@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo *)",
+      "mcp__stitch__list_projects",
+      "Bash(python3 *)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "chrome-devtools",
+    "supabase"
+  ]
+}
