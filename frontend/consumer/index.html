@@ -1,31 +1,270 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-    <title>Tor-li — Find a Haircut Now</title>
-    <!--
-      PLACEHOLDER SHELL. The real UI is generated in Stitch ("TOR LI" project).
-      Paste the Stitch <head> (styles) and <body> markup here, KEEPING these hook
-      ids/attributes so js/app.js can drive the design:
-        #map  #barbershop-list  #slot-list  #lock-timer  #booking-form (name, phone)
-    -->
-  </head>
-  <body>
-    <main>
-      <p id="geo-banner" hidden style="background:#fff3cd;padding:8px;margin:0">
-        Location unavailable — showing results near Tel Aviv city centre.
-      </p>
-      <section id="map" style="height: 240px"></section>
-      <ul id="barbershop-list"></ul>
-      <ul id="slot-list"></ul>
-      <div id="lock-timer"></div>
-      <form id="booking-form" hidden>
-        <input name="name" placeholder="Name" required />
-        <input name="phone" placeholder="Phone" required />
-        <button type="submit">Confirm booking</button>
+<html class="dark" dir="rtl" lang="he">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
+  <title>Tor-li — Find a Haircut Now</title>
+
+  <!-- Tailwind CDN + design-system tokens (from Stitch) -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "background":               "#131315",
+            "surface":                  "#131315",
+            "surface-dim":              "#131315",
+            "surface-1":                "#101012",
+            "surface-2":                "#131214",
+            "surface-3":                "#18171A",
+            "surface-4":                "#202023",
+            "surface-container":        "#201f22",
+            "surface-container-low":    "#1c1b1d",
+            "surface-container-high":   "#2a2a2c",
+            "surface-container-highest":"#353437",
+            "surface-container-lowest": "#0e0e10",
+            "surface-variant":          "#353437",
+            "surface-bright":           "#39393b",
+            "inverse-surface":          "#e5e1e4",
+            "inverse-on-surface":       "#313032",
+            "on-background":            "#e5e1e4",
+            "on-surface":               "#e5e1e4",
+            "on-surface-variant":       "#d4c5ac",
+            "primary":                  "#ffd174",
+            "primary-fixed":            "#ffdea1",
+            "primary-fixed-dim":        "#fbbc18",
+            "primary-container":        "#efb200",
+            "on-primary":               "#402d00",
+            "on-primary-fixed":         "#261900",
+            "on-primary-fixed-variant": "#5c4300",
+            "on-primary-container":     "#624700",
+            "inverse-primary":          "#7a5900",
+            "secondary":                "#c6c6c7",
+            "secondary-fixed":          "#e2e2e2",
+            "secondary-fixed-dim":      "#c6c6c7",
+            "secondary-container":      "#454747",
+            "on-secondary":             "#2f3131",
+            "on-secondary-fixed":       "#1a1c1c",
+            "on-secondary-fixed-variant":"#454747",
+            "on-secondary-container":   "#b4b5b5",
+            "tertiary":                 "#abdeff",
+            "tertiary-fixed":           "#c4e7ff",
+            "tertiary-fixed-dim":       "#7cd0ff",
+            "tertiary-container":       "#57c7ff",
+            "on-tertiary":              "#00344a",
+            "on-tertiary-fixed":        "#001e2c",
+            "on-tertiary-fixed-variant":"#004c69",
+            "on-tertiary-container":    "#005170",
+            "error":                    "#ffb4ab",
+            "error-container":          "#93000a",
+            "on-error":                 "#690005",
+            "on-error-container":       "#ffdad6",
+            "outline":                  "#9c8f79",
+            "outline-variant":          "#504533",
+            "surface-tint":             "#fbbc18",
+            "gold-glow":                "rgba(239, 178, 0, 0.15)",
+            "text-primary":             "#FAFAF9",
+            "text-secondary":           "#A1A1AA",
+            "text-muted":               "#71717A",
+            "border-light":             "rgba(255, 255, 255, 0.08)",
+            "success":                  "#34C759",
+            "danger":                   "#FF453A",
+            "info":                     "#0A84FF",
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"
+          },
+          spacing: {
+            base: "4px", "stack-sm": "8px", "stack-md": "16px",
+            "stack-lg": "24px", "section-gap": "32px", gutter: "20px"
+          },
+          fontFamily: {
+            "headline-lg":        ["Heebo"],
+            "headline-lg-mobile": ["Heebo"],
+            "headline-md":        ["Heebo"],
+            "headline-sm":        ["Heebo"],
+            "body-lg":            ["Heebo"],
+            "body-md":            ["Heebo"],
+            "display-lg":         ["Heebo"],
+            "price-lg":           ["JetBrains Mono"],
+            "label-mono":         ["JetBrains Mono"],
+          },
+          fontSize: {
+            "headline-lg":        ["32px", { lineHeight:"1.2",  fontWeight:"800" }],
+            "headline-lg-mobile": ["28px", { lineHeight:"1.2",  fontWeight:"800" }],
+            "headline-md":        ["24px", { lineHeight:"1.2",  fontWeight:"800" }],
+            "headline-sm":        ["20px", { lineHeight:"1.3",  fontWeight:"700" }],
+            "body-lg":            ["18px", { lineHeight:"1.5",  fontWeight:"500" }],
+            "body-md":            ["16px", { lineHeight:"1.5",  fontWeight:"400" }],
+            "display-lg":         ["40px", { lineHeight:"1.1",  letterSpacing:"-0.02em", fontWeight:"900" }],
+            "price-lg":           ["24px", { lineHeight:"1",    fontWeight:"600" }],
+            "label-mono":         ["14px", { lineHeight:"1",    letterSpacing:"0.05em",  fontWeight:"500" }],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #131315;
+      color: #FAFAF9;
+      font-family: 'Heebo', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .card-gradient { background: linear-gradient(to top, #101012 0%, transparent 100%); }
+    .gold-ring { box-shadow: 0 0 0 1px #efb200; }
+    /* Smooth slot-list appear */
+    #slots-section { transition: opacity 0.2s ease; }
+  </style>
+</head>
+
+<body class="bg-background text-text-primary min-h-screen pb-28 max-w-[430px] mx-auto relative overflow-x-hidden">
+
+  <!-- Geo fallback banner -->
+  <div id="geo-banner" hidden
+       class="bg-surface-container border-b border-border-light px-gutter py-2 text-center font-body-md text-text-secondary text-sm">
+    מיקום לא זמין — מציג תוצאות ליד מרכז תל אביב
+  </div>
+
+  <!-- Header -->
+  <header class="px-gutter pt-8 pb-4 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary">
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">person</span>
+      </div>
+      <div class="flex flex-col justify-center">
+        <span class="font-body-md text-text-secondary text-sm">מיקום נוכחי</span>
+        <div class="flex items-center gap-1">
+          <span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings:'FILL' 1;">location_on</span>
+          <span id="location-label" class="font-headline-sm text-[16px] font-bold">מאתר...</span>
+        </div>
+      </div>
+    </div>
+    <button class="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center border border-border-light text-text-primary hover:bg-surface-3 transition-colors">
+      <span class="material-symbols-outlined">notifications</span>
+    </button>
+  </header>
+
+  <!-- Search + Filter -->
+  <div class="px-gutter mb-5 flex gap-2">
+    <div class="relative flex-1">
+      <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary">search</span>
+      <input id="search-input"
+             class="w-full bg-surface-1 border border-border-light rounded-[16px] h-12 pr-10 pl-4 font-body-md text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 transition-colors"
+             placeholder="חפש ספרים, שירותים..." type="text"/>
+    </div>
+    <button class="w-12 h-12 bg-surface-2 rounded-[16px] border border-border-light flex items-center justify-center text-text-primary hover:bg-surface-3 transition-colors">
+      <span class="material-symbols-outlined">filter_list</span>
+    </button>
+  </div>
+
+  <!-- List / Map toggle -->
+  <div class="px-gutter mb-stack-lg">
+    <div class="bg-surface-2 p-1 rounded-full flex border border-border-light w-48 mx-auto">
+      <button id="btn-list-view"
+              class="flex-1 py-1.5 rounded-full bg-surface-variant text-text-primary font-body-md text-sm text-center transition-all shadow-sm">
+        רשימה
+      </button>
+      <button id="btn-map-view"
+              class="flex-1 py-1.5 rounded-full text-text-secondary font-body-md text-sm text-center transition-all hover:text-text-primary">
+        מפה
+      </button>
+    </div>
+  </div>
+
+  <!-- Map panel (hidden by default; shown when map toggle is active) -->
+  <div id="map-panel" class="px-gutter mb-6 hidden">
+    <div id="map" class="w-full h-[280px] rounded-2xl overflow-hidden border border-border-light"></div>
+  </div>
+
+  <!-- ── LIST VIEW ────────────────────────────────────────────────── -->
+  <div id="list-panel">
+
+    <!-- Available Near You -->
+    <section class="mb-section-gap">
+      <div class="px-gutter flex justify-between items-end mb-stack-md">
+        <h2 class="font-headline-md text-headline-md">זמינים<br/>בקרבתך</h2>
+        <span class="font-body-md text-text-muted text-sm" id="shop-count"></span>
+      </div>
+
+      <!-- Horizontal scroll of barber cards; app.js renders into this -->
+      <div id="barbershop-list"
+           class="flex overflow-x-auto hide-scrollbar gap-4 px-gutter pb-4 -mx-0">
+        <!-- Skeleton cards shown while loading -->
+        <div class="min-w-[240px] h-52 bg-surface-2 rounded-[20px] border border-border-light animate-pulse flex-shrink-0"></div>
+        <div class="min-w-[240px] h-52 bg-surface-2 rounded-[20px] border border-border-light animate-pulse flex-shrink-0"></div>
+        <div class="min-w-[240px] h-52 bg-surface-2 rounded-[20px] border border-border-light animate-pulse flex-shrink-0"></div>
+      </div>
+    </section>
+
+    <!-- Slots for selected barbershop (hidden until a shop is selected) -->
+    <section id="slots-section" class="mb-section-gap px-gutter hidden">
+      <div class="flex justify-between items-end mb-stack-md">
+        <h2 class="font-headline-md text-headline-md" id="slots-title">תורים פנויים</h2>
+        <button id="btn-close-slots" class="text-text-muted hover:text-text-primary transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <!-- Lock countdown (shown once a slot is locked) -->
+      <div id="lock-timer-bar" class="hidden mb-stack-md bg-surface-container border border-primary/30 rounded-xl px-4 py-3 flex items-center gap-3">
+        <span class="material-symbols-outlined text-primary animate-pulse">timer</span>
+        <span class="font-body-md text-text-secondary text-sm">הזמן שמור עוד</span>
+        <span id="lock-timer" class="font-price-lg text-price-lg text-primary ml-auto"></span>
+      </div>
+
+      <div id="slot-list" class="flex flex-col gap-3"></div>
+    </section>
+
+    <!-- Booking form (hidden until a slot is locked) -->
+    <section id="booking-section" class="px-gutter mb-section-gap hidden">
+      <h2 class="font-headline-md text-headline-md mb-stack-md">פרטי הזמנה</h2>
+      <form id="booking-form" class="flex flex-col gap-3">
+        <input name="name"
+               class="w-full bg-surface-1 border border-border-light rounded-xl h-12 px-4 font-body-md text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 transition-colors"
+               placeholder="שם מלא" required/>
+        <input name="phone"
+               class="w-full bg-surface-1 border border-border-light rounded-xl h-12 px-4 font-body-md text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 transition-colors"
+               placeholder="מספר טלפון" type="tel" required/>
+        <button type="submit"
+                class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-xl flex justify-center items-center transition-transform duration-200 active:scale-95">
+          אישור הזמנה
+        </button>
       </form>
-    </main>
-    <script type="module" src="./js/app.js"></script>
-  </body>
+    </section>
+
+  </div><!-- /list-panel -->
+
+  <!-- Bottom Navigation -->
+  <nav class="bg-surface-1/90 font-label-mono text-label-mono fixed bottom-0 w-full max-w-[430px] z-50 h-20 backdrop-blur-2xl flex flex-row-reverse justify-around items-center px-4 pb-safe border-t border-border-light"
+       style="box-shadow: 0 -4px 20px rgba(0,0,0,0.5);">
+    <a class="flex flex-col items-center justify-center text-primary gap-1 scale-110" href="#">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">home</span>
+      <span class="text-[10px]">בית</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-text-muted gap-1 hover:text-primary transition-colors" href="#">
+      <span class="material-symbols-outlined">calendar_month</span>
+      <span class="text-[10px]">התורים שלי</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-text-muted gap-1 hover:text-primary transition-colors" href="#">
+      <span class="material-symbols-outlined">person</span>
+      <span class="text-[10px]">פרופיל</span>
+    </a>
+  </nav>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
 </html>
