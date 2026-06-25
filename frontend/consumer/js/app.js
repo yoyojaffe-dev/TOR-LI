@@ -32,11 +32,23 @@ let unsubscribeSlots = null;
 // Priority-3 fallback: Jerusalem city centre (used when GPS denied + no search).
 const DEFAULT_POSITION = { lat: 31.7683, lng: 35.2137 };
 
+// Client-side filter state (applied over the fetched shops, persists across searches).
+const filterState = { maxDistanceM: null };
+
 // Clear barbershop pins from the map between location changes (avoids pileup).
 function clearMarkers() {
   const markers = store.get().markers;
   if (markers) markers.forEach((m) => m.setMap(null));
   store.set({ markers: [] });
+}
+
+// The shops currently visible after applying the active filter.
+function visibleShops() {
+  const all = store.get().barbershops || [];
+  if (filterState.maxDistanceM == null) return all;
+  return all.filter(
+    (b) => b.distance_m == null || b.distance_m <= filterState.maxDistanceM
+  );
 }
 
 // ── View toggle (List ↔ Map) ─────────────────────────────────────────────────
@@ -56,11 +68,12 @@ function setView(view) {
   if (!isList && !store.get().map) {
     const mapEl = els.map();
     if (mapEl) {
-      const { position, barbershops } = store.get();
+      const { position } = store.get();
       renderMap(mapEl, position).then((map) => {
         store.set({ map });
-        if (barbershops?.length) {
-          const markers = renderBarbershopMarkers(map, barbershops, selectBarbershop);
+        const shops = visibleShops();
+        if (shops.length) {
+          const markers = renderBarbershopMarkers(map, shops, selectBarbershop);
           store.set({ markers });
         }
       });
@@ -102,15 +115,21 @@ async function loadNearby() {
   const { position } = store.get();
   const barbershops = await api.nearbyBarbershops(position.lat, position.lng);
   store.set({ barbershops });
-  renderBarbershops(barbershops);
+  renderShops();
+}
+
+// Render the currently-visible shops (post-filter) into the list + map.
+function renderShops() {
+  const shops = visibleShops();
+  renderBarbershops(shops);
 
   const count = els.shopCount();
-  if (count) count.textContent = `${barbershops.length} ספרים`;
+  if (count) count.textContent = `${shops.length} ספרים`;
 
   // Redraw markers if the map exists (clear old pins first to avoid pileup).
   if (store.get().map) {
     clearMarkers();
-    const markers = renderBarbershopMarkers(store.get().map, barbershops, selectBarbershop);
+    const markers = renderBarbershopMarkers(store.get().map, shops, selectBarbershop);
     store.set({ markers });
   }
 }
@@ -176,8 +195,10 @@ function renderBarbershops(barbershops) {
 
   if (!barbershops.length) {
     list.innerHTML = `
-      <div class="px-gutter text-text-muted font-body-md py-8 text-center w-full">
-        לא נמצאו ספרים בקרבתך
+      <div class="w-full flex flex-col items-center justify-center text-center py-12 px-gutter gap-3">
+        <span class="material-symbols-outlined text-5xl text-surface-variant">location_off</span>
+        <p class="font-headline-sm text-headline-sm text-text-primary">לא נמצאו ספרים באזור זה</p>
+        <p class="font-body-md text-text-secondary text-sm">נסה לחפש עיר אחרת או להרחיב את הסינון</p>
       </div>`;
     return;
   }
@@ -323,6 +344,114 @@ async function handleSearch() {
   }
 }
 
+// ── Toast (non-blocking feedback) ────────────────────────────────────────────
+
+let toastTimer = null;
+function toast(message) {
+  let el = document.getElementById("toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "toast";
+    el.className =
+      "fixed left-1/2 -translate-x-1/2 bottom-28 z-[60] bg-surface-container " +
+      "border border-border-light text-text-primary font-body-md text-sm " +
+      "px-5 py-2.5 rounded-full shadow-2xl opacity-0 transition-opacity duration-200 pointer-events-none";
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  el.classList.remove("opacity-0");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add("opacity-0"), 2000);
+}
+
+// ── Filter bottom-sheet (client-side distance filter) ────────────────────────
+
+function ensureFilterSheet() {
+  let backdrop = document.getElementById("filter-backdrop");
+  if (backdrop) return backdrop;
+
+  backdrop = document.createElement("div");
+  backdrop.id = "filter-backdrop";
+  backdrop.className =
+    "fixed inset-0 z-[70] bg-black/60 opacity-0 pointer-events-none " +
+    "transition-opacity duration-200 flex items-end justify-center";
+  backdrop.innerHTML = `
+    <div id="filter-sheet"
+         class="w-full max-w-[430px] bg-surface-container border-t border-border-light
+                rounded-t-3xl p-gutter pb-[calc(20px+env(safe-area-inset-bottom))]
+                translate-y-full transition-transform duration-300 ease-out">
+      <div class="w-10 h-1 bg-surface-variant rounded-full mx-auto mb-stack-lg"></div>
+      <div class="flex justify-between items-center mb-stack-lg">
+        <h2 class="font-headline-md text-headline-md">סינון</h2>
+        <button id="filter-close" class="text-text-muted hover:text-text-primary transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <label class="font-body-md text-text-secondary text-sm flex justify-between mb-stack-sm">
+        <span>מרחק מקסימלי</span>
+        <span id="filter-distance-label" class="font-label-mono text-primary"></span>
+      </label>
+      <input id="filter-distance" type="range" min="500" max="10000" step="500"
+             class="w-full accent-primary mb-stack-lg"/>
+      <div class="flex gap-3">
+        <button id="filter-reset"
+                class="flex-1 py-3 rounded-xl border border-border-light text-text-primary font-body-lg
+                       hover:bg-surface-2 transition-colors">איפוס</button>
+        <button id="filter-apply"
+                class="flex-1 py-3 rounded-xl bg-primary text-on-primary font-headline-sm
+                       active:scale-95 transition-transform">החל</button>
+      </div>
+    </div>`;
+  document.body.appendChild(backdrop);
+
+  const slider = backdrop.querySelector("#filter-distance");
+  const label = backdrop.querySelector("#filter-distance-label");
+  const syncLabel = () => {
+    const v = Number(slider.value);
+    label.textContent = v >= 10000 ? "ללא הגבלה" : `${(v / 1000).toFixed(1)} ק"מ`;
+  };
+  slider.addEventListener("input", syncLabel);
+
+  backdrop.querySelector("#filter-close").addEventListener("click", closeFilterSheet);
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) closeFilterSheet();
+  });
+  backdrop.querySelector("#filter-reset").addEventListener("click", () => {
+    filterState.maxDistanceM = null;
+    slider.value = "10000";
+    syncLabel();
+    renderShops();
+    closeFilterSheet();
+    toast("הסינון אופס");
+  });
+  backdrop.querySelector("#filter-apply").addEventListener("click", () => {
+    const v = Number(slider.value);
+    filterState.maxDistanceM = v >= 10000 ? null : v;
+    renderShops();
+    closeFilterSheet();
+    toast(`${visibleShops().length} תוצאות`);
+  });
+
+  return backdrop;
+}
+
+function openFilterSheet() {
+  const backdrop = ensureFilterSheet();
+  const sheet = backdrop.querySelector("#filter-sheet");
+  const slider = backdrop.querySelector("#filter-distance");
+  slider.value = String(filterState.maxDistanceM ?? 10000);
+  slider.dispatchEvent(new Event("input"));
+  backdrop.classList.remove("opacity-0", "pointer-events-none");
+  requestAnimationFrame(() => sheet.classList.remove("translate-y-full"));
+}
+
+function closeFilterSheet() {
+  const backdrop = document.getElementById("filter-backdrop");
+  if (!backdrop) return;
+  backdrop.querySelector("#filter-sheet").classList.add("translate-y-full");
+  backdrop.classList.add("opacity-0", "pointer-events-none");
+}
+
 // ── Event wiring ─────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -346,8 +475,33 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-  // Close slots panel.
+  // Filter button (tune/filter_list icon) -> open the filter bottom-sheet.
+  document.querySelectorAll(".material-symbols-outlined").forEach((icon) => {
+    const name = icon.textContent.trim();
+    if (name === "filter_list" || name === "tune") {
+      const btn = icon.closest("button") || icon;
+      btn.style.cursor = "pointer";
+      btn.addEventListener("click", openFilterSheet);
+    }
+  });
+
+  // Bottom nav: prevent dead "#" jumps; surface not-yet-built tabs cleanly.
+  document.querySelectorAll("nav a").forEach((link) => {
+    const label = link.textContent.trim();
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (label.includes("בית")) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        toast("בקרוב 🚧");
+      }
+    });
+  });
+
+  // Close slots panel — also release any active pessimistic lock (no orphan locks).
   document.getElementById("btn-close-slots")?.addEventListener("click", () => {
+    cancelBooking();
+    els.lockTimerBar()?.classList.add("hidden");
     els.slotsSection()?.classList.add("hidden");
     els.bookingSection()?.classList.add("hidden");
   });
