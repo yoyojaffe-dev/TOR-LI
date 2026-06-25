@@ -1,3 +1,6 @@
+// Location resolution: GPS (HTML5) + manual address geocoding (Google Maps).
+import { loadGoogleMaps } from "./map.js";
+
 // Browser geolocation -> {lat, lng} for the radius search.
 
 export function getCurrentPosition(options = {}) {
@@ -20,5 +23,30 @@ export function getCurrentPosition(options = {}) {
       (err) => reject(err),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000, ...options }
     );
+  });
+}
+
+// Convert a typed address/city into {lat, lng} via the Google Geocoder.
+// Region-biased to Israel. Rejects if the query yields no results.
+export async function geocodeAddress(query) {
+  const trimmed = (query || "").trim();
+  if (!trimmed) throw new Error("Empty address");
+
+  const maps = await loadGoogleMaps();
+  const geocoder = new maps.Geocoder();
+
+  return new Promise((resolve, reject) => {
+    geocoder.geocode({ address: trimmed, region: "il" }, (results, status) => {
+      if (status === "OK" && results && results.length > 0) {
+        const loc = results[0].geometry.location;
+        resolve({
+          lat: loc.lat(),
+          lng: loc.lng(),
+          label: results[0].formatted_address,
+        });
+      } else {
+        reject(new Error(`Geocode failed (${status}) for "${trimmed}"`));
+      }
+    });
   });
 }

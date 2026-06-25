@@ -22,11 +22,13 @@ export function loadGoogleMaps() {
 }
 
 // Render the map into `el`, centered on the user, with a radius circle.
+// The "you" marker + radius circle are stashed on the map so recenterMap can
+// move them when the location changes (manual search / GPS update).
 export async function renderMap(el, { lat, lng }, radiusM = config.DEFAULT_RADIUS_M) {
   const maps = await loadGoogleMaps();
   const map = new maps.Map(el, { center: { lat, lng }, zoom: 14 });
 
-  new maps.Marker({ position: { lat, lng }, map, title: "You" });
+  const userMarker = new maps.Marker({ position: { lat, lng }, map, title: "You" });
   const circle = new maps.Circle({
     map,
     center: { lat, lng },
@@ -37,7 +39,23 @@ export async function renderMap(el, { lat, lng }, radiusM = config.DEFAULT_RADIU
     strokeOpacity: 0.4,
   });
   map.fitBounds(circle.getBounds());
+
+  // Stash for later recentering.
+  map.__torli = { userMarker, circle, radiusM };
   return map;
+}
+
+// Recenter an existing map on a new location, moving the user marker + circle.
+export function recenterMap(map, { lat, lng }) {
+  if (!map) return;
+  const center = { lat, lng };
+  map.setCenter(center);
+  const refs = map.__torli;
+  if (refs) {
+    refs.userMarker.setPosition(center);
+    refs.circle.setCenter(center);
+    map.fitBounds(refs.circle.getBounds());
+  }
 }
 
 // Drop markers for a list of barbershops; returns the marker array.

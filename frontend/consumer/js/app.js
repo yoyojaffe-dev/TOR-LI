@@ -2,8 +2,8 @@
 // and keeps slots live via Supabase Realtime.
 import { api, ApiError } from "./api.js";
 import { store } from "./state.js";
-import { getCurrentPosition } from "./geo.js";
-import { renderMap, renderBarbershopMarkers } from "./map.js";
+import { getCurrentPosition, geocodeAddress } from "./geo.js";
+import { renderMap, renderBarbershopMarkers, recenterMap } from "./map.js";
 import { subscribeToSlots } from "./realtime.js";
 import { startBooking, confirmBooking, cancelBooking } from "./booking.js";
 
@@ -25,10 +25,19 @@ const els = {
   mapPanel:     () => document.getElementById("map-panel"),
   btnListView:  () => document.getElementById("btn-list-view"),
   btnMapView:   () => document.getElementById("btn-map-view"),
+  searchInput:  () => document.getElementById("search-input"),
 };
 
 let unsubscribeSlots = null;
-const DEFAULT_POSITION = { lat: 32.0853, lng: 34.7818 };
+// Priority-3 fallback: Jerusalem city centre (used when GPS denied + no search).
+const DEFAULT_POSITION = { lat: 31.7683, lng: 35.2137 };
+
+// Clear barbershop pins from the map between location changes (avoids pileup).
+function clearMarkers() {
+  const markers = store.get().markers;
+  if (markers) markers.forEach((m) => m.setMap(null));
+  store.set({ markers: [] });
+}
 
 // ── View toggle (List ↔ Map) ─────────────────────────────────────────────────
 
@@ -51,7 +60,8 @@ function setView(view) {
       renderMap(mapEl, position).then((map) => {
         store.set({ map });
         if (barbershops?.length) {
-          renderBarbershopMarkers(map, barbershops, selectBarbershop);
+          const markers = renderBarbershopMarkers(map, barbershops, selectBarbershop);
+          store.set({ markers });
         }
       });
     }
@@ -61,21 +71,31 @@ function setView(view) {
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 async function init() {
-  let position;
+  // Priority on load: GPS -> Jerusalem fallback. (Manual search overrides later.)
   try {
-    position = await getCurrentPosition();
-    const label = els.locationLabel();
-    if (label) label.textContent = "מיקומך";
+    const position = await getCurrentPosition();
+    await setLocation(position, { label: "מיקומך" });
   } catch {
-    position = DEFAULT_POSITION;
     const banner = els.geoBanner();
     if (banner) banner.hidden = false;
-    const label = els.locationLabel();
-    if (label) label.textContent = "תל אביב";
+    await setLocation(DEFAULT_POSITION, { label: "ירושלים" });
   }
+}
 
+// Single entry point for any location change (GPS, search, fallback).
+// Updates state + label, re-fetches nearby shops, recenters the map.
+async function setLocation(position, { label } = {}) {
   store.set({ position });
+  if (label) {
+    const el = els.locationLabel();
+    if (el) el.textContent = label;
+  }
   await loadNearby();
+
+  // Follow the new location on the map if it's already rendered.
+  if (store.get().map) {
+    recenterMap(store.get().map, position);
+  }
 }
 
 async function loadNearby() {
@@ -87,9 +107,11 @@ async function loadNearby() {
   const count = els.shopCount();
   if (count) count.textContent = `${barbershops.length} ספרים`;
 
-  // If map is already visible, add markers immediately.
+  // Redraw markers if the map exists (clear old pins first to avoid pileup).
   if (store.get().map) {
-    renderBarbershopMarkers(store.get().map, barbershops, selectBarbershop);
+    clearMarkers();
+    const markers = renderBarbershopMarkers(store.get().map, barbershops, selectBarbershop);
+    store.set({ markers });
   }
 }
 
@@ -255,12 +277,74 @@ function renderSlots(slots) {
   });
 }
 
+// ── Manual location search ───────────────────────────────────────────────────
+
+// Lazily-created inline hint shown under the search bar on geocode failure.
+function searchHint(message) {
+  const input = els.searchInput();
+  if (!input) return;
+  let hint = document.getElementById("search-hint");
+  if (!hint) {
+    hint = document.createElement("p");
+    hint.id = "search-hint";
+    hint.className = "px-gutter -mt-3 mb-3 text-danger font-body-md text-xs text-right";
+    // Place it right after the search/filter row (input's grandparent).
+    const row = input.closest(".flex");
+    row?.parentElement?.insertBefore(hint, row.nextSibling);
+  }
+  hint.textContent = message || "";
+  hint.classList.toggle("hidden", !message);
+}
+
+// Resolve the typed address -> geocode -> re-fetch + recenter.
+// Empty query falls back to GPS (then Jerusalem if denied).
+async function handleSearch() {
+  const input = els.searchInput();
+  const query = input?.value.trim();
+  searchHint("");
+
+  if (!query) {
+    try {
+      const position = await getCurrentPosition();
+      await setLocation(position, { label: "מיקומך" });
+    } catch {
+      await setLocation(DEFAULT_POSITION, { label: "ירושלים" });
+    }
+    return;
+  }
+
+  try {
+    const geo = await geocodeAddress(query);
+    // Use the typed query as the short label (formatted_address is long).
+    await setLocation({ lat: geo.lat, lng: geo.lng }, { label: query });
+  } catch (err) {
+    console.warn("Geocode failed:", err.message);
+    searchHint("הכתובת לא נמצאה — נסה שוב");
+  }
+}
+
 // ── Event wiring ─────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
   // View toggle buttons.
   els.btnListView()?.addEventListener("click", () => setView("list"));
   els.btnMapView()?.addEventListener("click", () => setView("map"));
+
+  // Manual location search: Enter in the field, or click the search icon.
+  els.searchInput()?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSearch();
+    }
+  });
+  document
+    .querySelectorAll('.material-symbols-outlined')
+    .forEach((icon) => {
+      if (icon.textContent.trim() === "search") {
+        icon.style.cursor = "pointer";
+        icon.addEventListener("click", handleSearch);
+      }
+    });
 
   // Close slots panel.
   document.getElementById("btn-close-slots")?.addEventListener("click", () => {
