@@ -3,9 +3,12 @@
 Mounted only when ENVIRONMENT != "production".
 """
 
-from fastapi import APIRouter, HTTPException, Query
+import asyncio
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 
 from app.agents.discovery_agent import DiscoveryAgent
+from app.agents.scraping_agent import ScrapingAgent
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -31,3 +34,18 @@ def trigger_discovery(
         "barbershops_upserted": count,
         "search": {"lat": lat, "lng": lng, "radius_m": radius_m},
     }
+
+
+@router.post("/scraping/run")
+async def trigger_scraping() -> dict:
+    """Run one full Scraping Agent pass synchronously and return stats.
+
+    Example:
+        POST /admin/scraping/run
+    """
+    try:
+        stats = await ScrapingAgent().run_once()
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return {"success": True, **stats}
