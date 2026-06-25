@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import barbershops, bookings, slots
+from app.routers import admin, barbershops, bookings, slots
 
 settings = get_settings()
 
@@ -39,6 +39,10 @@ app.add_middleware(
 app.include_router(barbershops.router)
 app.include_router(slots.router)
 app.include_router(bookings.router)
+
+# Admin/ops endpoints — mounted in all environments for manual triggers.
+# Add auth middleware here before going to production.
+app.include_router(admin.router)
 
 
 @app.get("/health", tags=["meta"])
