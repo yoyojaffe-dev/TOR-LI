@@ -10,7 +10,7 @@ end-to-end. The real Playwright automation lands in the post-review phase.
 """
 
 from app.config import get_settings
-from app.supabase_client import get_supabase
+from app.supabase_client import supabase_admin
 
 
 class BookingAgent:
@@ -18,7 +18,8 @@ class BookingAgent:
 
     def __init__(self) -> None:
         self.settings = get_settings()
-        self.db = get_supabase()
+        # Service-role client: background agents bypass RLS to write directly.
+        self.db = supabase_admin
 
     def submit(self, slot_id: str, customer_name: str, customer_phone: str) -> dict:
         """Submit the booking for ``slot_id``.

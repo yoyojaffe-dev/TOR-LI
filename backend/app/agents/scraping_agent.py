@@ -11,7 +11,7 @@ are stubbed and marked TODO for the post-review phase.
 """
 
 from app.config import get_settings
-from app.supabase_client import get_supabase
+from app.supabase_client import supabase_admin
 
 # OpenAI function-calling schema the parser will use to return structured slots.
 SLOT_EXTRACTION_TOOL = {
@@ -46,7 +46,8 @@ class ScrapingAgent:
 
     def __init__(self) -> None:
         self.settings = get_settings()
-        self.db = get_supabase()
+        # Service-role client: background agents bypass RLS to write directly.
+        self.db = supabase_admin
         # TODO (Playwright phase): init AsyncOpenAI(api_key=...) + Playwright browser.
 
     def fetch_targets(self) -> list[dict]:

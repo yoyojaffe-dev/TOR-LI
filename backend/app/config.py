@@ -25,7 +25,8 @@ class Settings(BaseSettings):
 
     # --- Supabase ---
     supabase_url: str
-    supabase_key: str
+    supabase_key: str  # anon key (public read paths, RLS-guarded RPCs)
+    supabase_service_role_key: str = ""  # bypasses RLS; background agents only
 
     # --- External integrations ---
     google_maps_api_key: str = ""
