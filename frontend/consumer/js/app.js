@@ -22,11 +22,23 @@ const els = {
 
 let unsubscribeSlots = null;
 
-async function init() {
-  try {
-    const position = await getCurrentPosition();
-    store.set({ position });
+// Tel Aviv centre — used when the user denies geolocation or it times out.
+const DEFAULT_POSITION = { lat: 32.0853, lng: 34.7818 };
 
+async function init() {
+  let position;
+  try {
+    position = await getCurrentPosition();
+  } catch {
+    // Geo denied / unavailable → fall back to default so the app still loads.
+    position = DEFAULT_POSITION;
+    const banner = document.getElementById("geo-banner");
+    if (banner) banner.hidden = false;
+  }
+
+  store.set({ position });
+
+  try {
     const mapEl = els.map();
     if (mapEl) {
       const map = await renderMap(mapEl, position);
@@ -34,7 +46,7 @@ async function init() {
     }
     await loadNearby();
   } catch (err) {
-    console.error("Init failed:", err);
+    console.error("Init failed after geo:", err);
   }
 }
 
