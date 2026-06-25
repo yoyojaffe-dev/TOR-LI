@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>הגדרת עסק - שלב 1</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#201f22",
+                    "surface-bright": "#39393b",
+                    "surface-4": "#202023",
+                    "surface-tint": "#fbbc18",
+                    "on-tertiary-container": "#005170",
+                    "secondary-fixed-dim": "#c6c6c7",
+                    "primary-fixed": "#ffdea1",
+                    "on-secondary-fixed": "#1a1c1c",
+                    "on-tertiary-fixed-variant": "#004c69",
+                    "text-primary": "#FAFAF9",
+                    "surface-dim": "#131315",
+                    "on-secondary-container": "#b4b5b5",
+                    "surface-variant": "#353437",
+                    "secondary-container": "#454747",
+                    "on-primary-container": "#624700",
+                    "primary-container": "#efb200",
+                    "secondary-fixed": "#e2e2e2",
+                    "on-primary-fixed-variant": "#5c4300",
+                    "on-error-container": "#ffdad6",
+                    "tertiary": "#abdeff",
+                    "outline": "#9c8f79",
+                    "on-primary": "#402d00",
+                    "on-background": "#e5e1e4",
+                    "primary": "#ffd174",
+                    "danger": "#FF453A",
+                    "on-secondary-fixed-variant": "#454747",
+                    "success": "#34C759",
+                    "text-muted": "#71717A",
+                    "on-error": "#690005",
+                    "surface-container-lowest": "#0e0e10",
+                    "secondary": "#c6c6c7",
+                    "gold-glow": "rgba(239, 178, 0, 0.15)",
+                    "error": "#ffb4ab",
+                    "on-tertiary": "#00344a",
+                    "on-surface": "#e5e1e4",
+                    "surface-container-low": "#1c1b1d",
+                    "border-light": "rgba(255, 255, 255, 0.08)",
+                    "inverse-surface": "#e5e1e4",
+                    "tertiary-container": "#57c7ff",
+                    "on-primary-fixed": "#261900",
+                    "surface": "#131315",
+                    "on-tertiary-fixed": "#001e2c",
+                    "on-secondary": "#2f3131",
+                    "tertiary-fixed-dim": "#7cd0ff",
+                    "inverse-on-surface": "#313032",
+                    "primary-fixed-dim": "#fbbc18",
+                    "background": "#131315",
+                    "surface-2": "#131214",
+                    "on-surface-variant": "#d4c5ac",
+                    "error-container": "#93000a",
+                    "tertiary-fixed": "#c4e7ff",
+                    "surface-container-highest": "#353437",
+                    "surface-1": "#101012",
+                    "info": "#0A84FF",
+                    "outline-variant": "#504533",
+                    "surface-container-high": "#2a2a2c",
+                    "surface-3": "#18171A",
+                    "inverse-primary": "#7a5900",
+                    "text-secondary": "#A1A1AA"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "section-gap": "32px",
+                    "stack-lg": "24px",
+                    "stack-sm": "8px",
+                    "gutter": "20px",
+                    "base": "4px",
+                    "stack-md": "16px"
+            },
+            "fontFamily": {
+                    "price-lg": ["JetBrains Mono"],
+                    "body-md": ["Heebo"],
+                    "body-lg": ["Heebo"],
+                    "headline-lg-mobile": ["Heebo"],
+                    "display-lg": ["Heebo"],
+                    "headline-lg": ["Heebo"],
+                    "label-mono": ["JetBrains Mono"],
+                    "headline-md": ["Heebo"],
+                    "headline-sm": ["Heebo"]
+            },
+            "fontSize": {
+                    "price-lg": ["24px", {"lineHeight": "1", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.5", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "800"}],
+                    "display-lg": ["40px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "800"}],
+                    "label-mono": ["14px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-md": ["24px", {"lineHeight": "1.2", "fontWeight": "800"}],
+                    "headline-sm": ["20px", {"lineHeight": "1.3", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #353437;
+            border-radius: 4px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-text-primary min-h-screen flex flex-col font-body-md antialiased selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar Component (from JSON) -->
+<header class="fixed top-0 w-full bg-surface dark:bg-surface text-primary dark:text-primary bg-surface-container-low border-b border-border-light flex items-center justify-between px-5 h-16 z-50">
+<button class="transition-all duration-200 active:scale-95 text-primary hover:bg-surface-variant p-2 -mr-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="arrow_back" style="font-variation-settings: 'wght' 400;">arrow_forward</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-black text-primary">Barber Onboarding</h1>
+<div class="w-10"></div> <!-- Placeholder for balance -->
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 mt-16 px-gutter pb-32">
+<!-- Progress Bar Container -->
+<div class="w-full bg-surface-container-highest h-1 mt-stack-md rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full transition-all duration-500 ease-out" style="width: 25%;"></div>
+</div>
+<!-- Page Headers -->
+<div class="mt-stack-lg mb-section-gap">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-text-primary">פרטי העסק</h2>
+<p class="font-body-md text-body-md text-secondary-fixed-dim mt-stack-sm">הגדרת עסק - שלב 1</p>
+</div>
+<!-- Form Area -->
+<form class="space-y-stack-lg">
+<!-- Business Name Input -->
+<div class="space-y-stack-sm">
+<label class="block font-label-mono text-label-mono text-secondary-fixed-dim" for="businessName">שם העסק</label>
+<input class="w-full bg-surface-1 border border-border-light rounded-[16px] px-4 py-3 font-body-md text-body-md text-text-primary placeholder:text-surface-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" id="businessName" placeholder="הכנס את שם המספרה" type="text"/>
+</div>
+<!-- Address Input with Map Picker Placeholder -->
+<div class="space-y-stack-sm">
+<label class="block font-label-mono text-label-mono text-secondary-fixed-dim" for="address">כתובת העסק</label>
+<div class="relative">
+<input class="w-full bg-surface-1 border border-border-light rounded-[16px] pr-4 pl-12 py-3 font-body-md text-body-md text-text-primary placeholder:text-surface-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" id="address" placeholder="חפש רחוב ועיר" type="text"/>
+<button class="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-fixed-dim hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined">location_on</span>
+</button>
+</div>
+<!-- Map Placeholder -->
+<div class="w-full h-32 mt-stack-sm rounded-[16px] overflow-hidden border border-border-light bg-surface-container flex items-center justify-center relative">
+<img alt="Map" class="absolute inset-0 w-full h-full object-cover opacity-50 grayscale mix-blend-luminosity" data-alt="A highly detailed top-down view of a modern digital map interface displaying an urban city layout. The map uses a sleek, dark-mode aesthetic with varying shades of deep gray and near-black surfaces representing city blocks. Subtle, glowing gold lines trace the primary traffic routes and main streets, creating a high-tech navigation feel. The overall mood is sophisticated, utilitarian, and perfectly aligned with a premium modern mobile application design." data-location="Tel Aviv" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARJMDeTYDE-s3dtwboEhSjGmfd55MRLB6xQvp_B4-PloV7VjPwBjBpXddqy6Q_AGKOgTkTYXssUJ1kdfnlCGhzd6uxyivTc24Q_QpH7qI4Xg-ZDquZIPg2Zce5htw0FEd4uYqw425iH42OZU6ylVR6qY7T6OnVRGBVqKEgmb4zNqmFrI9-7niUL2I9Shqo7VrvgiD7scaLewzjDg-yLv2yt-b6EBKmw7Iw65wb2VdFqto5M4aao6erpnEZjC8azKFCHl2NvCCwCZ2o"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-1 to-transparent"></div>
+<span class="material-symbols-outlined text-primary text-3xl z-10" style="filter: drop-shadow(0 0 8px rgba(239, 178, 0, 0.5));">location_pin</span>
+</div>
+</div>
+<!-- Photo Upload Component -->
+<div class="space-y-stack-sm">
+<label class="block font-label-mono text-label-mono text-secondary-fixed-dim">תמונת המספרה</label>
+<div class="w-full bg-surface-1 border-2 border-dashed border-outline-variant rounded-[16px] p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-surface-container-high transition-all group">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mb-stack-sm group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-secondary-fixed-dim group-hover:text-on-primary-container">add_a_photo</span>
+</div>
+<p class="font-body-md text-body-md text-text-primary text-center">לחץ להעלאת תמונה</p>
+<p class="font-label-mono text-label-mono text-surface-variant text-center mt-base">JPEG, PNG עד 5MB</p>
+</div>
+</div>
+<!-- Phone Number Input -->
+<div class="space-y-stack-sm">
+<label class="block font-label-mono text-label-mono text-secondary-fixed-dim" for="phone">מספר טלפון</label>
+<input class="w-full bg-surface-1 border border-border-light rounded-[16px] px-4 py-3 font-body-md text-body-md text-text-primary placeholder:text-surface-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-right" dir="ltr" id="phone" placeholder="050-0000000" type="tel"/>
+</div>
+<!-- Instagram Handle Input -->
+<div class="space-y-stack-sm">
+<label class="block font-label-mono text-label-mono text-secondary-fixed-dim" for="instagram">אינסטגרם (אופציונלי)</label>
+<div class="relative flex items-center">
+<span class="absolute right-4 font-body-md text-secondary-fixed-dim">@</span>
+<input class="w-full bg-surface-1 border border-border-light rounded-[16px] pr-8 pl-4 py-3 font-body-md text-body-md text-text-primary placeholder:text-surface-variant focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-left" dir="ltr" id="instagram" placeholder="barbershop_name" type="text"/>
+</div>
+</div>
+</form>
+</main>
+<!-- Sticky Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 w-full p-gutter bg-background/80 backdrop-blur-xl border-t border-border-light z-40">
+<button class="w-full bg-text-primary text-surface-dim font-headline-sm text-headline-sm py-4 rounded-[16px] shadow-lg flex items-center justify-center space-x-2 space-x-reverse transition-transform duration-200 active:scale-95 hover:bg-surface-secondary">
+<span>המשך</span>
+</button>
+</div>
+</body></html>

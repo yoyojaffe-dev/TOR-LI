@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="he" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tor - Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#efb200",
+                        "on-tertiary-container": "#005170",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "surface-variant": "#353437",
+                        "on-background": "#e5e1e4",
+                        "background": "#131315",
+                        "surface-1": "#101012",
+                        "text-primary": "#FAFAF9",
+                        "outline-variant": "#504533",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#454747",
+                        "inverse-on-surface": "#313032",
+                        "surface-container-high": "#2a2a2c",
+                        "success": "#34C759",
+                        "on-primary-fixed": "#261900",
+                        "surface-container": "#201f22",
+                        "text-secondary": "#A1A1AA",
+                        "surface-3": "#18171A",
+                        "primary": "#ffd174",
+                        "info": "#0A84FF",
+                        "surface-2": "#131214",
+                        "inverse-surface": "#e5e1e4",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#fbbc18",
+                        "on-secondary-container": "#b4b5b5",
+                        "on-surface": "#e5e1e4",
+                        "on-primary-container": "#624700",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "surface-tint": "#fbbc18",
+                        "primary-fixed": "#ffdea1",
+                        "text-muted": "#71717A",
+                        "tertiary-container": "#57c7ff",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "error-container": "#93000a",
+                        "danger": "#FF453A",
+                        "surface-container-highest": "#353437",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "surface": "#131315",
+                        "on-secondary": "#2f3131",
+                        "surface-container-low": "#1c1b1d",
+                        "secondary": "#c6c6c7",
+                        "tertiary": "#abdeff",
+                        "on-tertiary-fixed": "#001e2c",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#d4c5ac",
+                        "surface-4": "#202023",
+                        "on-secondary-fixed-variant": "#454747",
+                        "on-primary": "#402d00",
+                        "secondary-fixed": "#e2e2e2",
+                        "surface-container-lowest": "#0e0e10",
+                        "inverse-primary": "#7a5900",
+                        "surface-bright": "#39393b",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "outline": "#9c8f79",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "surface-dim": "#131315",
+                        "on-tertiary": "#00344a",
+                        "tertiary-fixed": "#c4e7ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "stack-sm": "8px",
+                        "stack-md": "16px",
+                        "stack-lg": "24px",
+                        "section-gap": "32px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Heebo"],
+                        "display-lg": ["Heebo"],
+                        "headline-md": ["Heebo"],
+                        "body-lg": ["Heebo"],
+                        "headline-sm": ["Heebo"],
+                        "body-md": ["Heebo"],
+                        "price-lg": ["JetBrains Mono"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-lg": ["Heebo"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "display-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "price-lg": ["24px", { "lineHeight": "1", "fontWeight": "600" }],
+                        "label-mono": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #131315;
+            color: #FAFAF9;
+            font-family: 'Heebo', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Custom Scrollbar Hide */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .gold-ring {
+            box-shadow: 0 0 0 1px #efb200;
+        }
+        
+        .gold-glow {
+            filter: drop-shadow(0 0 8px rgba(239, 178, 0, 0.15));
+        }
+
+        .card-gradient {
+            background: linear-gradient(to top, #101012 0%, transparent 100%);
+        }
+    </style>
+</head>
+<body class="bg-background text-text-primary min-h-screen pb-24 max-w-[430px] mx-auto relative overflow-x-hidden">
+<!-- Header Section -->
+<header class="px-gutter pt-8 pb-4 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<img alt="User Avatar" class="w-10 h-10 rounded-full object-cover border border-border-light" data-alt="A close-up black and white portrait of a modern urban man, slightly moody lighting, high contrast, fitting a premium dark-mode barber app aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaD3LVEjkBqALQ-HGfdp8Ea9Li8gPIxeEm9nner4JO_iMx0XyKBLgd3SdaNRic3FxVYzf1gD9kc97g65D1D4OKZBMBbHDZyELpgvQodLOu9tS93JD_9skhpRTpeK4n8sb3f6xvB-Ot1IWI80RvtDxDslx7IxhjkM7TTQNFSeYwupvymXNyGjro66A2M-QYESdsTCB6qp17heRTNmJ1S2I5RmYPdG8-RhYyXVpXSbeK2Z_5DFirE3ZjJbOg4lQqFlC55Y8EMSBC0mtr"/>
+<div class="flex flex-col justify-center">
+<span class="font-body-md text-text-secondary text-sm">מיקום נוכחי</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<span class="font-headline-sm text-headline-sm-mobile">תל אביב</span>
+</div>
+</div>
+</div>
+<button class="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center border border-border-light text-text-primary hover:bg-surface-3 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Search & Filter -->
+<div class="px-gutter mb-6 flex gap-2">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary">search</span>
+<input class="w-full bg-surface-1 border border-border-light rounded-[16px] h-12 pr-10 pl-4 font-body-md text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 transition-colors" placeholder="חפש ספרים, שירותים..." type="text"/>
+</div>
+<button class="w-12 h-12 bg-surface-2 rounded-[16px] border border-border-light flex items-center justify-center text-text-primary hover:bg-surface-3 transition-colors" onclick="toggleFilterPanel()">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div><div class="hidden px-gutter mb-6 transition-all duration-300 ease-out" id="filter-panel">
+<div class="bg-surface-2 border border-border-light rounded-[20px] p-4 shadow-2xl">
+<div id="filter-main-view">
+<h3 class="font-headline-sm text-text-primary mb-4 text-right">מה אתה מחפש?</h3>
+<div class="grid grid-cols-4 gap-2 mb-4">
+<button class="flex flex-col items-center gap-2 p-3 bg-surface-3 rounded-xl border border-border-light hover:border-primary/50 transition-colors" onclick="showSubFilter('type')">
+<span class="material-symbols-outlined text-primary">content_cut</span>
+<span class="text-xs font-body-md">סוג</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-3 bg-surface-3 rounded-xl border border-border-light hover:border-primary/50 transition-colors" onclick="showSubFilter('budget')">
+<span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+<span class="text-xs font-body-md">תקציב</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-3 bg-surface-3 rounded-xl border border-border-light hover:border-primary/50 transition-colors" onclick="showSubFilter('when')">
+<span class="material-symbols-outlined text-primary">calendar_today</span>
+<span class="text-xs font-body-md">מתי</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-3 bg-surface-3 rounded-xl border border-border-light hover:border-primary/50 transition-colors" onclick="showSubFilter('rating')">
+<span class="material-symbols-outlined text-primary">star</span>
+<span class="text-xs font-body-md">דירוג</span>
+</button>
+</div>
+<button class="w-full bg-primary text-on-primary font-headline-sm py-3 rounded-xl hover:opacity-90 transition-opacity" onclick="toggleFilterPanel()">הצג תוצאות</button>
+</div>
+<div class="hidden" id="filter-sub-view">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-headline-sm text-text-primary" id="sub-view-title"></h3>
+<button class="text-primary font-body-md flex items-center gap-1" onclick="hideSubFilter()">
+<span>אישור</span>
+<span class="material-symbols-outlined text-sm">arrow_back_ios</span>
+</button>
+</div>
+<div class="min-h-[100px]" id="sub-view-content"></div>
+</div>
+</div>
+</div>
+<script>
+function toggleFilterPanel() {
+    const panel = document.getElementById('filter-panel');
+    panel.classList.toggle('hidden');
+    hideSubFilter();
+}
+
+function showSubFilter(type) {
+    const main = document.getElementById('filter-main-view');
+    const sub = document.getElementById('filter-sub-view');
+    const title = document.getElementById('sub-view-title');
+    const content = document.getElementById('sub-view-content');
+    
+    main.classList.add('hidden');
+    sub.classList.remove('hidden');
+    
+    if (type === 'type') {
+        title.innerText = 'סוג תספורת';
+        content.innerHTML = `<div class="flex flex-wrap gap-2">
+            ${['הכל', 'פייד', 'זקן', 'קליעות', 'ילדים', 'צבע'].map(t => `<button class="px-4 py-2 rounded-full bg-surface-3 border border-border-light text-sm hover:border-primary transition-colors focus:bg-primary/10 focus:border-primary focus:text-primary">${t}</button>`).join('')}
+        </div>`;
+    } else if (type === 'budget') {
+        title.innerText = 'תקציב';
+        content.innerHTML = `<div class="px-2 pt-2">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-text-secondary font-body-md text-sm">עד</span>
+                <span id="budget-value" class="font-label-mono text-primary text-2xl font-bold">₪150</span>
+            </div>
+            <input type="range" min="0" max="300" value="150" class="w-full accent-primary bg-surface-3 h-2 rounded-lg appearance-none cursor-pointer" oninput="document.getElementById('budget-value').innerText = '₪' + this.value">
+            <div class="flex justify-between mt-2 text-xs text-text-secondary font-label-mono"><span>₪300</span><span>₪0</span></div>
+        </div>`;
+    } else if (type === 'when') {
+        title.innerText = 'מתי';
+        const days = ['היום', 'מחר', 'יום ד\'', 'יום ה\'', 'יום ו\'', 'שבת', 'יום א\''];
+        content.innerHTML = `<div class="flex flex-col gap-4">
+            <div class="flex overflow-x-auto hide-scrollbar gap-2 pb-2 -mx-2 px-2">
+                ${days.map(d => `<button class="px-4 py-2 rounded-full bg-surface-3 border border-border-light text-sm whitespace-nowrap hover:border-primary transition-colors focus:bg-primary/10 focus:border-primary focus:text-primary">${d}</button>`).join('')}
+                <button class="px-4 py-2 rounded-full border border-primary text-primary text-sm flex items-center gap-1 whitespace-nowrap hover:bg-primary/10 transition-colors" onclick="document.getElementById('calendar-grid').classList.toggle('hidden')">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    מועד מיוחד
+                </button>
+            </div>
+            <div id="calendar-grid" class="hidden bg-surface-2 rounded-xl p-3 border border-border-light shadow-inner">
+                <div class="grid grid-cols-7 gap-1 text-center text-xs text-text-secondary mb-2 font-body-md">
+                    <div>א</div><div>ב</div><div>ג</div><div>ד</div><div>ה</div><div>ו</div><div>ש</div>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center text-sm font-body-md">
+                    <div class="py-1.5 opacity-30">28</div><div class="py-1.5 opacity-30">29</div><div class="py-1.5 opacity-30">30</div>
+                    <div class="py-1.5 bg-primary text-on-primary rounded-full font-bold">1</div>
+                    <div class="py-1.5 hover:bg-surface-4 rounded-full cursor-pointer transition-colors">2</div>
+                    <div class="py-1.5 hover:bg-surface-4 rounded-full cursor-pointer transition-colors">3</div>
+                    <div class="py-1.5 hover:bg-surface-4 rounded-full cursor-pointer transition-colors">4</div>
+                    <div class="py-1.5 hover:bg-surface-4 rounded-full cursor-pointer transition-colors">5</div>
+                    <div class="py-1.5 hover:bg-surface-4 rounded-full cursor-pointer transition-colors">6</div>
+                    <div class="py-1.5 hover:bg-surface-4 rounded-full cursor-pointer transition-colors">7</div>
+                    <div class="py-1.5 hover:bg-surface-4 rounded-full cursor-pointer transition-colors">8</div>
+                    <div class="py-1.5 hover:bg-surface-4 rounded-full cursor-pointer transition-colors">9</div>
+                    <div class="py-1.5 hover:bg-surface-4 rounded-full cursor-pointer transition-colors">10</div>
+                    <div class="py-1.5 hover:bg-surface-4 rounded-full cursor-pointer transition-colors">11</div>
+                </div>
+            </div>
+        </div>`;
+    } else if (type === 'rating') {
+        title.innerText = 'דירוג';
+        content.innerHTML = `<div class="px-2 pt-2">
+            <div class="flex justify-center items-center gap-1 mb-2" id="star-container" dir="ltr">
+                ${[1, 2, 3, 4, 5].map(i => `<span class="material-symbols-outlined text-4xl ${i <= 4 ? 'text-primary gold-glow' : 'text-surface-variant'}" style="font-variation-settings: 'FILL' ${i <= 4 ? 1 : 0};">star</span>`).join('')}
+            </div>
+            <div class="text-center font-label-mono text-primary text-xl mb-4 font-bold" id="rating-value">4.0</div>
+            <input type="range" min="0" max="5" step="0.5" value="4" class="w-full accent-primary bg-surface-3 h-2 rounded-lg appearance-none cursor-pointer" oninput="updateStars(this.value)">
+            <div class="flex justify-between mt-2 text-xs text-text-secondary font-label-mono"><span>5.0</span><span>0.0</span></div>
+        </div>`;
+    }
+}
+
+function updateStars(val) {
+    document.getElementById('rating-value').innerText = parseFloat(val).toFixed(1);
+    const container = document.getElementById('star-container');
+    let html = '';
+    for (let i = 1; i <= 5; i++) {
+        let isHalf = (i - 0.5 === parseFloat(val));
+        let icon = isHalf ? 'star_half' : 'star';
+        let fill = (i <= val) ? 1 : 0;
+        let color = (i <= val || isHalf) ? 'text-primary gold-glow' : 'text-surface-variant';
+        html += `<span class="material-symbols-outlined text-4xl ${color} transition-colors duration-200" style="font-variation-settings: 'FILL' ${fill};">${icon}</span>`;
+    }
+    container.innerHTML = html;
+}
+
+function hideSubFilter() {
+    document.getElementById('filter-main-view').classList.remove('hidden');
+    document.getElementById('filter-sub-view').classList.add('hidden');
+}
+</script>
+<!-- View Toggle -->
+<div class="px-gutter mb-stack-lg">
+<div class="bg-surface-2 p-1 rounded-full flex border border-border-light w-48 mx-auto">
+<button class="flex-1 py-1.5 rounded-full bg-surface-variant text-text-primary font-body-md text-sm text-center transition-all shadow-sm">
+                רשימה
+            </button>
+<button class="flex-1 py-1.5 rounded-full text-text-secondary font-body-md text-sm text-center transition-all hover:text-text-primary" onclick="window.location.href='{{DATA:SCREEN:SCREEN_48}}'">
+                מפה
+            </button>
+</div>
+</div>
+<!-- Available Near You Section -->
+<section class="mb-section-gap">
+<div class="px-gutter flex justify-between items-end mb-stack-md">
+<h2 class="font-headline-md text-headline-md">זמינים<br/>בקרבתך</h2>
+<a class="font-body-md text-primary text-sm hover:opacity-80 transition-opacity" href="#">ראה הכל</a>
+</div>
+<div class="flex overflow-x-auto hide-scrollbar gap-4 px-gutter pb-4 -mx-gutter">
+<!-- Card 1 (Active/Next-up styling) -->
+<div class="min-w-[260px] bg-surface-2 rounded-[20px] overflow-hidden border border-primary/30 gold-glow relative flex-shrink-0 group cursor-pointer" onclick="window.location.href='{{DATA:SCREEN:SCREEN_14}}'">
+<div class="h-32 w-full relative">
+<img alt="Barbershop Interior" class="w-full h-full object-cover" data-alt="A dimly lit, vintage-modern barbershop interior with brick walls, classic leather chairs, and warm, atmospheric pendant lighting, evoking a premium masculine aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJoYyvLY9NwSCtVCCyQqL8Bh19Wu5_wDId_v2FpBd8L1VRuEMbxaOS5QuUf0Sa4qY0vveVoEdH9nDxU7z3iWloA1IJkhbot6t_DIl8b2_TUJKZ6ovr-LInLAqchpixDTsvvMkgeLKS2E_e4ImGAFKwyn1ZE_xwn0g2GzpLd24xNvZyU4-gBce7QiujdAIDFSVPpbK1qqvhY1tLnGOWV6PlPpT-cql2oNvsvRrB3KXwQ2ofLPtc0QDT0mU0X4Ef-SQUSTZI8LWiTrvJ"/>
+<div class="absolute inset-0 card-gradient"></div>
+<!-- Rating Chip -->
+<div class="absolute top-3 right-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-2.5 py-1 flex items-center gap-1">
+<span class="font-body-md text-sm font-medium">4.6</span>
+<span class="material-symbols-outlined text-primary text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<!-- Barber Avatar -->
+<div class="absolute -bottom-5 right-4 z-10">
+<img alt="Barber Ron" class="w-12 h-12 rounded-full object-cover border-2 border-surface-2 gold-ring filter grayscale" data-alt="A black and white portrait of a stylish male barber, clean background, moody high-contrast lighting, looking directly at the camera." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAufKrCxl4Za47JXPhyXhog4BJZF51FXqYpqSRqItf46EpzGu0dPbkea5zOgBXc0vzfFZhEHGfz35ygmXnzW51JDGL_R8YuiE_vQUxkBh_aE_kTA4Rk3gZO2cnpGJB5-e-nw25Buh8XEC3svCBRljrdl5sE7pcOIIW2_kVkCWxjjD7qcbxOZReBx68MlwBYNzGFEYvbhiDfu0QTjYgJNvABzRj76TZwk_KAXahlKDEuUZ2DY_7ryukz5kUZTpeNvSNOatodf17QL5Fn"/>
+</div>
+</div>
+<div class="p-4 pt-6">
+<h3 class="font-headline-sm text-headline-sm text-right mb-0.5">רון ברק</h3>
+<p class="font-body-md text-text-secondary text-sm text-right mb-4">Gentlemen's Club</p>
+<div class="grid grid-cols-2 gap-2" dir="ltr">
+<div class="bg-surface-3 rounded-lg py-1.5 flex justify-center border border-border-light hover:bg-surface-4 transition-colors" onclick="event.stopPropagation(); window.location.href='{{DATA:SCREEN:SCREEN_16}}'">
+<span class="font-label-mono text-label-mono">10:00</span>
+</div>
+<div class="bg-surface-3 rounded-lg py-1.5 flex justify-center border border-border-light hover:bg-surface-4 transition-colors" onclick="event.stopPropagation(); window.location.href='{{DATA:SCREEN:SCREEN_16}}'">
+<span class="font-label-mono text-label-mono">11:30</span>
+</div>
+<div class="bg-surface-3 rounded-lg py-1.5 flex justify-center border border-border-light hover:bg-surface-4 transition-colors" onclick="event.stopPropagation(); window.location.href='{{DATA:SCREEN:SCREEN_16}}'">
+<span class="font-label-mono text-label-mono">15:00</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="min-w-[260px] bg-surface-2 rounded-[20px] overflow-hidden border border-border-light relative flex-shrink-0 group cursor-pointer hover:border-surface-variant transition-colors" onclick="window.location.href='{{DATA:SCREEN:SCREEN_14}}'">
+<div class="h-32 w-full relative">
+<img alt="Barbershop Interior" class="w-full h-full object-cover" data-alt="A modern minimalist barbershop interior with dark walls, sleek metallic accents, and focused spotlighting, high-end urban salon feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXblArIXVFo8d_tAPPOhw1JGxVSb-mUrJxWUeU2A09aU4TJ4XfF9Lq6TCnSmr5QWTTzfjb7K29ZbJ8lQPqwnFmddsb6EKU2cBtZcTR-SYp_OT63o7CkxAH70mmkl3vVwB-vxZQYE7Ez7EnzXUCneRaSdlDjp1lqDIDL4aY-if_aC_TafgIi8dH19qkIPwFzmhjQyVKigZKtpHoo63z-wsF301HWSBY33Gdie2xBVQKJdFxOoeXfCk9WhdqznFooH4pl1JOkGQOFFFa"/>
+<div class="absolute inset-0 card-gradient"></div>
+<!-- Rating Chip -->
+<div class="absolute top-3 right-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-full px-2.5 py-1 flex items-center gap-1">
+<span class="font-body-md text-sm font-medium">4.9</span>
+<span class="material-symbols-outlined text-primary text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<!-- Barber Avatar -->
+<div class="absolute -bottom-5 right-4 z-10">
+<img alt="Barber Yossi" class="w-12 h-12 rounded-full object-cover border-2 border-surface-2 filter grayscale" data-alt="A black and white portrait of an intense male barber with a beard, deep shadows, premium aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdJbZnBjhF0e2z-GBkIShNRyrWnUGX1CETcK5cVq-vUWA7k6Y1EAUKfGGKSnkoIxI2j3OMUPSMfVQ9gRjvEziFhEYFkAI15FRRL89-GOok_sUiJVLLK5a3ADqOILB-AU1HgpfQqhH67Z1XB-JHH-X7VXzC0DGFvUv95hvJMhtX8iXFdAhvJkpBE4QQL8fI_MI7MxPJPftEIGBGaqq3hNDdYShr-qERXGXTXNG_THPWks_M1ag4QtkVydlRSoOn7tmyVrocr1bPekNQ"/>
+</div>
+</div>
+<div class="p-4 pt-6">
+<h3 class="font-headline-sm text-headline-sm text-right mb-0.5">יוסי כהן</h3>
+<p class="font-body-md text-text-secondary text-sm text-right mb-4">הסכין המושחזת</p>
+<div class="grid grid-cols-2 gap-2" dir="ltr">
+<div class="bg-surface-3 rounded-lg py-1.5 flex justify-center border border-border-light hover:bg-surface-4 transition-colors" onclick="event.stopPropagation(); window.location.href='{{DATA:SCREEN:SCREEN_16}}'">
+<span class="font-label-mono text-label-mono">09:00</span>
+</div>
+<div class="bg-surface-3 rounded-lg py-1.5 flex justify-center border border-border-light opacity-50 cursor-not-allowed">
+<span class="font-label-mono text-label-mono line-through">11:30</span>
+</div>
+<div class="bg-surface-3 rounded-lg py-1.5 flex justify-center border border-border-light hover:bg-surface-4 transition-colors" onclick="event.stopPropagation(); window.location.href='{{DATA:SCREEN:SCREEN_16}}'">
+<span class="font-label-mono text-label-mono">13:00</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Last Minute Deals Section -->
+<section class="mb-section-gap px-gutter">
+<div class="flex justify-between items-end mb-stack-md">
+<h2 class="font-headline-md text-headline-md">דילים של הרגע<br/>האחרון</h2>
+<a class="font-body-md text-primary text-sm hover:opacity-80 transition-opacity" href="#">ראה הכל</a>
+</div>
+<div class="flex flex-col gap-3">
+<!-- List Item 1 -->
+<div class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center cursor-pointer hover:bg-surface-2 transition-colors">
+<div class="flex items-center gap-3 w-1/4" dir="ltr">
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-primary text-sm">bolt</span>
+<span class="font-price-lg text-price-lg text-primary">₪60</span>
+</div>
+</div>
+<div class="flex-1 text-right flex flex-col justify-center pr-3">
+<div class="flex justify-end items-center gap-2 mb-0.5">
+<span class="font-headline-sm text-base">רון ברק</span>
+<div class="flex items-center gap-0.5 bg-surface-3 px-1.5 rounded text-xs border border-border-light">
+<span class="font-body-md text-text-secondary">4.6</span>
+<span class="material-symbols-outlined text-primary text-[10px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<span class="font-body-md text-text-secondary text-xs">פייד ועיצוב - 104 מ'</span>
+</div>
+<img alt="Barber" class="w-12 h-12 rounded-full object-cover filter grayscale shrink-0 border border-border-light" data-alt="A black and white portrait of a stylish male barber, clean background, moody high-contrast lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpJ6lZkAoGntwudx9sPlQSRs0PdVunoB2Usl-VwZMIBka4m0Tef9jJeO8HKlUmr3LnN9byTloxCnpEx_BJeifdKkFFo7s-Ksm42qAF2FijyguxkNRboivNqIVStypJC4sYbSNsT9wOrPimhtyxd9GajP7XCCUc5LGZwg2GyiRl3aJJ03nrKzuEc533BRLqjpZhI3Mom6Wq8itJnFxXbL1eRoZVsEqqMSibVAhfl1i9LV-Kk0QFQENH9-Hpn_JSeaavBh1IiBFZHW7A"/>
+</div>
+<!-- List Item 2 -->
+<div class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center cursor-pointer hover:bg-surface-2 transition-colors">
+<div class="flex items-center gap-3 w-1/4" dir="ltr">
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-primary text-sm">bolt</span>
+<span class="font-price-lg text-price-lg text-primary">₪90</span>
+</div>
+</div>
+<div class="flex-1 text-right flex flex-col justify-center pr-3">
+<div class="flex justify-end items-center gap-2 mb-0.5">
+<span class="font-headline-sm text-base">יוסי כהן</span>
+<div class="flex items-center gap-0.5 bg-surface-3 px-1.5 rounded text-xs border border-border-light">
+<span class="font-body-md text-text-secondary">4.9</span>
+<span class="material-symbols-outlined text-primary text-[10px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<span class="font-body-md text-text-secondary text-xs">פייד ועיצוב - 327 מ'</span>
+</div>
+<img alt="Barber" class="w-12 h-12 rounded-full object-cover filter grayscale shrink-0 border border-border-light" data-alt="A black and white portrait of an intense male barber with a beard, deep shadows, premium aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJeIhabBVpd-9kg_yOdnCr-hwNJe8BXKom-pHcWrmIU849YV8rR7FFbfwIdhwbjfu1PnFCrAgTQRqKER9b98C2YpbwWbhq5p9DhEZdty0K7v9jxvHjjcEcYxlojWm1SlhNgjURK3glvaHxIqIvvQl3htD5qKtRJJYuqvU3c0qC9ws57Xjs7zM9eYYSAOiVC6X6qDGcGhmVn9CUkh944l9lgFOTTjZP73LsFkMbmIwob8QWjXUynTvSw3yhA-2pGfzK3PENAzYj_vkE"/>
+</div>
+</div>
+</section>
+<!-- Bottom Navigation Bar (Generated from JSON Anchor) -->
+<nav class="bg-surface-1/90 dark:bg-surface-1/90 font-label-mono text-label-mono text-primary font-headline-md fixed bottom-0 w-full z-50 h-20 backdrop-blur-2xl shadow-2xl flex flex-row-reverse justify-around items-center px-4 pb-safe border-t border-transparent" style="box-shadow: 0 -4px 20px rgba(0,0,0,0.5);">
+<!-- Active Nav Item -->
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary gap-1 scale-110 transition-all duration-300 ease-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-[10px]">בית</span>
+</a>
+<!-- Inactive Nav Item -->
+<a class="flex flex-col items-center justify-center text-text-muted dark:text-text-muted gap-1 hover:text-primary-container transition-colors" href="#" onclick="window.location.href='{{DATA:SCREEN:SCREEN_17}}'">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px]">פרופיל</span>
+</a>
+<!-- Inactive Nav Item -->
+<a class="flex flex-col items-center justify-center text-text-muted dark:text-text-muted gap-1 hover:text-primary-container transition-colors" href="#" onclick="alert('Language switched to English')">
+<span class="material-symbols-outlined">language</span>
+<span class="text-[10px]">EN</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="he" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Barber Dashboard - Calendar</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Hide scrollbar for horizontal scrolling areas but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<!-- Tailwind CSS Setup -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "success": "#34C759",
+                        "on-secondary-fixed-variant": "#454747",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "surface-container-highest": "#353437",
+                        "on-primary-fixed": "#261900",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "tertiary": "#abdeff",
+                        "tertiary-container": "#57c7ff",
+                        "on-surface-variant": "#d4c5ac",
+                        "error": "#ffb4ab",
+                        "primary-container": "#efb200",
+                        "surface-1": "#101012",
+                        "primary-fixed": "#ffdea1",
+                        "outline-variant": "#504533",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "surface-bright": "#39393b",
+                        "secondary-container": "#454747",
+                        "on-secondary": "#2f3131",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#7a5900",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "secondary": "#c6c6c7",
+                        "text-muted": "#71717A",
+                        "on-primary-container": "#624700",
+                        "on-background": "#e5e1e4",
+                        "surface-tint": "#fbbc18",
+                        "surface-4": "#202023",
+                        "on-tertiary-container": "#005170",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#313032",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "text-primary": "#FAFAF9",
+                        "outline": "#9c8f79",
+                        "info": "#0A84FF",
+                        "surface-container-lowest": "#0e0e10",
+                        "on-tertiary": "#00344a",
+                        "inverse-surface": "#e5e1e4",
+                        "primary-fixed-dim": "#fbbc18",
+                        "on-secondary-container": "#b4b5b5",
+                        "surface-dim": "#131315",
+                        "danger": "#FF453A",
+                        "text-secondary": "#A1A1AA",
+                        "on-error-container": "#ffdad6",
+                        "surface-variant": "#353437",
+                        "on-primary": "#402d00",
+                        "tertiary-fixed": "#c4e7ff",
+                        "surface-container": "#201f22",
+                        "surface-2": "#131214",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "background": "#131315",
+                        "secondary-fixed": "#e2e2e2",
+                        "surface-3": "#18171A",
+                        "on-tertiary-fixed": "#001e2c",
+                        "surface-container-low": "#1c1b1d",
+                        "surface-container-high": "#2a2a2c",
+                        "on-surface": "#e5e1e4",
+                        "primary": "#ffd174",
+                        "surface": "#131315"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "base": "4px",
+                        "section-gap": "32px",
+                        "stack-sm": "8px",
+                        "gutter": "20px",
+                        "stack-lg": "24px"
+                    },
+                    "fontFamily": {
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-sm": ["Heebo"],
+                        "body-md": ["Heebo"],
+                        "headline-lg-mobile": ["Heebo"],
+                        "display-lg": ["Heebo"],
+                        "headline-md": ["Heebo"],
+                        "headline-lg": ["Heebo"],
+                        "body-lg": ["Heebo"],
+                        "price-lg": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "label-mono": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "display-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }],
+                        "price-lg": ["24px", { "lineHeight": "1", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased pb-[100px]">
+<!-- TopAppBar Shared Component -->
+<header class="fixed z-40 bg-background dark:bg-background text-primary dark:text-primary-fixed docked full-width top-0 bg-background/80 backdrop-blur-xl border-b border-white/5 flat no shadows flex flex-row-reverse justify-between items-center w-full px-5 py-4">
+<!-- Leading Avatar -->
+<div class="h-10 w-10 rounded-full overflow-hidden border border-border-light hover:opacity-80 transition-opacity Active: scale-95 duration-200 cursor-pointer">
+<img alt="Barber Shop Owner Avatar" class="w-full h-full object-cover" data-alt="A striking, high-contrast black and white portrait of a modern barbershop owner. The subject is a confident male with a sharp haircut and styled beard, set against a completely dark background. Cinematic top-down lighting highlights the texture of the hair and the structural lines of the face, embodying a premium, edgy, urban aesthetic consistent with a high-end grooming brand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBU9j8oMzWTPxZhkj365VG6t9DwZVttmmM7fKwrX19CCuwOajc-NPDlYE_XBxM1leH_Jdl3q1eWVtx1VC1bemlFEqKqdrD-MawzYXjW5D4Azt4ZSwH6A0PIgrxQyvfK5o809lX31z7CUEdb8CSdtGP7Be22Tv62e7e-VnhKUtxx1pudPUXoQwbk3hMAm3XVyMmQB-hcCOwY--H6cGimaus0GLGW3b3BuBHB5mwzhlTpK7tAJyh6h-mN4rIMh0FbblmDbUIecEZI_O9b"/>
+</div>
+<!-- Headline -->
+<h1 class="text-headline-md font-headline-md font-extrabold text-primary flex-1 text-center truncate px-4">
+            ניהול מספרה
+        </h1>
+<!-- Trailing Icon -->
+<button class="h-10 w-10 flex items-center justify-center text-primary hover:opacity-80 transition-opacity Active: scale-95 duration-200 rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[88px] px-gutter max-w-[430px] mx-auto md:max-w-none md:flex md:flex-col md:items-center">
+<div class="w-full md:max-w-2xl">
+<!-- Staff Avatar Filter Row -->
+<section class="mb-section-gap w-full overflow-x-auto no-scrollbar">
+<div class="flex gap-4 min-w-max pb-2" id="staffFilterContainer">
+<!-- Rendered via JS -->
+</div>
+</section>
+<!-- Horizontal Week-Day Picker -->
+<section class="mb-stack-lg w-full overflow-x-auto no-scrollbar">
+<div class="flex justify-between items-center min-w-max gap-2 pb-2" id="dayPickerContainer">
+<!-- Rendered via JS -->
+</div>
+</section>
+<!-- Summary Tiles -->
+<section class="grid grid-cols-3 gap-3 mb-stack-lg" id="summaryTiles">
+<!-- Rendered via JS -->
+</section>
+<!-- Add Appointment Button -->
+<button class="w-full mb-section-gap py-4 rounded-xl border-2 border-dashed border-outline-variant hover:border-primary text-primary font-body-lg flex items-center justify-center gap-2 bg-surface-1/50 hover:bg-surface-2 transition-all active:scale-[0.98] outline-none" onclick="document.getElementById('addAppointmentModal').classList.remove('hidden')">
+<span class="material-symbols-outlined text-lg">add</span>
+                הכנס תור חדש
+            </button>
+<!-- Timeline / Appointment List -->
+<section class="flex flex-col gap-stack-md relative" id="appointmentsList">
+<!-- Vertical Timeline Line (Decorative) -->
+<div class="absolute right-[45px] top-4 bottom-4 w-px bg-border-light z-0"></div>
+<!-- Rendered via JS -->
+</section>
+</div>
+</main>
+<!-- BottomNavBar Shared Component -->
+<nav class="md:hidden bg-surface/70 dark:bg-surface/70 text-primary-fixed-dim dark:text-primary-fixed-dim text-label-mono font-label-mono docked full-width bottom-0 rounded-t-xl bg-surface/70 backdrop-blur-2xl border-t border-border-light shadow-lg hover:text-primary/80 transition-colors fixed bottom-0 left-0 w-full z-50 flex flex-row-reverse justify-around items-center h-20 px-2 pb-safe">
+<a class="flex flex-col items-center justify-center text-primary-container dark:text-primary-container Active: scale-90 duration-150 w-full h-full gap-1" href="{{DATA:SCREEN:SCREEN_20}}">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">calendar_month</span>
+<span class="text-[10px] leading-none">לוח שנה</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-muted dark:text-text-muted hover:text-on-surface w-full h-full gap-1 transition-colors" href="{{DATA:SCREEN:SCREEN_25}}">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 0;">equalizer</span>
+<span class="text-[10px] leading-none">סטטיסטיקות</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-muted dark:text-text-muted hover:text-on-surface w-full h-full gap-1 transition-colors" href="{{DATA:SCREEN:SCREEN_32}}">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 0;">group</span>
+<span class="text-[10px] leading-none">עובדים</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-muted dark:text-text-muted hover:text-on-surface w-full h-full gap-1 transition-colors" href="{{DATA:SCREEN:SCREEN_30}}">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 0;">content_cut</span>
+<span class="text-[10px] leading-none">שירותים</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-muted dark:text-text-muted hover:text-on-surface w-full h-full gap-1 transition-colors" href="{{DATA:SCREEN:SCREEN_37}}">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="text-[10px] leading-none">הגדרות</span>
+</a>
+</nav>
+<!-- Add Appointment Modal -->
+<div class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" id="addAppointmentModal">
+<div class="bg-surface-2 rounded-2xl w-full max-w-md p-6 border border-border-light shadow-2xl">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-headline-md text-primary">תור חדש</h2>
+<button class="text-text-muted hover:text-on-surface" onclick="document.getElementById('addAppointmentModal').classList.add('hidden')">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<form class="flex flex-col gap-4" id="addAppointmentForm">
+<div>
+<label class="block text-sm text-text-muted mb-1">שם לקוח</label>
+<input class="w-full bg-surface-1 border border-border-light rounded-lg p-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors" id="clientName" placeholder="הכנס שם" required="" type="text"/>
+</div>
+<div>
+<label class="block text-sm text-text-muted mb-1">טלפון</label>
+<input class="w-full bg-surface-1 border border-border-light rounded-lg p-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors text-right" dir="ltr" id="clientPhone" placeholder="05X-XXXXXXX" required="" type="tel"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-sm text-text-muted mb-1">שעה</label>
+<input class="w-full bg-surface-1 border border-border-light rounded-lg p-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors" id="appointmentTime" required="" type="time"/>
+</div>
+<div>
+<label class="block text-sm text-text-muted mb-1">ספר</label>
+<select class="w-full bg-surface-1 border border-border-light rounded-lg p-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors" id="appointmentBarber">
+<option value="yossi">יוסי</option>
+<option value="tal">טל</option>
+<option value="ori">אורי</option>
+<option value="or">אור</option>
+</select>
+</div>
+</div>
+<div>
+<label class="block text-sm text-text-muted mb-1">שירות</label>
+<select class="w-full bg-surface-1 border border-border-light rounded-lg p-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors" id="appointmentService">
+<option value="תספורת">תספורת (₪50 - 30 דק')</option>
+<option value="תספורת + זקן">תספורת + זקן (₪150 - 45 דק')</option>
+<option value="צבע שיער">צבע שיער (₪200 - 40 דק')</option>
+</select>
+</div>
+<button class="w-full mt-4 py-4 bg-primary text-on-primary-fixed font-headline-sm rounded-xl hover:opacity-90 transition-opacity active:scale-[0.98]" type="submit">
+                שמור תור
+            </button>
+</form>
+</div>
+</div>
+<script>
+    (function() {
+        // App State
+        let state = {
+            selectedDay: 8,
+            selectedStaff: 'all',
+            staff: [
+                { id: 'all', name: 'הכל', icon: 'group', active: true },
+                { id: 'yossi', name: 'יוסי', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBT8HpLIhm9P4yZpYxs4xI4K5XrMpv43LPgZ9bdHYUkQyHJw0ignc6vES3DG_X9_MAtZKIvQtlOZqjWPj7GCLVd4DD7d5_aknVbp0e2BHIXyxPJ7zz6blLEWuyPxU7ZuTOR2Klb8F0XlTkv6uu2gs7TLLxnnw1aaijxaRbb7Lut28X2KlelKxyvBm1FnPnQ7By45ZpR47Albs-bQ0CvCaUYe0fsP4PjIHQNbMdKf20lAzsuDC21YesXNT0x4glHMuh5s0jSUCOnkN4X', active: true },
+                { id: 'tal', name: 'טל', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuACZu2bFr5llW2_AajjThoH43Cym1BwmCjRpYt-2s6lOGfHxAKDu7kA2XFf314qcs39ZzhawdqEtHT2196wziDpcfZLEyqxMSP55T21k0upwm5By4oZpafgTW85fnLRpo3bWVS-v60OV6sj59sAEawSPwHhsAVT70lmzLPjopoCVbVJzUOakRE25A79jgQ1BoXu9IOXMFinXO4zTqsZ_hTJpeQ092Jqud6t5XBJXG-YZFv0hcty3Ea3CSgvxQ9uuL-ehCXoUSnBLqu-', active: true },
+                { id: 'ori', name: 'אורי', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCBpkHbIf9vzyLxcLImqFsuBR9oKM8Fn9Slg6NRpBIPtMX7r59mgZMo0zYn9xZ50NUd_uGmdfJOKlQt4WymZ7RAC5JcnvXsk-m4dWeaD8xeh_Dz_-TanapdnR9YCX26shFoHA8ZCoY1D5KPqi8_Y1RJFymNqlXQMEEpoQ9sz4LwZNQc9E5n2Y3ECS0Lw8WPxv68plWzW_uiXhAUEEcG1HuO9817EpwPFm32ASp83jcLZpqA6bxcLyWBMiikI1ER2iDJsMTXzHu8mVzH', active: true },
+                { id: 'or', name: 'אור', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCGwMUd2ljbYVe5rKj2W5jfyecSZkIlLe2EihW9a8b2LMRy3vYiYgqffTbiiYGp3N2A2S5Aum5M-eGHyIRUNErppIgTFLn5qeHbkk9nq8vb52TjV7EaDqFL18ahUlUrpYyppgukWyrUOtYgu4fVc6O7uC3u10I-9qAuGsLsGXs1NQKzCNPj7KKov3p5D3G1D7chhwLSe5JjY00Ulsxv9pwiBXbDs57czeMLSfLUGQLi7No42_OE2loUM0wW5gjnBSreZw4GpKOMPHOw', active: true } // Simulated active state sync
+            ],
+            days: [
+                { id: 7, name: "א'" }, { id: 8, name: "ב'" }, { id: 9, name: "ג'" },
+                { id: 10, name: "ד'" }, { id: 11, name: "ה'" }, { id: 12, name: "ו'" }, { id: 13, name: "ש'" }
+            ],
+            appointments: {
+                7: [
+                    { id: 101, time: '09:00', type: 'appointment', service: 'תספורת - אבי כהן', barber: 'yossi', status: 'completed', statusText: 'הושלם', price: 50, duration: 30, phone: '0501234567', tint: 'success', nodeColor: 'bg-primary/50', borderColor: 'border-primary/20' },
+                    { id: 102, time: '11:00', type: 'appointment', service: 'זקן - רון שחר', barber: 'tal', status: 'upcoming', statusText: 'קרוב', price: 40, duration: 20, phone: '0529876543', tint: 'info', nodeColor: 'bg-info', ring: 'ring-4 ring-background', borderColor: 'border-info/30', gradient: 'bg-gradient-to-l from-info/5 to-transparent', indicator: true }
+                ],
+                8: [
+                    { id: 1, time: '09:00', type: 'appointment', service: 'תספורת - עומר דוד', barber: 'tal', status: 'completed', statusText: 'הושלם', price: 50, duration: 30, phone: '0526667788', tint: 'success', nodeColor: 'bg-primary/50', borderColor: 'border-primary/20' },
+                    { id: 2, time: '10:00', type: 'appointment', service: 'תספורת + זקן - גיא ברוך', barber: 'yossi', status: 'completed', statusText: 'הושלם', price: 150, duration: 45, phone: '0558899001', tint: 'success', nodeColor: 'bg-primary/50', borderColor: 'border-primary/20' },
+                    { id: 3, time: '11:00', type: 'break', title: 'הפסקה', duration: 60 },
+                    { id: 4, time: '12:00', type: 'appointment', service: 'צבע שיער - דני לוי', barber: 'ori', status: 'upcoming', statusText: 'קרוב', price: 200, duration: 40, phone: '0521234567', tint: 'info', nodeColor: 'bg-info', ring: 'ring-4 ring-background', borderColor: 'border-info/30', gradient: 'bg-gradient-to-l from-info/5 to-transparent', indicator: true },
+                    { id: 5, time: '13:00', type: 'appointment', service: 'תספורת - דניאל לוי', barber: 'or', status: 'waiting', statusText: 'ממתין', price: 50, duration: 60, phone: '0522046119', tint: 'danger', nodeColor: 'bg-danger/50', borderColor: 'border-danger/20' }
+                ],
+                9: [
+                    { id: 201, time: '14:00', type: 'appointment', service: 'החלקה - יוסי לוי', barber: 'or', status: 'upcoming', statusText: 'מחר', price: 300, duration: 120, phone: '0505556666', tint: 'text-muted', nodeColor: 'bg-surface-bright', borderColor: 'border-border-light' }
+                ]
+            }
+        };
+
+        // Check local storage for hidden staff mock (State Sync requirement)
+        const hiddenStaff = JSON.parse(localStorage.getItem('hiddenStaff') || '[]');
+        state.staff = state.staff.filter(s => s.id === 'all' || !hiddenStaff.includes(s.id));
+
+        // Render Functions
+        const renderStaffFilter = () => {
+            const container = document.getElementById('staffFilterContainer');
+            container.innerHTML = state.staff.map(member => {
+                const isActive = state.selectedStaff === member.id;
+                if (member.id === 'all') {
+                    return `
+                        <button onclick="window.selectStaff('${member.id}')" class="flex flex-col items-center gap-2 group outline-none ${!isActive ? 'opacity-60 hover:opacity-100' : ''}">
+                            <div class="w-16 h-16 rounded-full ${isActive ? 'bg-primary shadow-[0_0_15px_rgba(239,178,0,0.3)]' : 'bg-surface-2 border border-border-light'} flex items-center justify-center transition-transform group-hover:scale-95">
+                                <span class="material-symbols-outlined ${isActive ? 'text-on-primary-fixed' : 'text-text-muted'} text-3xl" style="font-variation-settings: 'FILL' 1;">${member.icon}</span>
+                            </div>
+                            <span class="${isActive ? 'text-primary' : 'text-on-surface'} font-body-md text-sm">${member.name}</span>
+                        </button>`;
+                }
+                return `
+                    <button onclick="window.selectStaff('${member.id}')" class="flex flex-col items-center gap-2 group outline-none ${!isActive && state.selectedStaff !== 'all' ? 'opacity-40' : (isActive ? '' : 'opacity-60 hover:opacity-100')} transition-opacity">
+                        <div class="w-16 h-16 rounded-full overflow-hidden border ${isActive ? 'border-primary ring-2 ring-primary/30' : 'border-border-light'} bg-surface-2 transition-transform group-hover:scale-95 ${isActive ? '' : 'grayscale'}">
+                            <img src="${member.img}" class="w-full h-full object-cover" alt="${member.name}">
+                        </div>
+                        <span class="${isActive ? 'text-primary' : 'text-on-surface'} font-body-md text-sm">${member.name}</span>
+                    </button>`;
+            }).join('');
+        };
+
+        const renderDayPicker = () => {
+            const container = document.getElementById('dayPickerContainer');
+            container.innerHTML = state.days.map(day => {
+                const isActive = state.selectedDay === day.id;
+                if (isActive) {
+                    return `
+                        <button onclick="window.selectDay(${day.id})" class="flex flex-col items-center justify-center w-14 h-16 rounded-xl bg-primary text-on-primary-fixed shadow-[0_0_20px_rgba(239,178,0,0.15)] ring-1 ring-primary outline-none transition-transform active:scale-95">
+                            <span class="text-xs font-body-md mb-1 font-bold">${day.name}</span>
+                            <span class="font-label-mono text-lg font-extrabold">${day.id}</span>
+                        </button>`;
+                }
+                return `
+                    <button onclick="window.selectDay(${day.id})" class="flex flex-col items-center justify-center w-14 h-16 rounded-xl border border-transparent text-text-muted hover:text-on-surface transition-colors outline-none">
+                        <span class="text-xs font-body-md mb-1">${day.name}</span>
+                        <span class="font-label-mono text-lg font-bold">${day.id}</span>
+                    </button>`;
+            }).join('');
+        };
+
+        const getFilteredAppointments = () => {
+            const dayApps = state.appointments[state.selectedDay] || [];
+            if (state.selectedStaff === 'all') return dayApps;
+            return dayApps.filter(app => app.type === 'break' || app.barber === state.selectedStaff);
+        };
+
+        const renderAppointments = () => {
+            const container = document.getElementById('appointmentsList');
+            const apps = getFilteredAppointments();
+            
+            // Re-add vertical line
+            let html = `<div class="absolute right-[45px] top-4 bottom-4 w-px bg-border-light z-0"></div>`;
+            
+            if (apps.length === 0) {
+                html += `<div class="text-center text-text-muted py-8 relative z-10 font-body-md">אין תורים ליום זה</div>`;
+            } else {
+                html += apps.map(app => {
+                    if (app.type === 'break') {
+                        return `
+                            <div class="flex items-center gap-4 relative z-10 w-full my-2 opacity-80">
+                                <div class="w-[50px] text-right flex-shrink-0">
+                                    <span class="font-label-mono text-sm text-text-muted">${app.time}</span>
+                                </div>
+                                <div class="w-2 h-2 rounded-full bg-surface-bright mt-0 shrink-0 relative right-[5px]"></div>
+                                <div class="flex-1 bg-surface-3 rounded-full py-3 px-6 flex justify-center items-center gap-2 border border-border-light">
+                                    <span class="material-symbols-outlined text-text-muted text-sm">coffee</span>
+                                    <span class="font-body-md text-text-muted text-sm">${app.title} · ${app.duration}min</span>
+                                </div>
+                            </div>`;
+                    }
+                    
+                    return `
+                        <div class="flex items-start gap-4 relative z-10 w-full group cursor-pointer">
+                            <div class="w-[50px] pt-4 text-right flex-shrink-0">
+                                <span class="font-label-mono text-sm text-text-muted">${app.time}</span>
+                            </div>
+                            <div class="w-${app.indicator ? '3' : '2'} h-${app.indicator ? '3' : '2'} rounded-full ${app.nodeColor} mt-${app.indicator ? '4' : '5'} shrink-0 relative right-[${app.indicator ? '3' : '5'}px] ${app.ring || ''}"></div>
+                            <div class="flex-1 bg-surface-2 border ${app.borderColor} ${app.gradient || ''} rounded-xl p-4 shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-transform group-active:scale-[0.98] relative overflow-hidden">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="font-headline-sm text-on-surface text-lg">${app.service}</h3>
+                                    <span class="px-2 py-1 rounded bg-${app.tint.replace('text-', '')}/10 text-${app.tint} text-xs font-bold tracking-wide">${app.statusText}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-text-muted font-label-mono text-sm mb-2">
+                                    <span>${app.time}</span>
+                                    <span class="w-1 h-1 rounded-full bg-border-light"></span>
+                                    <span>₪${app.price}</span>
+                                    <span class="w-1 h-1 rounded-full bg-border-light"></span>
+                                    <span>${app.duration}min</span>
+                                </div>
+                                <div class="text-text-muted font-label-mono text-xs opacity-70">${app.phone}</div>
+                                ${app.indicator ? `<div class="absolute left-0 top-0 bottom-0 w-1 bg-info"></div>` : ''}
+                            </div>
+                        </div>`;
+                }).join('');
+            }
+            container.innerHTML = html;
+        };
+
+        const renderSummary = () => {
+            const apps = getFilteredAppointments();
+            const actualApps = apps.filter(a => a.type === 'appointment');
+            const totalApps = actualApps.length;
+            const completed = actualApps.filter(a => a.status === 'completed').length;
+            const revenue = actualApps.reduce((sum, a) => sum + (a.price || 0), 0);
+
+            const container = document.getElementById('summaryTiles');
+            container.innerHTML = `
+                <div class="bg-surface-1 rounded-xl p-4 flex flex-col items-center justify-center border border-border-light shadow-sm">
+                    <span class="font-label-mono text-headline-sm text-on-surface mb-1">${totalApps}</span>
+                    <span class="font-body-md text-xs text-text-muted">תורים</span>
+                </div>
+                <div class="bg-surface-1 rounded-xl p-4 flex flex-col items-center justify-center border border-border-light shadow-sm">
+                    <span class="font-label-mono text-headline-sm text-on-surface mb-1">${completed}</span>
+                    <span class="font-body-md text-xs text-text-muted">הושלמו</span>
+                </div>
+                <div class="bg-surface-1 rounded-xl p-4 flex flex-col items-center justify-center border border-border-light shadow-sm">
+                    <span class="font-price-lg text-headline-sm text-primary mb-1">₪${revenue}</span>
+                    <span class="font-body-md text-xs text-text-muted">הכנסות</span>
+                </div>`;
+        };
+
+        const updateUI = () => {
+            renderStaffFilter();
+            renderDayPicker();
+            renderSummary();
+            renderAppointments();
+        };
+
+        // Expose functions
+        window.selectStaff = (id) => {
+            state.selectedStaff = id;
+            updateUI();
+        };
+
+        window.selectDay = (id) => {
+            state.selectedDay = id;
+            updateUI();
+        };
+
+        // Form Handling
+        document.getElementById('addAppointmentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('clientName').value;
+            const phone = document.getElementById('clientPhone').value;
+            const time = document.getElementById('appointmentTime').value;
+            const barber = document.getElementById('appointmentBarber').value;
+            const serviceStr = document.getElementById('appointmentService').value;
+            
+            let price = 50, duration = 30;
+            if (serviceStr.includes('זקן')) { price = 150; duration = 45; }
+            if (serviceStr.includes('צבע')) { price = 200; duration = 40; }
+
+            const newApp = {
+                id: Date.now(),
+                time: time,
+                type: 'appointment',
+                service: `${serviceStr} - ${name}`,
+                barber: barber,
+                status: 'waiting',
+                statusText: 'חדש',
+                price: price,
+                duration: duration,
+                phone: phone,
+                tint: 'info',
+                nodeColor: 'bg-info/50',
+                borderColor: 'border-info/20'
+            };
+
+            if (!state.appointments[state.selectedDay]) {
+                state.appointments[state.selectedDay] = [];
+            }
+            
+            // Insert and sort by time
+            state.appointments[state.selectedDay].push(newApp);
+            state.appointments[state.selectedDay].sort((a, b) => a.time.localeCompare(b.time));
+            
+            document.getElementById('addAppointmentModal').classList.add('hidden');
+            e.target.reset();
+            updateUI();
+        });
+
+        // Init
+        updateUI();
+    })();
+</script>
+<div class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 pointer-events-none" id="toast-container"></div></body></html>

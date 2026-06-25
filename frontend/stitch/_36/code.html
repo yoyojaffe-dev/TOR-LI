@@ -1,0 +1,213 @@
+<!DOCTYPE html><html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Onboarding - Business Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "text-secondary": "#A1A1AA",
+                        "inverse-surface": "#e5e1e4",
+                        "info": "#0A84FF",
+                        "tertiary-container": "#57c7ff",
+                        "on-surface": "#e5e1e4",
+                        "secondary": "#c6c6c7",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed": "#c4e7ff",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "surface-container-lowest": "#0e0e10",
+                        "primary-container": "#efb200",
+                        "on-tertiary-container": "#005170",
+                        "on-primary-container": "#624700",
+                        "primary-fixed": "#ffdea1",
+                        "inverse-on-surface": "#313032",
+                        "on-surface-variant": "#d4c5ac",
+                        "surface-container-high": "#2a2a2c",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "danger": "#FF453A",
+                        "outline": "#9c8f79",
+                        "on-background": "#e5e1e4",
+                        "surface-container": "#201f22",
+                        "error-container": "#93000a",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "surface-container-low": "#1c1b1d",
+                        "surface": "#131315",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "on-primary-fixed": "#261900",
+                        "on-error": "#690005",
+                        "secondary-fixed": "#e2e2e2",
+                        "text-primary": "#FAFAF9",
+                        "on-primary": "#402d00",
+                        "surface-dim": "#131315",
+                        "inverse-primary": "#7a5900",
+                        "primary-fixed-dim": "#fbbc18",
+                        "surface-1": "#101012",
+                        "success": "#34C759",
+                        "background": "#131315",
+                        "text-muted": "#71717A",
+                        "on-secondary-container": "#b4b5b5",
+                        "on-secondary-fixed-variant": "#454747",
+                        "primary": "#ffd174",
+                        "surface-3": "#18171A",
+                        "on-secondary": "#2f3131",
+                        "surface-bright": "#39393b",
+                        "surface-variant": "#353437",
+                        "surface-4": "#202023",
+                        "on-tertiary-fixed": "#001e2c",
+                        "surface-tint": "#fbbc18",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-highest": "#353437",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "secondary-container": "#454747",
+                        "tertiary": "#abdeff",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "surface-2": "#131214",
+                        "outline-variant": "#504533",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "on-tertiary": "#00344a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-gap": "32px",
+                        "stack-lg": "24px",
+                        "stack-md": "16px",
+                        "gutter": "20px",
+                        "stack-sm": "8px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "price-lg": ["JetBrains Mono"],
+                        "headline-md": ["Heebo"],
+                        "body-lg": ["Heebo"],
+                        "headline-sm": ["Heebo"],
+                        "body-md": ["Heebo"],
+                        "headline-lg": ["Heebo"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Heebo"],
+                        "display-lg": ["Heebo"]
+                    },
+                    "fontSize": {
+                        "price-lg": ["24px", {"lineHeight": "1", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.2", "fontWeight": "800"}],
+                        "body-lg": ["18px", {"lineHeight": "1.5", "fontWeight": "500"}],
+                        "headline-sm": ["20px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "800"}],
+                        "label-mono": ["14px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "800"}],
+                        "display-lg": ["40px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-text-primary min-h-screen flex flex-col font-body-md antialiased selection:bg-primary selection:text-on-primary">
+<!-- Top Navigation / Progress Indicator -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-border-light h-16 flex items-center justify-between px-gutter">
+<div class="flex items-center gap-stack-sm text-text-secondary hover:text-text-primary transition-colors cursor-pointer" onclick="history.back()">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">arrow_forward</span>
+<span class="font-body-md text-body-md">חזור</span>
+</div>
+<div class="font-display-lg text-display-lg text-primary tracking-tighter">Tor-LI</div>
+<div class="w-20"></div> <!-- Spacer for flex centering -->
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col px-gutter pt-24 pb-32 max-w-md mx-auto w-full">
+<!-- Onboarding Header -->
+<div class="mb-section-gap flex flex-col items-center text-center">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg mb-stack-sm">פרטי העסק שלך</h1>
+<p class="font-body-md text-body-md text-text-secondary">בואו נתחיל לבנות את הפרופיל של המספרה שלכם כדי שלקוחות יוכלו למצוא אתכם בקלות.</p>
+</div>
+<!-- Progress Bar -->
+<div class="w-full mb-section-gap">
+<div class="flex justify-between items-center mb-stack-sm font-label-mono text-label-mono text-text-secondary">
+<span class="">שלב 1 מתוך 3</span>
+<span class="">33%</span>
+</div>
+<div class="h-2 bg-surface-container-highest rounded-full overflow-hidden w-full relative">
+<div class="h-full bg-primary rounded-full drop-shadow-[0_0_8px_rgba(239,178,0,0.5)] transition-all duration-500 ease-out" style="width: 33%;"></div>
+</div>
+</div>
+<!-- Form Fields -->
+<form class="flex flex-col gap-stack-lg" onsubmit="event.preventDefault();">
+<!-- Salon Name -->
+<div class="flex flex-col gap-stack-sm">
+<label class="font-body-md text-body-md text-text-primary flex items-center gap-base" for="salon-name">
+                    שם העסק
+                    <span class="text-error">*</span>
+</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary" style="font-variation-settings: &quot;FILL&quot; 0;">storefront</span>
+<input class="w-full bg-surface-1 border border-border-light rounded-[16px] py-4 pr-12 pl-4 text-text-primary placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors font-body-md text-body-md" id="salon-name" name="salon-name" placeholder="הכנס את שם המספרה" required="" type="text">
+</div>
+</div>
+<!-- Phone Number -->
+<div class="flex flex-col gap-stack-sm">
+<label class="font-body-md text-body-md text-text-primary flex items-center gap-base" for="phone">
+                    טלפון
+                    <span class="text-error">*</span>
+</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary" style="font-variation-settings: &quot;FILL&quot; 0;">call</span>
+<input class="w-full bg-surface-1 border border-border-light rounded-[16px] py-4 pr-12 pl-4 text-text-primary placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors font-body-md text-body-md text-right" dir="ltr" id="phone" name="phone" placeholder="050-0000000" required="" type="tel">
+</div>
+</div>
+<!-- Address & Map Preview -->
+<div class="flex flex-col gap-stack-sm">
+<label class="font-body-md text-body-md text-text-primary flex items-center gap-base" for="address">
+                    כתובת העסק
+                    <span class="text-error">*</span>
+</label>
+<div class="relative mb-stack-sm">
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary" style="font-variation-settings: &quot;FILL&quot; 0;">location_on</span>
+<input class="w-full bg-surface-1 border border-border-light rounded-[16px] py-4 pr-12 pl-4 text-text-primary placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors font-body-md text-body-md" id="address" name="address" placeholder="הכנס רחוב, מספר עיר" required="" type="text">
+</div>
+<!-- Map Preview Container (Glassmorphism styling) -->
+<div class="w-full h-32 rounded-[16px] bg-surface-2 border border-border-light overflow-hidden relative group cursor-pointer">
+<img alt="Map Preview" class="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-300" data-location="Tel Aviv" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbwsWySIv2H2Tx76_FjTtqqHhYPKW7g0TmYbdb-FAR7VJlRKjiIw4Pau69MbjFlIXzKfkvzTb8Ny2o0QA83153bFCg8CIYjIS14WNlbJFfgb6qd8kBB9475QT1wTdqJusC35_E2AO3_wb9QNBc_a3bVU5-AfVkxeWXBzvVlphuCQVvVbfbGBTwGsuCWCTqsgiyZE6VU-9NsRlZptLFviwx4I1PqEdZxoW3EHkk76QkeiTOQWXgGcuseRWicmVgkxUd8YU5dGkolDj-">
+<div class="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-[2px]">
+<div class="w-10 h-10 rounded-full bg-surface/80 border border-border-light backdrop-blur-md flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: &quot;FILL&quot; 1;">my_location</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Instagram -->
+<div class="flex flex-col gap-stack-sm">
+<label class="font-body-md text-body-md text-text-primary flex items-center gap-base" for="instagram">
+                    אינסטגרם
+                    <span class="text-text-secondary text-sm">(אופציונלי)</span>
+</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary" style="font-variation-settings: &quot;FILL&quot; 0;">alternate_email</span>
+<input class="w-full bg-surface-1 border border-border-light rounded-[16px] py-4 pr-12 pl-4 text-text-primary placeholder:text-text-secondary focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-colors font-body-md text-body-md text-right" dir="ltr" id="instagram" name="instagram" placeholder="username@" type="text">
+</div>
+</div>
+</form>
+</main>
+<!-- Bottom Action Area (Sticky) -->
+<div class="fixed bottom-0 w-full z-50 bg-surface/80 backdrop-blur-2xl border-t border-border-light p-gutter pb-safe">
+<button class="w-full max-w-md mx-auto block bg-text-primary text-background font-headline-sm text-headline-sm py-4 rounded-xl hover:bg-surface-2 hover:text-primary transition-colors duration-300 shadow-[0_4px_14px_0_rgba(255,255,255,0.1)] active:scale-[0.98]" type="button">
+            המשך
+        </button>
+</div>
+
+
+</body></html>

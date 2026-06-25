@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>הגדרת עסק - שלב 2 | שירותים ומחירים</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#201f22",
+                        "surface-bright": "#39393b",
+                        "surface-4": "#202023",
+                        "surface-tint": "#fbbc18",
+                        "on-tertiary-container": "#005170",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "primary-fixed": "#ffdea1",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "text-primary": "#FAFAF9",
+                        "surface-dim": "#131315",
+                        "on-secondary-container": "#b4b5b5",
+                        "surface-variant": "#353437",
+                        "secondary-container": "#454747",
+                        "on-primary-container": "#624700",
+                        "primary-container": "#efb200",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "on-error-container": "#ffdad6",
+                        "tertiary": "#abdeff",
+                        "outline": "#9c8f79",
+                        "on-primary": "#402d00",
+                        "on-background": "#e5e1e4",
+                        "primary": "#ffd174",
+                        "danger": "#FF453A",
+                        "on-secondary-fixed-variant": "#454747",
+                        "success": "#34C759",
+                        "text-muted": "#71717A",
+                        "on-error": "#690005",
+                        "surface-container-lowest": "#0e0e10",
+                        "secondary": "#c6c6c7",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "error": "#ffb4ab",
+                        "on-tertiary": "#00344a",
+                        "on-surface": "#e5e1e4",
+                        "surface-container-low": "#1c1b1d",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "inverse-surface": "#e5e1e4",
+                        "tertiary-container": "#57c7ff",
+                        "on-primary-fixed": "#261900",
+                        "surface": "#131315",
+                        "on-tertiary-fixed": "#001e2c",
+                        "on-secondary": "#2f3131",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "inverse-on-surface": "#313032",
+                        "primary-fixed-dim": "#fbbc18",
+                        "background": "#131315",
+                        "surface-2": "#131214",
+                        "on-surface-variant": "#d4c5ac",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#c4e7ff",
+                        "surface-container-highest": "#353437",
+                        "surface-1": "#101012",
+                        "info": "#0A84FF",
+                        "outline-variant": "#504533",
+                        "surface-container-high": "#2a2a2c",
+                        "surface-3": "#18171A",
+                        "inverse-primary": "#7a5900",
+                        "text-secondary": "#A1A1AA"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-gap": "32px",
+                        "stack-lg": "24px",
+                        "stack-sm": "8px",
+                        "gutter": "20px",
+                        "base": "4px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "price-lg": ["JetBrains Mono"],
+                        "body-md": ["Heebo"],
+                        "body-lg": ["Heebo"],
+                        "headline-lg-mobile": ["Heebo"],
+                        "display-lg": ["Heebo"],
+                        "headline-lg": ["Heebo"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-md": ["Heebo"],
+                        "headline-sm": ["Heebo"]
+                    },
+                    "fontSize": {
+                        "price-lg": ["24px", { "lineHeight": "1", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "display-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "label-mono": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.text-primary');
+            font-family: 'Heebo', sans-serif;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Utility for hiding scrollbar but keeping functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen flex flex-col items-center">
+<!-- Mobile Wrapper -->
+<div class="w-full max-w-[430px] min-h-screen bg-background relative flex flex-col shadow-2xl mx-auto overflow-hidden">
+<!-- TopAppBar (From JSON, modified for onboarding intent) -->
+<header class="bg-surface dark:bg-surface text-primary dark:text-primary font-headline-sm text-headline-sm flex items-center justify-between px-5 h-16 w-full z-50 bg-surface-container-low border-b border-border-light flat no shadows sticky top-0">
+<button class="transition-all duration-200 active:scale-95 text-primary flex items-center justify-center p-2 rounded-full hover:bg-surface-variant">
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-black text-primary">Barber Onboarding</h1>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col px-gutter py-section-gap pb-[120px] overflow-y-auto no-scrollbar">
+<!-- Progress Indicator -->
+<div class="flex items-center gap-2 mb-stack-md">
+<div class="h-1 flex-1 bg-primary rounded-full"></div>
+<div class="h-1 flex-1 bg-primary rounded-full drop-shadow-[0_0_8px_rgba(239,178,0,0.4)]"></div>
+<div class="h-1 flex-1 bg-surface-variant rounded-full"></div>
+<div class="h-1 flex-1 bg-surface-variant rounded-full"></div>
+</div>
+<p class="font-label-mono text-label-mono text-primary mb-stack-sm uppercase tracking-widest">הגדרת עסק - שלב 2</p>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-text-primary mb-section-gap">שירותים ומחירים</h2>
+<p class="font-body-md text-body-md text-text-secondary mb-stack-lg">
+                אילו שירותים אתה מציע? הוסף את הטיפולים המרכזיים שלך כדי שלקוחות יוכלו להזמין.
+            </p>
+<!-- Services List -->
+<div class="flex flex-col gap-stack-md mb-stack-lg" id="services-list">
+<!-- Service Item 1 -->
+<div class="bg-surface-1 border border-border-light rounded-xl p-stack-md flex justify-between items-center group relative overflow-hidden transition-all duration-200 hover:border-surface-variant">
+<div class="flex flex-col gap-1">
+<h3 class="font-body-lg text-body-lg text-text-primary">תספורת גברים</h3>
+<div class="flex items-center gap-2 text-text-muted">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+<span class="font-body-md text-body-md">30 דק'</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-price-lg text-price-lg text-primary">₪60</span>
+<button class="text-text-muted hover:text-danger transition-colors p-2 rounded-full hover:bg-surface-2">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+<!-- Service Item 2 -->
+<div class="bg-surface-1 border border-border-light rounded-xl p-stack-md flex justify-between items-center group relative overflow-hidden transition-all duration-200 hover:border-surface-variant">
+<div class="flex flex-col gap-1">
+<h3 class="font-body-lg text-body-lg text-text-primary">תספורת + זקן</h3>
+<div class="flex items-center gap-2 text-text-muted">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+<span class="font-body-md text-body-md">45 דק'</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-price-lg text-price-lg text-primary">₪90</span>
+<button class="text-text-muted hover:text-danger transition-colors p-2 rounded-full hover:bg-surface-2">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Add Service Button (Dashed Gold) -->
+<button class="w-full py-stack-md rounded-xl border border-dashed border-primary text-primary font-body-lg text-body-lg flex justify-center items-center gap-2 transition-all duration-200 hover:bg-[rgba(255,209,116,0.05)] active:scale-[0.98]">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                + הוסף שירות
+            </button>
+</main>
+<!-- Sticky Action Bar -->
+<div class="fixed bottom-0 w-full max-w-[430px] bg-surface-container/80 backdrop-blur-xl border-t border-border-light p-gutter pb-[calc(20px+env(safe-area-inset-bottom))] z-50">
+<button class="w-full bg-text-primary text-background font-headline-sm text-headline-sm py-4 rounded-xl flex justify-center items-center transition-transform duration-200 active:scale-95 shadow-[0_4px_14px_0_rgba(255,255,255,0.1)]">
+                המשך
+            </button>
+</div>
+</div>
+<!-- Note: BottomNavBar is suppressed due to onboarding intent -->
+</body></html>

@@ -12,6 +12,10 @@ __pycache__/
 dist/
 build/
 
+# Stitch exports (binary zip + screenshots — keep only extracted HTML)
+*.zip
+frontend/stitch/**/screen.png
+
 # Node
 node_modules/
 npm-debug.log*

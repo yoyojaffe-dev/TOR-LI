@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="he" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tor - Booking</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#efb200",
+                        "on-tertiary-container": "#005170",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "surface-variant": "#353437",
+                        "on-background": "#e5e1e4",
+                        "background": "#131315",
+                        "surface-1": "#101012",
+                        "text-primary": "#FAFAF9",
+                        "outline-variant": "#504533",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#454747",
+                        "inverse-on-surface": "#313032",
+                        "surface-container-high": "#2a2a2c",
+                        "success": "#34C759",
+                        "on-primary-fixed": "#261900",
+                        "surface-container": "#201f22",
+                        "text-secondary": "#A1A1AA",
+                        "surface-3": "#18171A",
+                        "primary": "#ffd174",
+                        "info": "#0A84FF",
+                        "surface-2": "#131214",
+                        "inverse-surface": "#e5e1e4",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#fbbc18",
+                        "on-secondary-container": "#b4b5b5",
+                        "on-surface": "#e5e1e4",
+                        "on-primary-container": "#624700",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "surface-tint": "#fbbc18",
+                        "primary-fixed": "#ffdea1",
+                        "text-muted": "#71717A",
+                        "tertiary-container": "#57c7ff",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "error-container": "#93000a",
+                        "danger": "#FF453A",
+                        "surface-container-highest": "#353437",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "surface": "#131315",
+                        "on-secondary": "#2f3131",
+                        "surface-container-low": "#1c1b1d",
+                        "secondary": "#c6c6c7",
+                        "tertiary": "#abdeff",
+                        "on-tertiary-fixed": "#001e2c",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#d4c5ac",
+                        "surface-4": "#202023",
+                        "on-secondary-fixed-variant": "#454747",
+                        "on-primary": "#402d00",
+                        "secondary-fixed": "#e2e2e2",
+                        "surface-container-lowest": "#0e0e10",
+                        "inverse-primary": "#7a5900",
+                        "surface-bright": "#39393b",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "outline": "#9c8f79",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "surface-dim": "#131315",
+                        "on-tertiary": "#00344a",
+                        "tertiary-fixed": "#c4e7ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "stack-sm": "8px",
+                        "stack-md": "16px",
+                        "stack-lg": "24px",
+                        "section-gap": "32px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Heebo"],
+                        "display-lg": ["Heebo"],
+                        "headline-md": ["Heebo"],
+                        "body-lg": ["Heebo"],
+                        "headline-sm": ["Heebo"],
+                        "body-md": ["Heebo"],
+                        "price-lg": ["JetBrains Mono"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-lg": ["Heebo"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "display-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "price-lg": ["24px", { "lineHeight": "1", "fontWeight": "600" }],
+                        "label-mono": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-text-primary min-h-screen antialiased flex justify-center pb-32">
+<main class="w-full max-w-[430px] flex flex-col h-full bg-background relative overflow-hidden shadow-2xl">
+<!-- Header -->
+<header class="bg-background/80 backdrop-blur-xl border-b border-white/5 sticky top-0 w-full z-50 flex flex-row-reverse justify-between items-center px-gutter h-16">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-1 hover:bg-surface-2 transition-colors border border-border-light text-text-primary" onclick="window.location.href='{{DATA:SCREEN:SCREEN_18}}'">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_forward</span>
+</button>
+<div class="flex items-center gap-3">
+<div class="text-left">
+<h1 class="font-headline-sm text-headline-sm-mobile text-text-primary m-0 p-0 leading-none">הזמנת תור</h1>
+<p class="font-label-mono text-label-mono text-text-muted mt-1 m-0 p-0">רון ברק - Gentlemen's Club</p>
+</div>
+<img alt="Profile" class="w-10 h-10 rounded-full border border-border-light grayscale object-cover" data-alt="A close up, black and white professional portrait of a male barber. He has a clean shave and a short, modern haircut. The lighting is dramatic and moody, reflecting a high-end urban barbershop aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMfqh7JI3eILbQasTaYsjNjymK_S6tp50jbk_byCiStSsOmpC4ULT19gP3PqS18l9N3WQM2Nw54N07ZQBr5K6TCDVzu3uSk3yRGMJQOStT00Mxxy-biAb4pJwIsRbG52US_E-QHFZXnElBQIWt72if6wZ33E2J8FoNtQfGnDAoT9Q7jxW6hC_Ys5J7gkSs2tX5GAOn3H2jWKIPVDCKkPqzbERs76RMvC6AiUzMAd_3GRpRCPJLh2T59LQAvdqqAgu-zbOCHvyEyfI3"/>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="px-gutter pt-stack-lg flex flex-col gap-section-gap w-full flex-grow">
+<!-- Service Selection -->
+<section class="flex flex-col gap-stack-md">
+<h2 class="font-headline-md text-headline-md text-text-primary mb-1">בחר שירות</h2>
+<div class="flex overflow-x-auto gap-stack-md pb-4 hide-scrollbar snap-x rtl:flex-row">
+<!-- Selected Service Card -->
+<button class="snap-start shrink-0 w-40 p-4 rounded-xl bg-surface-2 border border-primary-container shadow-[0_0_15px_rgba(239,178,0,0.15)] flex flex-col justify-between h-28 relative text-right transition-transform active:scale-95">
+<div class="w-full flex justify-between items-start">
+<div class="font-label-mono text-label-mono text-text-muted">20 דק'</div>
+<h3 class="font-body-lg text-body-lg text-primary-container font-bold">תספורת</h3>
+</div>
+<div class="font-price-lg text-price-lg text-primary-container self-end">₪60</div>
+</button>
+<!-- Unselected Service Card -->
+<button class="snap-start shrink-0 w-40 p-4 rounded-xl bg-surface-1 border border-border-light flex flex-col justify-between h-28 text-right transition-transform active:scale-95 hover:bg-surface-2">
+<div class="w-full flex justify-between items-start">
+<div class="font-label-mono text-label-mono text-text-muted">40 דק'</div>
+<h3 class="font-body-lg text-body-lg text-text-primary">פייד + זקן</h3>
+</div>
+<div class="font-price-lg text-price-lg text-text-primary self-end">₪100</div>
+</button>
+<!-- Unselected Service Card -->
+<button class="snap-start shrink-0 w-40 p-4 rounded-xl bg-surface-1 border border-border-light flex flex-col justify-between h-28 text-right transition-transform active:scale-95 hover:bg-surface-2">
+<div class="w-full flex justify-between items-start">
+<div class="font-label-mono text-label-mono text-text-muted">15 דק'</div>
+<h3 class="font-body-lg text-body-lg text-text-primary">עיצוב זקן</h3>
+</div>
+<div class="font-price-lg text-price-lg text-text-primary self-end">₪40</div>
+</button>
+</div>
+</section>
+<!-- Calendar -->
+<section class="flex flex-col bg-surface-1 p-4 rounded-xl border border-border-light">
+<!-- Month Navigation -->
+<div class="flex justify-between items-center mb-6">
+<button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-2 transition-colors text-text-muted">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+<div class="font-headline-sm text-headline-sm text-text-primary">יוני 2026</div>
+<button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-2 transition-colors text-text-muted">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+</div>
+<!-- Days of Week Header -->
+<div class="grid grid-cols-7 gap-1 text-center mb-4">
+<div class="font-label-mono text-label-mono text-text-muted">א'</div>
+<div class="font-label-mono text-label-mono text-text-muted">ב'</div>
+<div class="font-label-mono text-label-mono text-text-muted">ג'</div>
+<div class="font-label-mono text-label-mono text-text-muted">ד'</div>
+<div class="font-label-mono text-label-mono text-text-muted">ה'</div>
+<div class="font-label-mono text-label-mono text-text-muted">ו'</div>
+<div class="font-label-mono text-label-mono text-text-muted">ש'</div>
+</div>
+<!-- Calendar Grid -->
+<div class="grid grid-cols-7 gap-y-3 gap-x-1 text-center">
+<!-- Week 1 (Offset) -->
+<div class="font-label-mono text-label-mono text-surface-3"></div>
+<div class="font-label-mono text-label-mono text-surface-3">1</div>
+<div class="font-label-mono text-label-mono text-surface-3">2</div>
+<div class="font-label-mono text-label-mono text-surface-3">3</div>
+<div class="font-label-mono text-label-mono text-surface-3">4</div>
+<div class="font-label-mono text-label-mono text-surface-3">5</div>
+<div class="font-label-mono text-label-mono text-surface-3">6</div>
+<!-- Week 2 -->
+<div class="font-label-mono text-label-mono text-surface-3">7</div>
+<!-- Selected Day -->
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full bg-primary-container/20 border border-primary-container text-primary-container font-label-mono text-label-mono shadow-[0_0_10px_rgba(239,178,0,0.1)]">8</button>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">9</button>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">10</button>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">11</button>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">12</button>
+<div class="w-8 h-8 mx-auto flex items-center justify-center rounded-full text-surface-3 font-label-mono text-label-mono">13</div>
+<!-- Week 3 -->
+<div class="w-8 h-8 mx-auto flex items-center justify-center rounded-full text-surface-3 font-label-mono text-label-mono">14</div>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">15</button>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">16</button>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">17</button>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">18</button>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">19</button>
+<div class="w-8 h-8 mx-auto flex items-center justify-center rounded-full text-surface-3 font-label-mono text-label-mono">20</div>
+<!-- Week 4 -->
+<div class="w-8 h-8 mx-auto flex items-center justify-center rounded-full text-surface-3 font-label-mono text-label-mono">21</div>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">22</button>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">23</button>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">24</button>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">25</button>
+<button class="w-8 h-8 mx-auto flex items-center justify-center rounded-full hover:bg-surface-2 text-text-primary font-label-mono text-label-mono transition-colors">26</button>
+<div class="w-8 h-8 mx-auto flex items-center justify-center rounded-full text-surface-3 font-label-mono text-label-mono">27</div>
+<!-- Week 5 -->
+<div class="w-8 h-8 mx-auto flex items-center justify-center rounded-full text-surface-3 font-label-mono text-label-mono">28</div>
+<div class="w-8 h-8 mx-auto flex items-center justify-center rounded-full text-surface-3 font-label-mono text-label-mono">29</div>
+<div class="w-8 h-8 mx-auto flex items-center justify-center rounded-full text-surface-3 font-label-mono text-label-mono">30</div>
+</div>
+<div class="mt-6 flex justify-center">
+<div class="inline-flex items-center gap-2 bg-primary-container/10 border border-primary-container/30 px-3 py-1.5 rounded-full">
+<span class="material-symbols-outlined text-primary-container text-sm">sync</span>
+<span class="font-label-mono text-label-mono text-primary-container text-xs">מסונכרן בזמן אמת עם לוח הזמנים</span>
+</div>
+</div>
+</section>
+<!-- Time Slots Placeholder (Visual balance, no selection active yet in this view flow typically) -->
+<section class="flex flex-col gap-stack-md mb-10">
+<h2 class="font-body-lg text-body-lg text-text-primary text-center">בחר שעה</h2>
+<div class="flex flex-wrap gap-3 justify-center">
+<button class="px-6 py-2 rounded-full border border-border-light bg-surface-1 font-label-mono text-label-mono text-text-muted border-primary-container text-primary-container">10:00</button>
+<button class="px-6 py-2 rounded-full border border-border-light bg-surface-1 font-label-mono text-label-mono text-text-muted">10:30</button>
+<button class="px-6 py-2 rounded-full border border-border-light bg-surface-1 font-label-mono text-label-mono text-text-muted">11:00</button>
+</div>
+</section>
+</div>
+<!-- Sticky Bottom Summary -->
+<div class="fixed bottom-0 w-full max-w-[430px] bg-surface-1/95 backdrop-blur-xl border-t border-border-light p-gutter flex flex-col gap-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-50"><div class="flex items-center justify-center gap-2 bg-primary-container/10 border border-primary-container/30 py-2 px-4 rounded-full mb-1 animate-pulse">
+<span class="material-symbols-outlined text-primary-container text-sm">timer</span>
+<span class="font-label-mono text-label-mono text-primary-container text-xs">התור ננעל עבורך ל-5 דקות</span>
+<span class="font-label-mono text-label-mono text-primary-container text-xs font-bold ml-auto">04:59</span>
+</div>
+<div class="flex justify-between items-center w-full px-2">
+<span class="font-body-md text-body-md text-text-primary">תספורת • 8 ביוני, 10:00</span>
+<span class="font-price-lg text-price-lg text-primary-container drop-shadow-[0_0_8px_rgba(239,178,0,0.3)]">₪60</span>
+</div>
+<button class="w-full bg-surface-2 border border-border-light text-text-muted font-body-lg text-body-lg py-4 rounded-xl transition-all active:scale-[0.98] bg-primary text-on-primary" onclick="window.location.href='{{DATA:SCREEN:SCREEN_28}}'">אישור והזמנה</button>
+</div>
+</main>
+</body></html>

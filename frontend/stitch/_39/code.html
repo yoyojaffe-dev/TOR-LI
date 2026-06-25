@@ -1,0 +1,315 @@
+<!DOCTYPE html><html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Tor - Map View</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config from Brand Anchors -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ffb4ab",
+                        "on-secondary-container": "#b4b5b5",
+                        "tertiary-container": "#57c7ff",
+                        "surface": "#131315",
+                        "surface-dim": "#131315",
+                        "surface-3": "#18171A",
+                        "success": "#34C759",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#fbbc18",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "on-primary-fixed": "#261900",
+                        "primary": "#ffd174",
+                        "text-muted": "#71717A",
+                        "inverse-surface": "#e5e1e4",
+                        "background": "#131315",
+                        "tertiary": "#abdeff",
+                        "on-surface": "#e5e1e4",
+                        "tertiary-fixed": "#c4e7ff",
+                        "inverse-primary": "#7a5900",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "surface-container": "#201f22",
+                        "on-tertiary": "#00344a",
+                        "surface-container-low": "#1c1b1d",
+                        "info": "#0A84FF",
+                        "surface-4": "#202023",
+                        "on-tertiary-container": "#005170",
+                        "surface-1": "#101012",
+                        "on-primary": "#402d00",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-secondary": "#2f3131",
+                        "primary-container": "#efb200",
+                        "danger": "#FF453A",
+                        "secondary-container": "#454747",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "on-tertiary-fixed": "#001e2c",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "primary-fixed": "#ffdea1",
+                        "inverse-on-surface": "#313032",
+                        "surface-container-high": "#2a2a2c",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "surface-container-highest": "#353437",
+                        "text-secondary": "#A1A1AA",
+                        "on-secondary-fixed-variant": "#454747",
+                        "surface-tint": "#fbbc18",
+                        "surface-bright": "#39393b",
+                        "on-surface-variant": "#d4c5ac",
+                        "on-primary-container": "#624700",
+                        "surface-2": "#131214",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "outline-variant": "#504533",
+                        "on-error-container": "#ffdad6",
+                        "surface-variant": "#353437",
+                        "surface-container-lowest": "#0e0e10",
+                        "secondary": "#c6c6c7",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "on-background": "#e5e1e4",
+                        "error-container": "#93000a",
+                        "text-primary": "#FAFAF9",
+                        "outline": "#9c8f79"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "24px",
+                        "stack-md": "16px",
+                        "gutter": "20px",
+                        "stack-sm": "8px",
+                        "base": "4px",
+                        "section-gap": "32px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Heebo", "sans-serif"],
+                        "body-lg": ["Heebo", "sans-serif"],
+                        "body-md": ["Heebo", "sans-serif"],
+                        "display-lg": ["Heebo", "sans-serif"],
+                        "headline-lg-mobile": ["Heebo", "sans-serif"],
+                        "price-lg": ["JetBrains Mono", "monospace"],
+                        "label-mono": ["JetBrains Mono", "monospace"],
+                        "headline-sm": ["Heebo", "sans-serif"],
+                        "headline-lg": ["Heebo", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "price-lg": ["24px", { "lineHeight": "1", "fontWeight": "600" }],
+                        "label-mono": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }]
+                    }
+                }
+            }
+        }
+    </script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body {
+            background-color: #131315; /* background color from config */
+            color: #FAFAF9; /* text-primary from config */
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Utility for Material Icons */
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill-icon {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* Hide scrollbar for horizontal scrolling containers */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        /* Map background placeholder */
+        .map-bg {
+            background-color: #1c1b1d; /* surface-container-low */
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* Pulsing dot animation */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+        .pulse-ring {
+            animation: pulse 2s infinite ease-out;
+        }
+    </style>
+</head>
+<body class="bg-background text-text-primary antialiased font-body-md h-screen w-full overflow-hidden flex flex-col max-w-[430px] mx-auto relative border-x border-border-light shadow-2xl">
+<!-- Top AppBar Structure (Absolute to overlay on map) -->
+<header class="absolute top-0 w-full z-40 bg-background/80 backdrop-blur-xl border-b border-border-light pb-stack-md pt-safe">
+<!-- Standard Header Row -->
+<div class="flex flex-row-reverse justify-between items-center px-gutter h-16 w-full mb-stack-sm">
+<!-- Trailing (Right side in RTL, Left side visually) -->
+<button class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<!-- Center Content (Location) -->
+<div class="flex flex-col items-center">
+<span class="font-label-mono text-label-mono text-text-secondary text-[10px]">מיקום נוכחי</span>
+<div class="flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<span class="font-headline-sm text-headline-sm-mobile">תל אביב</span>
+</div>
+</div>
+<!-- Leading (Left side in RTL, Right side visually) -->
+<button class="w-10 h-10 rounded-full overflow-hidden border border-border-light hover:opacity-80 transition-opacity">
+<img alt="A professional headshot of a man against a clean, neutral background. He is wearing a dark, casual shirt. The lighting is soft and even, typical of a high-quality studio portrait. The image feels modern and trustworthy." class="w-full h-full object-cover" data-alt="A professional headshot of a man against a clean, neutral background. He is wearing a dark, casual shirt. The lighting is soft and even, typical of a high-quality studio portrait. The image feels modern and trustworthy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1yJgF4rxTXg_xVeDxCQ4txhRlaDoDzVOehiro8oUJcBo1mF9v1hd35zDsBJIXub7YB_uYqj_KnH86mu40zOhPwoKeeb2vigtL8-b4OSZtVQ8nrqA5vSxjLHfDycXFdfWKsGts5oac9rxPJ3LURGte21P4_HxUpW6dp9W7cyHUB5aoGAqdcve2PtvbhtoGqMD8ZlqMJfBNU-hH3Y5q2eRDkGgqc87jrUShGaPUlUgO_sNs6BKp2dRJK93mLjy6ZVwMJd7B0dFqXmkw">
+</button>
+</div>
+<!-- Search & Filter Row -->
+<div class="px-gutter flex gap-stack-sm mb-stack-md">
+<!-- Search Bar -->
+<div class="flex-1 relative h-12">
+<div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-text-muted">search</span>
+</div>
+<input class="w-full h-full bg-surface-1 border border-border-light rounded-[16px] pr-10 pl-4 text-text-primary font-body-md placeholder-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-right" dir="rtl" placeholder="חפש ספרים, שירותים..." type="text">
+</div>
+<!-- Filter Button -->
+<button class="w-12 h-12 rounded-[16px] bg-surface-2 border border-border-light flex items-center justify-center text-text-primary hover:bg-surface-3 transition-colors shrink-0">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+<!-- Segmented Control (List / Map) -->
+<div class="px-gutter flex justify-center">
+<div class="bg-surface-2 p-1 rounded-full flex w-64 border border-border-light">
+<button class="flex-1 py-1.5 rounded-full text-center font-body-md text-text-secondary hover:text-text-primary transition-colors">רשימה</button>
+<!-- Active Map State -->
+<button class="flex-1 py-1.5 rounded-full text-center font-body-md bg-surface-4 text-text-primary shadow-sm">מפה</button>
+</div>
+</div>
+</header>
+<!-- Main Content Area (MAP) -->
+<main class="flex-1 relative w-full h-full map-bg" data-location="Tel Aviv">
+<!-- We use an image as a detailed map placeholder for visual richness, overlaid with the grid pattern -->
+<div class="absolute inset-0 opacity-20">
+<img alt="A dark-themed aerial map view of an urban city center with glowing streets, representing a modern navigation interface. The mood is nocturnal and sleek, aligning with the premium dark-mode aesthetic. High contrast between the dark building blocks and the subtle, illuminated roadways." class="w-full h-full object-cover grayscale mix-blend-screen" data-alt="A dark-themed aerial map view of an urban city center with glowing streets, representing a modern navigation interface. The mood is nocturnal and sleek, aligning with the premium dark-mode aesthetic. High contrast between the dark building blocks and the subtle, illuminated roadways." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBN6tZzh82wWp4Hmk3qShil8ThV3gY9sqCjJTm5zgql5PpHP-iGe14kvSERp4QO3_TxiqSIZkOaUbHxssEQR0WtrwaGNDRH3dURlYUQrRiyGa59LSYAsDvkd66l29x7PULSw1_-UqWUbRRxPAUocRRJ8GWz-cHmFVoN9RwjU0ttyGZCzsUc2QugQoeSd5NzKz8Pkm3CWjtuUNUCfyQXsx9T3fZjBeglnoixg9EUHSmUdWxEmzIGrVPKDQYJLL9IsoVDCnkMBEcM0z71">
+</div>
+<!-- Map Content Overlay -->
+<div class="absolute inset-0 z-10">
+<!-- User Location (Pulsing Dot) -->
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+<div class="relative w-4 h-4 rounded-full bg-info z-10 border-2 border-background"></div>
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-info/30 pulse-ring"></div>
+</div>
+<!-- Pin 1: Ron Barak (Active - matching preview card) -->
+<div class="absolute top-[35%] left-[60%] transform -translate-x-1/2 -translate-y-full flex flex-col items-center">
+<!-- Golden Avatar Pin -->
+<div class="relative w-12 h-12 rounded-full p-[2px] bg-primary shadow-[0_0_15px_rgba(239,178,0,0.4)] z-20 transition-transform hover:scale-110 cursor-pointer">
+<img alt="A black and white portrait of a bald, bearded barber in his shop, conveying a serious and professional demeanor. The setting feels like a classic, high-end barbershop. The lighting is moody and focused on his face." class="w-full h-full rounded-full object-cover grayscale border-2 border-background" data-alt="A black and white portrait of a bald, bearded barber in his shop, conveying a serious and professional demeanor. The setting feels like a classic, high-end barbershop. The lighting is moody and focused on his face." src="https://lh3.googleusercontent.com/aida-public/AB6AXuALbPz2Ghxegdh8vdqNQPM8_s4v_qw8mbu7_KFJceK1D5wISfPdNBWNzGpadHRomk5YAaiQ0hxugLGVyrp46yfSs9CSFvZbaKxr6JvtXuroIo-dWSEWmrKLN-2DkOjGi8jJTZfUrnoPHuaUd0RZAXwobIYqpkbtCJdUN-iPKQ0ehOAb2pyBwe5tjGSe7zGIqcewqo_L02MVwDqgveesKviJMi2OzUtwgUNJ6RuEeWRAfJNlNdukDWo0s2YbT926jr75k9kxrZqmpl7V">
+</div>
+<!-- Pin Pointer -->
+<div class="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-primary -mt-[2px] z-10"></div>
+</div>
+<!-- Pin 2: Yossi Cohen (Inactive) -->
+<div class="absolute top-[45%] left-[20%] transform -translate-x-1/2 -translate-y-full flex flex-col items-center opacity-70 scale-90">
+<div class="relative w-10 h-10 rounded-full p-[2px] bg-surface-3 border border-border-light z-20 transition-transform hover:scale-110 cursor-pointer hover:opacity-100">
+<img alt="A dramatic black and white portrait of a handsome young barber looking directly at the camera. He wears a dark shirt and the background is completely black, emphasizing his features and creating a moody, premium feel." class="w-full h-full rounded-full object-cover grayscale" data-alt="A dramatic black and white portrait of a handsome young barber looking directly at the camera. He wears a dark shirt and the background is completely black, emphasizing his features and creating a moody, premium feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuDRTLch_46lYPwqBsbjRCdznRz6wn5vFma8P5rbPma4gXo_cqzk5lj4hOPaG4-ctFJwP2JuFZENH_LGqpj08k1QIgL4URXA9a32BTCESmu1d1_DM5DCtDHhTs9JRuntnxvSc-Z90XiQQ-21qeUVdgU6n6Zy40YH8yRMcbpKN53lqcqkelVns9awDxLW26fh-LRxv0_7bi8ln9F_RM8UYzA5L0-9LulEQElHiX6zoRr7CB7r93VJ39tUKL40lPVDzc-YJxaER5mnky">
+</div>
+<div class="w-0 h-0 border-l-[5px] border-r-[5px] border-t-[6px] border-l-transparent border-r-transparent border-t-surface-3 -mt-[1px] z-10"></div>
+</div>
+<!-- Pin 3: Unnamed Barber (Inactive) -->
+<div class="absolute top-[65%] left-[75%] transform -translate-x-1/2 -translate-y-full flex flex-col items-center opacity-70 scale-90">
+<div class="relative w-10 h-10 rounded-full p-[2px] bg-surface-3 border border-border-light z-20 transition-transform hover:scale-110 cursor-pointer hover:opacity-100">
+<img alt="A sleek black and white avatar of a modern urban barber. The lighting highlights strong facial features against a dark, minimalist background. The style is sophisticated and matches the corporate modern vibe of the app." class="w-full h-full rounded-full object-cover grayscale" data-alt="A sleek black and white avatar of a modern urban barber. The lighting highlights strong facial features against a dark, minimalist background. The style is sophisticated and matches the corporate modern vibe of the app." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA16N-zKyWZ5tUSckDnBzwrOxKs_JYWYMW0qPFvHboejyzivduGzeL0RRAmeukCYobgW58hfhh_1VbbyHy943Vsh8X8owMxe2BYdY9saivOLvM0_04J5M57Xhbwvvym16Z4UPJpaojNyebOJVllUbrCsCp0PCtoHgLxSE9XCKAV6xxGNPr3wp_GeResoHBoXo2gmN4npFDZ8v8kwJbJKwCYFMoBYPQQA0iliQNrxeavf_RXmMkbL3jVIo8q3XLwJ2k3QiSyaaOivf9z">
+</div>
+<div class="w-0 h-0 border-l-[5px] border-r-[5px] border-t-[6px] border-l-transparent border-r-transparent border-t-surface-3 -mt-[1px] z-10"></div>
+</div>
+</div>
+<!-- Floating Barber Preview Card (Bottom of map, above nav) -->
+<div class="absolute bottom-24 w-full px-gutter z-30">
+<div class="bg-surface-1/95 backdrop-blur-md rounded-[20px] border border-border-light p-4 shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+<div class="flex flex-row-reverse items-start gap-4">
+<!-- Barber Avatar -->
+<div class="w-16 h-16 rounded-full overflow-hidden shrink-0 border border-border-light">
+<img alt="A black and white portrait of a bald, bearded barber in his shop, conveying a serious and professional demeanor. The setting feels like a classic, high-end barbershop. The lighting is moody and focused on his face." class="w-full h-full object-cover grayscale" data-alt="A black and white portrait of a bald, bearded barber in his shop, conveying a serious and professional demeanor. The setting feels like a classic, high-end barbershop. The lighting is moody and focused on his face." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLgU5_22bJDC6woEHUgmV2ziqc0jUCixJ-28v6izlzNS1Hm9Sa8Eojc2uI4nhROKdKK4wrj8FSHTWUVLr5KHYPl98FLYlvInoJJWGGTGu0SXhCcQIxFFKYnYhX1jY2VXQdsSoYCN6tER62_bR348i9qvHBJzvG88OYAO4mYR8RgXijgniWyAltZXdH3S2bSJAcI7YqxLJfgSWXRetTktG5aPD9k-WtjKliYFXPLaZEkRAT4nJTT8Uy1E-hKYCD2scQwXO4yzXJkTIY">
+</div>
+<!-- Barber Info -->
+<div class="flex-1 text-right">
+<div class="flex flex-row-reverse justify-between items-center mb-1">
+<h3 class="font-headline-sm text-headline-sm-mobile text-text-primary">רון ברק</h3>
+<div class="flex items-center gap-1 bg-surface-3 px-2 py-0.5 rounded-full border border-border-light">
+<span class="font-label-mono text-label-mono text-text-primary">4.9</span>
+<span class="material-symbols-outlined text-[14px] text-primary fill-icon">star</span>
+</div>
+</div>
+<p class="font-body-md text-text-secondary text-sm mb-2">Gentlemen's Club • <span class="font-label-mono">104 מ׳</span></p>
+<!-- Travel Info -->
+<div class="flex flex-row-reverse items-center justify-between font-label-mono text-label-mono text-text-muted text-[10px] mt-2">
+  <div class="flex items-center gap-1">
+    <span class="material-symbols-outlined text-[14px]">directions_walk</span>
+    <span class="font-label-mono">5 דק׳</span>
+  </div>
+  <div class="flex items-center gap-1">
+    <span class="material-symbols-outlined text-[14px]">pedal_bike</span>
+    <span class="font-label-mono">2 דק׳</span>
+  </div>
+  <div class="flex items-center gap-1">
+    <span class="material-symbols-outlined text-[14px]">directions_car</span>
+    <span class="font-label-mono">2 דק׳</span>
+  </div>
+  <div class="flex items-center gap-1">
+    <span class="material-symbols-outlined text-[14px]">directions_bus</span>
+    <span class="font-label-mono">8 דק׳</span>
+  </div>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full mt-4 bg-primary text-on-primary font-headline-sm text-[16px] py-3 rounded-xl hover:opacity-90 active:scale-[0.98] transition-all">
+                    הזמן תור
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Structure (Fixed 3-item variant from JSON) -->
+<nav class="fixed bottom-0 w-full z-50 h-20 bg-surface-1/90 backdrop-blur-2xl border-t border-border-light shadow-2xl flex flex-row-reverse justify-around items-center px-4 pb-safe max-w-[430px]">
+<!-- Item 1: בית (Home) - ACTIVE state -->
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary gap-1 w-16 group" href="#">
+<span class="material-symbols-outlined text-[28px] fill-icon group-active:scale-110 transition-all duration-300 ease-out">home</span>
+<span class="font-label-mono text-[10px]">בית</span>
+</a>
+<!-- Item 2: פרופיל (Profile) - Inactive state -->
+<a class="flex flex-col items-center justify-center text-text-muted dark:text-text-muted gap-1 w-16 group hover:text-primary-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[28px] group-active:scale-110 transition-all duration-300 ease-out">person</span>
+<span class="font-label-mono text-[10px]">פרופיל</span>
+</a>
+<!-- Item 3: שפה (Language) - Inactive state -->
+<a class="flex flex-col items-center justify-center text-text-muted dark:text-text-muted gap-1 w-16 group hover:text-primary-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[28px] group-active:scale-110 transition-all duration-300 ease-out">language</span>
+<span class="font-label-mono text-[10px]">שפה</span>
+</a>
+</nav>
+<!-- Adding pb-safe equivalent padding to the bottom of the body so content isn't hidden under nav -->
+<div class="h-20 shrink-0 bg-background md:hidden"></div>
+
+
+</body></html>

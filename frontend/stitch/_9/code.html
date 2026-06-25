@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Last Minute Deals</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            font-feature-settings: 'liga';
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#57c7ff",
+                        "on-tertiary": "#00344a",
+                        "success": "#34C759",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "surface-bright": "#39393b",
+                        "primary-container": "#efb200",
+                        "tertiary-fixed": "#c4e7ff",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "background": "#131315",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "surface-3": "#18171A",
+                        "inverse-surface": "#e5e1e4",
+                        "on-primary-fixed": "#261900",
+                        "danger": "#FF453A",
+                        "on-tertiary-fixed": "#001e2c",
+                        "secondary-fixed": "#e2e2e2",
+                        "primary-fixed-dim": "#fbbc18",
+                        "surface-container-low": "#1c1b1d",
+                        "on-secondary": "#2f3131",
+                        "surface-1": "#101012",
+                        "on-secondary-container": "#b4b5b5",
+                        "tertiary": "#abdeff",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#454747",
+                        "text-secondary": "#A1A1AA",
+                        "on-secondary-fixed-variant": "#454747",
+                        "surface-container": "#201f22",
+                        "on-primary-container": "#624700",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#353437",
+                        "secondary": "#c6c6c7",
+                        "on-tertiary-container": "#005170",
+                        "surface-4": "#202023",
+                        "surface-container-lowest": "#0e0e10",
+                        "primary": "#ffd174",
+                        "text-muted": "#71717A",
+                        "surface-tint": "#fbbc18",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "surface-dim": "#131315",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "info": "#0A84FF",
+                        "on-primary": "#402d00",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "primary-fixed": "#ffdea1",
+                        "inverse-primary": "#7a5900",
+                        "text-primary": "#FAFAF9",
+                        "surface": "#131315",
+                        "on-background": "#e5e1e4",
+                        "error": "#ffb4ab",
+                        "on-surface-variant": "#d4c5ac",
+                        "surface-variant": "#353437",
+                        "error-container": "#93000a",
+                        "surface-2": "#131214",
+                        "outline": "#9c8f79",
+                        "surface-container-high": "#2a2a2c",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "on-surface": "#e5e1e4",
+                        "outline-variant": "#504533",
+                        "inverse-on-surface": "#313032"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "base": "4px",
+                        "stack-lg": "24px",
+                        "section-gap": "32px",
+                        "stack-md": "16px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "price-lg": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Heebo"],
+                        "body-md": ["Heebo"],
+                        "headline-sm": ["Heebo"],
+                        "headline-md": ["Heebo"],
+                        "headline-lg": ["Heebo"],
+                        "label-mono": ["JetBrains Mono"],
+                        "display-lg": ["Heebo"],
+                        "body-lg": ["Heebo"]
+                    },
+                    "fontSize": {
+                        "price-lg": ["24px", { "lineHeight": "1", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "label-mono": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "display-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-text-primary min-h-screen pb-[80px]">
+<!-- TopAppBar -->
+<header class="bg-background/80 backdrop-blur-xl border-b border-white/5 fixed top-0 w-full z-50 flex flex-row-reverse justify-between items-center px-gutter h-16 transition-all duration-300">
+<div class="flex items-center gap-4 text-primary font-headline-md">
+<span class="material-symbols-outlined hover:opacity-80 transition-opacity cursor-pointer">notifications</span>
+</div>
+<h1 class="font-headline-sm text-headline-sm-mobile md:font-headline-sm md:text-headline-sm text-primary dark:text-primary">דילים של הרגע האחרון</h1>
+<div class="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-text-primary">arrow_forward</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[88px] px-gutter max-w-2xl mx-auto flex flex-col gap-4">
+<!-- Deal Item 1 -->
+<article class="bg-surface-1 rounded-xl p-4 border border-border-light flex items-center justify-between gap-4 hover:border-primary/50 transition-colors cursor-pointer group drop-shadow-[0_0_15px_rgba(239,178,0,0.15)] relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+<div class="flex items-center gap-4 relative z-10 flex-1">
+<div class="w-16 h-16 rounded-full overflow-hidden border border-border-light flex-shrink-0 grayscale">
+<img alt="Barber Portrait" class="w-full h-full object-cover" data-alt="A striking black and white portrait of a modern urban barber, captured in high-contrast cinematic lighting against a dark studio background. The barber looks professional and focused, embodying a premium, moody aesthetic. Shot with sharp focus and subtle shadow gradients." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBf4K-PpKp1VHqQHHK6rJAGKl0byDt4Ucc7H2hYZ3QaclA6hq8Z_ILR87ElO-pmZizHS6YTMrgOn8zAhmWHzEU3wjW_u_xR5pj4_Q4CM7cOvNG_oLqBsOXvLnI4hunwWSfVVuNatr1weg4EtX7I4KjlGKseSD9B5lN9NzhTCuYUUgAkICmR_eapDOM6ioXVL42K9Fxa6DOKHXdaiSn9P213vxpPIOJtnUTUYeKg4IFqBk-z8BPy3F8ctXOBNAK1QXrOJPedtNr_OIqt"/>
+</div>
+<div class="flex flex-col">
+<h2 class="font-body-lg text-body-lg text-text-primary">ברברשופ דניאל</h2>
+<div class="flex items-center gap-1 text-text-muted mt-1">
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-body-md text-body-md">4.9</span>
+<span class="mx-1">•</span>
+<span class="font-body-md text-body-md">תספורת גבר</span>
+</div>
+<div class="flex items-center gap-1 text-text-muted mt-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="font-label-mono text-label-mono">1.2 ק"מ</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2 relative z-10">
+<div class="bg-primary/10 text-primary px-3 py-1 rounded-full flex items-center gap-1 border border-primary/20">
+<span class="material-symbols-outlined text-[16px]">bolt</span>
+<span class="font-label-mono text-label-mono">בעוד 30 דק'</span>
+</div>
+<div class="font-price-lg text-price-lg text-primary flex items-center gap-1">
+<span>₪60</span>
+<span class="font-body-md text-body-md text-text-muted line-through opacity-70">₪80</span>
+</div>
+</div>
+</article>
+<!-- Deal Item 2 -->
+<article class="bg-surface-1 rounded-xl p-4 border border-border-light flex items-center justify-between gap-4 hover:border-primary/50 transition-colors cursor-pointer group relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+<div class="flex items-center gap-4 relative z-10 flex-1">
+<div class="w-16 h-16 rounded-full overflow-hidden border border-border-light flex-shrink-0 grayscale">
+<img alt="Barber Portrait" class="w-full h-full object-cover" data-alt="A moody black and white studio portrait of an experienced barber. The lighting highlights the texture of his skin and beard, creating a high-end, sophisticated look. The dark background ensures the subject stands out sharply, fitting a premium dark-mode UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD23uKNECOUzE5HAsGk2TKK6bJuGny3DqLjGq30dnkNXSFfsKw4IuCwVyMhIBQ9zquBO0a310wPWFc8nC8VI8-3kbX-13CK2Kaz8_caM05_itQ2nVim8B2NHXDoWDo7Hx2SIGfqj3HoJG48T0LWGG7tYNIkfSvFwEMngTDJbtQCY1GhmvP5Tye44JVa-_13gDAArwOARqoaJm1zgBKklhsg3Uv9upyAWRWvG_C8Bc3vQIBgYrgfhn7tbnBJ6yXKXxBn1aFyYWUvhzZx"/>
+</div>
+<div class="flex flex-col">
+<h2 class="font-body-lg text-body-lg text-text-primary">מספרת האחים</h2>
+<div class="flex items-center gap-1 text-text-muted mt-1">
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-body-md text-body-md">4.7</span>
+<span class="mx-1">•</span>
+<span class="font-body-md text-body-md">עיצוב זקן</span>
+</div>
+<div class="flex items-center gap-1 text-text-muted mt-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="font-label-mono text-label-mono">2.5 ק"מ</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2 relative z-10">
+<div class="bg-primary/10 text-primary px-3 py-1 rounded-full flex items-center gap-1 border border-primary/20">
+<span class="material-symbols-outlined text-[16px]">bolt</span>
+<span class="font-label-mono text-label-mono">בעוד שעה</span>
+</div>
+<div class="font-price-lg text-price-lg text-primary flex items-center gap-1">
+<span>₪40</span>
+<span class="font-body-md text-body-md text-text-muted line-through opacity-70">₪55</span>
+</div>
+</div>
+</article>
+<!-- Deal Item 3 -->
+<article class="bg-surface-1 rounded-xl p-4 border border-border-light flex items-center justify-between gap-4 hover:border-primary/50 transition-colors cursor-pointer group relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+<div class="flex items-center gap-4 relative z-10 flex-1">
+<div class="w-16 h-16 rounded-full overflow-hidden border border-border-light flex-shrink-0 grayscale">
+<img alt="Barber Portrait" class="w-full h-full object-cover" data-alt="A stylized black and white close-up portrait of a young, trendy barber. The image is rich in contrast, with deep blacks and stark white highlights, perfectly suited for a luxury booking app. The mood is confident and modern." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYy9No1zsci_h2wUe_939DoMdBJUlmfl0qJ1egAq3do0-fEy5wL9tFEzWq2UetLBew1jBVhmf_x3OZoZ7wbzESS_CThe97K2bJXW9gadrhV-9Sm99GmIGCoKD_7S5r80hmYgf3HKuEl_mWibqHIh0wnJu6cHRuMRS2TEpazIDIAAyVnpxdq0E7ijLxmTtTSKBH08UUwsdSGi8JnDvjy1ln-OGeWn7T3qQRcDKhPnb08qRbCcT2rjujhp7PIeI-K-J3_qWCNHtEYYN2"/>
+</div>
+<div class="flex flex-col">
+<h2 class="font-body-lg text-body-lg text-text-primary">The Vintage Cut</h2>
+<div class="flex items-center gap-1 text-text-muted mt-1">
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-body-md text-body-md">4.8</span>
+<span class="mx-1">•</span>
+<span class="font-body-md text-body-md">תספורת + זקן</span>
+</div>
+<div class="flex items-center gap-1 text-text-muted mt-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="font-label-mono text-label-mono">3.0 ק"מ</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2 relative z-10">
+<div class="bg-primary/10 text-primary px-3 py-1 rounded-full flex items-center gap-1 border border-primary/20">
+<span class="material-symbols-outlined text-[16px]">bolt</span>
+<span class="font-label-mono text-label-mono">היום ב-18:00</span>
+</div>
+<div class="font-price-lg text-price-lg text-primary flex items-center gap-1">
+<span>₪100</span>
+<span class="font-body-md text-body-md text-text-muted line-through opacity-70">₪130</span>
+</div>
+</div>
+</article>
+</main>
+</body></html>

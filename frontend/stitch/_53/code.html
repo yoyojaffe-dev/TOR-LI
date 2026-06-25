@@ -1,0 +1,349 @@
+<!DOCTYPE html><html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Barber Dashboard - Calendar</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<!-- Tailwind CSS Setup -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "text-secondary": "#A1A1AA",
+                        "inverse-surface": "#e5e1e4",
+                        "info": "#0A84FF",
+                        "tertiary-container": "#57c7ff",
+                        "on-surface": "#e5e1e4",
+                        "secondary": "#c6c6c7",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed": "#c4e7ff",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "surface-container-lowest": "#0e0e10",
+                        "primary-container": "#efb200",
+                        "on-tertiary-container": "#005170",
+                        "on-primary-container": "#624700",
+                        "primary-fixed": "#ffdea1",
+                        "inverse-on-surface": "#313032",
+                        "on-surface-variant": "#d4c5ac",
+                        "surface-container-high": "#2a2a2c",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "danger": "#FF453A",
+                        "outline": "#9c8f79",
+                        "on-background": "#e5e1e4",
+                        "surface-container": "#201f22",
+                        "error-container": "#93000a",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "surface-container-low": "#1c1b1d",
+                        "surface": "#09090b",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "on-primary-fixed": "#261900",
+                        "on-error": "#690005",
+                        "secondary-fixed": "#e2e2e2",
+                        "text-primary": "#FAFAF9",
+                        "on-primary": "#402d00",
+                        "surface-dim": "#131315",
+                        "inverse-primary": "#7a5900",
+                        "primary-fixed-dim": "#fbbc18",
+                        "surface-1": "#101012",
+                        "success": "#34C759",
+                        "background": "#09090b",
+                        "text-muted": "#71717A",
+                        "on-secondary-container": "#b4b5b5",
+                        "on-secondary-fixed-variant": "#454747",
+                        "primary": "#ffd174",
+                        "surface-3": "#18171A",
+                        "on-secondary": "#2f3131",
+                        "surface-bright": "#39393b",
+                        "surface-variant": "#353437",
+                        "surface-4": "#202023",
+                        "on-tertiary-fixed": "#001e2c",
+                        "surface-tint": "#fbbc18",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-highest": "#353437",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "secondary-container": "#454747",
+                        "tertiary": "#abdeff",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "surface-2": "#131214",
+                        "outline-variant": "#504533",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "on-tertiary": "#00344a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "section-gap": "32px",
+                        "base": "4px",
+                        "gutter": "20px",
+                        "stack-lg": "24px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Heebo"],
+                        "headline-md": ["Heebo"],
+                        "headline-lg": ["Heebo"],
+                        "body-md": ["Heebo"],
+                        "headline-sm": ["Heebo"],
+                        "display-lg": ["Heebo"],
+                        "price-lg": ["JetBrains Mono"],
+                        "body-lg": ["Heebo"]
+                    },
+                    "fontSize": {
+                        "label-mono": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "display-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "price-lg": ["24px", { "lineHeight": "1", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased pb-[100px]">
+<!-- Header -->
+<header class="fixed z-40 top-0 w-full bg-background/80 backdrop-blur-xl border-b border-border-light flex flex-row-reverse justify-between items-center px-5 py-4">
+<!-- Avatar -->
+<div class="h-10 w-10 rounded-full overflow-hidden border border-border-light cursor-pointer">
+<img alt="Owner Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBU9j8oMzWTPxZhkj365VG6t9DwZVttmmM7fKwrX19CCuwOajc-NPDlYE_XBxM1leH_Jdl3q1eWVtx1VC1bemlFEqKqdrD-MawzYXjW5D4Azt4ZSwH6A0PIgrxQyvfK5o809lX31z7CUEdb8CSdtGP7Be22Tv62e7e-VnhKUtxx1pudPUXoQwbk3hMAm3XVyMmQB-hcCOwY--H6cGimaus0GLGW3b3BuBHB5mwzhlTpK7tAJyh6h-mN4rIMh0FbblmDbUIecEZI_O9b">
+</div>
+<!-- Title -->
+<h1 class="text-headline-md font-extrabold text-primary flex-1 text-center truncate px-4">
+            ניהול מספרה
+        </h1>
+<!-- Notification -->
+<button class="h-10 w-10 flex items-center justify-center text-primary rounded-full">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="bell" aria-hidden="true" class="lucide lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+</button>
+</header>
+<main class="pt-[88px] px-gutter max-w-[430px] mx-auto md:max-w-none md:flex md:flex-col md:items-center">
+<div class="w-full md:max-w-2xl">
+<!-- Staff Filter Row -->
+<section class="mb-section-gap w-full overflow-x-auto no-scrollbar">
+<div class="flex gap-4 min-w-max pb-2">
+<!-- All (Active) -->
+<button class="flex flex-col items-center gap-2 group outline-none">
+<div class="w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-[0_0_15px_rgba(239,178,0,0.3)]">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="users" aria-hidden="true" class="lucide lucide-users text-on-primary-fixed w-8 h-8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><path d="M16 3.128a4 4 0 0 1 0 7.744"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><circle cx="9" cy="7" r="4"></circle></svg>
+</div>
+<span class="text-primary font-body-md text-sm font-bold">הכל</span>
+</button>
+<!-- Yossi -->
+<button class="flex flex-col items-center gap-2 group outline-none opacity-60 hover:opacity-100 transition-opacity">
+<div class="w-16 h-16 rounded-full overflow-hidden border border-border-light bg-surface-2 grayscale">
+<img alt="יוסי" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBT8HpLIhm9P4yZpYxs4xI4K5XrMpv43LPgZ9bdHYUkQyHJw0ignc6vES3DG_X9_MAtZKIvQtlOZqjWPj7GCLVd4DD7d5_aknVbp0e2BHIXyxPJ7zz6blLEWuyPxU7ZuTOR2Klb8F0XlTkv6uu2gs7TLLxnnw1aaijxaRbb7Lut28X2KlelKxyvBm1FnPnQ7By45ZpR47Albs-bQ0CvCaUYe0fsP4PjIHQNbMdKf20lAzsuDC21YesXNT0x4glHMuh5s0jSUCOnkN4X">
+</div>
+<span class="text-on-surface font-body-md text-sm">יוסי</span>
+</button>
+<!-- Tal -->
+<button class="flex flex-col items-center gap-2 group outline-none opacity-60 hover:opacity-100 transition-opacity">
+<div class="w-16 h-16 rounded-full overflow-hidden border border-border-light bg-surface-2 grayscale">
+<img alt="טל" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACZu2bFr5llW2_AajjThoH43Cym1BwmCjRpYt-2s6lOGfHxAKDu7kA2XFf314qcs39ZzhawdqEtHT2196wziDpcfZLEyqxMSP55T21k0upwm5By4oZpafgTW85fnLRpo3bWVS-v60OV6sj59sAEawSPwHhsAVT70lmzLPjopoCVbVJzUOakRE25A79jgQ1BoXu9IOXMFinXO4zTqsZ_hTJpeQ092Jqud6t5XBJXG-YZFv0hcty3Ea3CSgvxQ9uuL-ehCXoUSnBLqu-">
+</div>
+<span class="text-on-surface font-body-md text-sm">טל</span>
+</button>
+<!-- Ori -->
+<button class="flex flex-col items-center gap-2 group outline-none opacity-60 hover:opacity-100 transition-opacity">
+<div class="w-16 h-16 rounded-full overflow-hidden border border-border-light bg-surface-2 grayscale">
+<img alt="אורי" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBpkHbIf9vzyLxcLImqFsuBR9oKM8Fn9Slg6NRpBIPtMX7r59mgZMo0zYn9xZ50NUd_uGmdfJOKlQt4WymZ7RAC5JcnvXsk-m4dWeaD8xeh_Dz_-TanapdnR9YCX26shFoHA8ZCoY1D5KPqi8_Y1RJFymNqlXQMEEpoQ9sz4LwZNQc9E5n2Y3ECS0Lw8WPxv68plWzW_uiXhAUEEcG1HuO9817EpwPFm32ASp83jcLZpqA6bxcLyWBMiikI1ER2iDJsMTXzHu8mVzH">
+</div>
+<span class="text-on-surface font-body-md text-sm">אורי</span>
+</button>
+<!-- Or -->
+<button class="flex flex-col items-center gap-2 group outline-none opacity-60 hover:opacity-100 transition-opacity">
+<div class="w-16 h-16 rounded-full overflow-hidden border border-border-light bg-surface-2 grayscale">
+<img alt="אור" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGwMUd2ljbYVe5rKj2W5jfyecSZkIlLe2EihW9a8b2LMRy3vYiYgqffTbiiYGp3N2A2S5Aum5M-eGHyIRUNErppIgTFLn5qeHbkk9nq8vb52TjV7EaDqFL18ahUlUrpYyppgukWyrUOtYgu4fVc6O7uC3u10I-9qAuGsLsGXs1NQKzCNPj7KKov3p5D3G1D7chhwLSe5JjY00Ulsxv9pwiBXbDs57czeMLSfLUGQLi7No42_OE2loUM0wW5gjnBSreZw4GpKOMPHOw">
+</div>
+<span class="text-on-surface font-body-md text-sm">אור</span>
+</button>
+</div>
+</section>
+<!-- Horizontal Week-Day Picker -->
+<section class="mb-stack-lg w-full overflow-x-auto no-scrollbar">
+<div class="flex justify-between items-center min-w-max gap-2 pb-2">
+<button class="flex flex-col items-center justify-center w-14 h-16 rounded-xl border border-transparent text-text-muted outline-none">
+<span class="text-xs font-body-md mb-1">א'</span>
+<span class="font-label-mono text-lg font-bold">7</span>
+</button>
+<button class="flex flex-col items-center justify-center w-14 h-16 rounded-xl bg-primary text-on-primary-fixed shadow-[0_0_20px_rgba(239,178,0,0.15)] ring-1 ring-primary outline-none">
+<span class="text-xs font-body-md mb-1 font-bold">ב'</span>
+<span class="font-label-mono text-lg font-extrabold">8</span>
+</button>
+<button class="flex flex-col items-center justify-center w-14 h-16 rounded-xl border border-transparent text-text-muted outline-none">
+<span class="text-xs font-body-md mb-1">ג'</span>
+<span class="font-label-mono text-lg font-bold">9</span>
+</button>
+<button class="flex flex-col items-center justify-center w-14 h-16 rounded-xl border border-transparent text-text-muted outline-none">
+<span class="text-xs font-body-md mb-1">ד'</span>
+<span class="font-label-mono text-lg font-bold">10</span>
+</button>
+<button class="flex flex-col items-center justify-center w-14 h-16 rounded-xl border border-transparent text-text-muted outline-none">
+<span class="text-xs font-body-md mb-1">ה'</span>
+<span class="font-label-mono text-lg font-bold">11</span>
+</button>
+<button class="flex flex-col items-center justify-center w-14 h-16 rounded-xl border border-transparent text-text-muted outline-none">
+<span class="text-xs font-body-md mb-1">ו'</span>
+<span class="font-label-mono text-lg font-bold">12</span>
+</button>
+<button class="flex flex-col items-center justify-center w-14 h-16 rounded-xl border border-transparent text-text-muted outline-none">
+<span class="text-xs font-body-md mb-1">ש'</span>
+<span class="font-label-mono text-lg font-bold">13</span>
+</button>
+</div>
+</section>
+<!-- Summary Tiles -->
+<section class="grid grid-cols-3 gap-3 mb-stack-lg">
+<div class="bg-surface-1 rounded-xl p-4 flex flex-col items-center justify-center border border-border-light">
+<span class="font-label-mono text-headline-sm text-on-surface mb-1">4</span>
+<span class="font-body-md text-xs text-text-muted">תורים</span>
+</div>
+<div class="bg-surface-1 rounded-xl p-4 flex flex-col items-center justify-center border border-border-light">
+<span class="font-label-mono text-headline-sm text-on-surface mb-1">2</span>
+<span class="font-body-md text-xs text-text-muted">הושלמו</span>
+</div>
+<div class="bg-surface-1 rounded-xl p-4 flex flex-col items-center justify-center border border-border-light">
+<span class="font-price-lg text-headline-sm text-primary mb-1">₪450</span>
+<span class="font-body-md text-xs text-text-muted">הכנסות</span>
+</div>
+</section>
+<!-- Add Appointment Button -->
+<button class="w-full mb-section-gap py-4 rounded-xl border-2 border-dashed border-outline-variant text-primary font-body-lg flex items-center justify-center gap-2 bg-surface-1/50 outline-none">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus" aria-hidden="true" class="lucide lucide-plus w-5 h-5"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+                הכנס תור חדש
+            </button>
+<!-- Timeline List -->
+<section class="flex flex-col gap-stack-md relative">
+<!-- Vertical Line -->
+<div class="absolute right-[45px] top-4 bottom-4 w-px bg-border-light z-0"></div>
+<!-- 09:00 Appointment -->
+<div class="flex items-start gap-4 relative z-10 w-full group">
+<div class="w-[50px] pt-4 text-right flex-shrink-0">
+<span class="font-label-mono text-sm text-text-muted">09:00</span>
+</div>
+<div class="w-2 h-2 rounded-full bg-primary/50 mt-5 shrink-0 relative right-[5px]"></div>
+<div class="flex-1 bg-surface-1 border border-border-light rounded-xl p-4">
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-headline-sm text-on-surface text-lg">תספורת - עומר דוד</h3>
+<span class="px-2 py-1 rounded bg-success/10 text-success text-xs font-bold tracking-wide">הושלם</span>
+</div>
+<div class="flex items-center gap-2 text-text-muted font-label-mono text-sm mb-2">
+<span class="">09:00</span>
+<span class="w-1 h-1 rounded-full bg-border-light"></span>
+<span class="">₪50</span>
+<span class="w-1 h-1 rounded-full bg-border-light"></span>
+<span class="">30min</span>
+</div>
+<div class="text-text-muted font-label-mono text-xs opacity-70">0526667788</div>
+</div>
+</div>
+<!-- 10:00 Appointment -->
+<div class="flex items-start gap-4 relative z-10 w-full group">
+<div class="w-[50px] pt-4 text-right flex-shrink-0">
+<span class="font-label-mono text-sm text-text-muted">10:00</span>
+</div>
+<div class="w-2 h-2 rounded-full bg-primary/50 mt-5 shrink-0 relative right-[5px]"></div>
+<div class="flex-1 bg-surface-1 border border-border-light rounded-xl p-4">
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-headline-sm text-on-surface text-lg">תספורת + זקן - גיא ברוך</h3>
+<span class="px-2 py-1 rounded bg-success/10 text-success text-xs font-bold tracking-wide">הושלם</span>
+</div>
+<div class="flex items-center gap-2 text-text-muted font-label-mono text-sm mb-2">
+<span class="">10:00</span>
+<span class="w-1 h-1 rounded-full bg-border-light"></span>
+<span class="">₪150</span>
+<span class="w-1 h-1 rounded-full bg-border-light"></span>
+<span class="">45min</span>
+</div>
+<div class="text-text-muted font-label-mono text-xs opacity-70">0558899001</div>
+</div>
+</div>
+<!-- 11:00 Break -->
+<div class="flex items-center gap-4 relative z-10 w-full my-2 opacity-80">
+<div class="w-[50px] text-right flex-shrink-0">
+<span class="font-label-mono text-sm text-text-muted">11:00</span>
+</div>
+<div class="w-2 h-2 rounded-full bg-surface-bright mt-0 shrink-0 relative right-[5px]"></div>
+<div class="flex-1 bg-surface-3 rounded-full py-3 px-6 flex justify-center items-center gap-2 border border-border-light">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="coffee" aria-hidden="true" class="lucide lucide-coffee text-text-muted w-4 h-4"><path d="M10 2v2"></path><path d="M14 2v2"></path><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"></path><path d="M6 2v2"></path></svg>
+<span class="font-body-md text-text-muted text-sm">הפסקה · 60min</span>
+</div>
+</div>
+<!-- 12:00 Appointment (Upcoming/Info) -->
+<div class="flex items-start gap-4 relative z-10 w-full group">
+<div class="w-[50px] pt-4 text-right flex-shrink-0">
+<span class="font-label-mono text-sm text-text-muted">12:00</span>
+</div>
+<div class="w-3 h-3 rounded-full bg-info mt-4 shrink-0 relative right-[3px] ring-4 ring-background"></div>
+<div class="flex-1 bg-surface-1 border border-info/30 rounded-xl p-4 relative overflow-hidden bg-gradient-to-l from-info/5 to-transparent">
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-headline-sm text-on-surface text-lg">צבע שיער - דני לוי</h3>
+<span class="px-2 py-1 rounded bg-info/10 text-info text-xs font-bold tracking-wide">קרוב</span>
+</div>
+<div class="flex items-center gap-2 text-text-muted font-label-mono text-sm mb-2">
+<span class="">12:00</span>
+<span class="w-1 h-1 rounded-full bg-border-light"></span>
+<span class="">₪200</span>
+<span class="w-1 h-1 rounded-full bg-border-light"></span>
+<span class="">40min</span>
+</div>
+<div class="text-text-muted font-label-mono text-xs opacity-70">0521234567</div>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-info"></div>
+</div>
+</div>
+<!-- 13:00 Appointment (Waiting/Danger) -->
+<div class="flex items-start gap-4 relative z-10 w-full group">
+<div class="w-[50px] pt-4 text-right flex-shrink-0">
+<span class="font-label-mono text-sm text-text-muted">13:00</span>
+</div>
+<div class="w-2 h-2 rounded-full bg-danger/50 mt-5 shrink-0 relative right-[5px]"></div>
+<div class="flex-1 bg-surface-1 border border-danger/20 rounded-xl p-4">
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-headline-sm text-on-surface text-lg">תספורת - דניאל לוי</h3>
+<span class="px-2 py-1 rounded bg-danger/10 text-danger text-xs font-bold tracking-wide">ממתין</span>
+</div>
+<div class="flex items-center gap-2 text-text-muted font-label-mono text-sm mb-2">
+<span class="">13:00</span>
+<span class="w-1 h-1 rounded-full bg-border-light"></span>
+<span class="">₪50</span>
+<span class="w-1 h-1 rounded-full bg-border-light"></span>
+<span class="">60min</span>
+</div>
+<div class="text-text-muted font-label-mono text-xs opacity-70">0522046119</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="md:hidden bg-surface-1/90 backdrop-blur-2xl border-t border-border-light fixed bottom-0 left-0 w-full z-50 flex flex-row-reverse justify-around items-center h-20 px-2 pb-safe"><a class="flex flex-col items-center justify-center text-text-muted hover:text-on-surface w-full h-full gap-1" href="#"><i class="w-6 h-6" data-lucide="settings"></i><span class="text-[10px] leading-none font-label-mono">הגדרות</span></a><a class="flex flex-col items-center justify-center text-text-muted hover:text-on-surface w-full h-full gap-1" href="#"><i class="w-6 h-6" data-lucide="scissors"></i><span class="text-[10px] leading-none font-label-mono">שירותים</span></a><a class="flex flex-col items-center justify-center text-text-muted hover:text-on-surface w-full h-full gap-1" href="#"><i class="w-6 h-6" data-lucide="users"></i><span class="text-[10px] leading-none font-label-mono">עובדים</span></a><a class="flex flex-col items-center justify-center text-text-muted hover:text-on-surface w-full h-full gap-1" href="#"><i class="w-6 h-6" data-lucide="bar-chart-2"></i><span class="text-[10px] leading-none font-label-mono">סטטיסטיקות</span></a><a class="flex flex-col items-center justify-center text-primary w-full h-full gap-1" href="#"><i class="w-6 h-6" data-lucide="calendar"></i><span class="text-[10px] leading-none font-label-mono">לוח שנה</span></a></nav>
+<script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+
+
+</body></html>

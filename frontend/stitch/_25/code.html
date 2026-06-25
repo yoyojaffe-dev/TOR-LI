@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tor - My Bookings</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-container": "#efb200",
+                        "on-tertiary-container": "#005170",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "surface-variant": "#353437",
+                        "on-background": "#e5e1e4",
+                        "background": "#131315",
+                        "surface-1": "#101012",
+                        "text-primary": "#FAFAF9",
+                        "outline-variant": "#504533",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#454747",
+                        "inverse-on-surface": "#313032",
+                        "surface-container-high": "#2a2a2c",
+                        "success": "#34C759",
+                        "on-primary-fixed": "#261900",
+                        "surface-container": "#201f22",
+                        "text-secondary": "#A1A1AA",
+                        "surface-3": "#18171A",
+                        "primary": "#ffd174",
+                        "info": "#0A84FF",
+                        "surface-2": "#131214",
+                        "inverse-surface": "#e5e1e4",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#fbbc18",
+                        "on-secondary-container": "#b4b5b5",
+                        "on-surface": "#e5e1e4",
+                        "on-primary-container": "#624700",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "surface-tint": "#fbbc18",
+                        "primary-fixed": "#ffdea1",
+                        "text-muted": "#71717A",
+                        "tertiary-container": "#57c7ff",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "error-container": "#93000a",
+                        "danger": "#FF453A",
+                        "surface-container-highest": "#353437",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "surface": "#131315",
+                        "on-secondary": "#2f3131",
+                        "surface-container-low": "#1c1b1d",
+                        "secondary": "#c6c6c7",
+                        "tertiary": "#abdeff",
+                        "on-tertiary-fixed": "#001e2c",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#d4c5ac",
+                        "surface-4": "#202023",
+                        "on-secondary-fixed-variant": "#454747",
+                        "on-primary": "#402d00",
+                        "secondary-fixed": "#e2e2e2",
+                        "surface-container-lowest": "#0e0e10",
+                        "inverse-primary": "#7a5900",
+                        "surface-bright": "#39393b",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "outline": "#9c8f79",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "surface-dim": "#131315",
+                        "on-tertiary": "#00344a",
+                        "tertiary-fixed": "#c4e7ff"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "base": "4px",
+                        "stack-sm": "8px",
+                        "stack-md": "16px",
+                        "stack-lg": "24px",
+                        "section-gap": "32px",
+                        "gutter": "20px"
+                    },
+                    fontFamily: {
+                        "headline-lg-mobile": ["Heebo"],
+                        "display-lg": ["Heebo"],
+                        "headline-md": ["Heebo"],
+                        "body-lg": ["Heebo"],
+                        "headline-sm": ["Heebo"],
+                        "body-md": ["Heebo"],
+                        "price-lg": ["JetBrains Mono"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-lg": ["Heebo"]
+                    },
+                    fontSize: {
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "display-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "price-lg": ["24px", { "lineHeight": "1", "fontWeight": "600" }],
+                        "label-mono": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400;
+        }
+        .gold-glow-shadow {
+            box-shadow: 0 0 20px rgba(239, 178, 0, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-background text-text-primary min-h-screen pb-24 font-body-md antialiased md:bg-[#09090b]">
+<div class="max-w-[430px] mx-auto min-h-screen bg-background relative overflow-hidden flex flex-col md:border-x md:border-white/5 md:shadow-2xl">
+<header class="flex flex-row-reverse justify-between items-center px-gutter pt-12 pb-6">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile tracking-tight">ההזמנות שלי</h1>
+<button class="w-10 h-10 rounded-full bg-surface-1 border border-border-light flex items-center justify-center hover:bg-surface-2 transition-colors">
+<span class="material-symbols-outlined text-text-primary">settings</span>
+</button>
+</header>
+<nav class="flex gap-8 px-gutter border-b border-border-light mb-8">
+<button class="pb-3 border-b-2 border-primary text-primary font-body-lg text-body-lg">הזמנות</button>
+<button class="pb-3 border-b-2 border-transparent text-text-muted hover:text-text-primary transition-colors font-body-lg text-body-lg">מועדפים</button>
+<button class="pb-3 border-b-2 border-transparent text-text-muted hover:text-text-primary transition-colors font-body-lg text-body-lg">חשבון</button>
+</nav>
+<main class="flex-1 px-gutter flex flex-col gap-section-gap overflow-y-auto pb-8">
+<section class="flex flex-col gap-stack-md">
+<h2 class="font-headline-sm text-headline-sm text-text-secondary">קרובים</h2>
+<div class="bg-surface-1 rounded-[20px] border border-primary p-5 gold-glow-shadow relative overflow-hidden">
+<div class="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>
+<div class="relative z-10 flex flex-col gap-stack-lg">
+<div class="flex justify-between items-start">
+<div class="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full">
+<span class="material-symbols-outlined text-[18px]">timer</span>
+<span class="font-label-mono text-label-mono font-semibold">מתחיל בעוד 45 דק׳</span>
+</div>
+<span class="material-symbols-outlined text-text-muted">more_vert</span>
+</div>
+<div class="flex items-center gap-4">
+<img alt="Barber profile" class="w-16 h-16 rounded-full object-cover border-2 border-surface-2 grayscale" data-alt="A high-contrast black and white portrait of a stylish male barber with a neat beard, looking directly at the camera with a professional demeanor. The lighting is dramatic, highlighting facial features against a dark studio background, perfectly fitting a premium modern dark-mode grooming app aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuASUSNoXkqyy7mOWKL0Y36-gYmnJzza-OJN62tGDiZ6ml7X5ToBJ5MyiPbq9k_m9yc-hSaxBqifO9bAtEM1pJnZ-DSmawgjvx7jr8InYSgJ4ZFTwobRQH2NvFNxMXM2B-za57hc7gaIY7x-8EyIb3SEPhG0zghurvrD8x7_Mne-eVcmNcAU8f2WjUGJIYGE40yEHmPSzK9INiI_wfjalM5ZYzromkWhjgRHjQBPLnX5JdPiz7ksZX2YSJaEzTqRrJR2oalNpkV8OTq5"/>
+<div>
+<h3 class="font-headline-md text-headline-md text-text-primary">רון ברק</h3>
+<p class="font-body-md text-body-md text-text-secondary">Gentlemen's Club, תל אביב</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-2">
+<div>
+<p class="text-text-muted font-label-mono text-[12px] uppercase tracking-wider mb-1">שירות</p>
+<p class="font-body-md text-body-md font-medium text-text-primary">תספורת + זקן</p>
+</div>
+<div>
+<p class="text-text-muted font-label-mono text-[12px] uppercase tracking-wider mb-1">תאריך ושעה</p>
+<p class="font-body-md text-body-md font-medium text-text-primary" dir="ltr">14:30 • 12 מאי</p>
+</div>
+</div>
+<div class="flex gap-3 pt-4 border-t border-border-light">
+<button class="flex-1 bg-text-primary text-background font-body-lg text-body-lg py-3.5 rounded-full flex justify-center items-center gap-2 active:scale-95 transition-transform" onclick="document.getElementById('nav-bottom-sheet').classList.remove('pointer-events-none'); document.getElementById('nav-overlay').classList.replace('opacity-0', 'opacity-100'); document.querySelector('#nav-bottom-sheet &gt; div:nth-child(2)').classList.remove('translate-y-full');">
+<span class="material-symbols-outlined text-[20px]">near_me</span>
+                                ניווט
+                            </button>
+<button class="flex-1 bg-surface-2 border border-border-light text-text-primary font-body-lg text-body-lg py-3.5 rounded-full flex justify-center items-center active:scale-95 transition-transform">
+                                שינוי תור
+                            </button>
+</div>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-stack-md mt-4">
+<h2 class="font-headline-sm text-headline-sm text-text-secondary">תורים קודמים</h2>
+<div class="flex flex-col gap-4">
+<div class="bg-surface-1 rounded-[16px] border border-border-light p-4 flex flex-col gap-4">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-full bg-surface-3 flex items-center justify-center border border-border-light">
+<span class="material-symbols-outlined text-text-muted">content_cut</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg font-bold text-text-primary">דניאל כהן</h3>
+<p class="font-body-md text-body-md text-text-secondary text-[14px]">The Sharp Cut</p>
+</div>
+</div>
+<span class="font-label-mono text-label-mono text-text-muted" dir="ltr">28 אפר׳</span>
+</div>
+<div class="flex justify-between items-center pt-3 border-t border-border-light"><button class="border border-border-light bg-surface-2 text-text-primary px-4 py-2 rounded-full font-body-md text-body-md text-[14px] hover:bg-surface-3 active:scale-95 transition-all flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary">star</span>דרג וכתוב חוות דעת</button>
+<p class="font-body-md text-body-md text-text-primary">תספורת קלאסית</p>
+<button class="border border-border-light bg-transparent text-text-primary px-4 py-2 rounded-full font-body-md text-body-md text-[14px] hover:bg-surface-2 active:scale-95 transition-all" onclick="window.location.href='{{DATA:SCREEN:SCREEN_14}}'">
+                                הזמן שוב
+                            </button>
+</div>
+</div>
+<div class="bg-surface-1 rounded-[16px] border border-border-light p-4 flex flex-col gap-4">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<img alt="Barber profile" class="w-12 h-12 rounded-full object-cover border border-border-light grayscale opacity-80" data-alt="A minimalist black and white headshot of a younger male barber with a modern textured crop haircut. He is softly lit against a pure black background, conveying a high-end, urban salon vibe suitable for a premium dark-mode booking interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuATBZKAd5hFJvlEfE4ewH2DVLCN_Xu-inxbQy3oMJQPu9dwLerfhj2PgeWfvJk8xSeEJcXix6Wka2IOzGCtPad7Ju3TlOLZ_Awl_MCRMCb_8vF7h4Yh9eU2xXO0VTJdMUq-2te0_INNpQr_lg5QVKVhBYLvjJGKWT29VAwF3jOLt7HCbU-XGEXJf2jWZ2Y1SbcXlnon0NYdvZCMvJJlrk7L0_4tvUEULfMh8yS4KQIuGiy3Ir5j6XnosSG9WELZgJ5IBjVxXqQd1d7B"/>
+<div>
+<h3 class="font-body-lg text-body-lg font-bold text-text-primary">רון ברק</h3>
+<p class="font-body-md text-body-md text-text-secondary text-[14px]">Gentlemen's Club</p>
+</div>
+</div>
+<span class="font-label-mono text-label-mono text-text-muted" dir="ltr">15 מרץ</span>
+</div>
+<div class="flex justify-between items-center pt-3 border-t border-border-light"><button class="border border-border-light bg-surface-2 text-text-primary px-4 py-2 rounded-full font-body-md text-body-md text-[14px] hover:bg-surface-3 active:scale-95 transition-all flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary">star</span>דרג וכתוב חוות דעת</button>
+<p class="font-body-md text-body-md text-text-primary">תספורת + זקן</p>
+<button class="border border-border-light bg-transparent text-text-primary px-4 py-2 rounded-full font-body-md text-body-md text-[14px] hover:bg-surface-2 active:scale-95 transition-all" onclick="window.location.href='{{DATA:SCREEN:SCREEN_14}}'">
+                                הזמן שוב
+                            </button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<nav class="fixed bottom-0 max-w-[430px] w-full z-50 h-20 bg-surface-1/90 backdrop-blur-2xl border-t border-border-light shadow-2xl flex flex-row-reverse justify-around items-center px-4 pb-safe md:static md:bottom-auto">
+<a class="flex flex-col items-center justify-center text-text-muted gap-1 hover:text-primary-container transition-colors w-16" href="{{DATA:SCREEN:SCREEN_18}}">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="font-label-mono text-label-mono text-[11px]">בית</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary gap-1 scale-110 transition-all duration-300 ease-out w-16 relative" href="#">
+<div class="absolute -top-3 w-12 h-1 bg-primary/20 rounded-full blur-md"></div>
+<span class="material-symbols-outlined text-[24px] icon-fill">person</span>
+<span class="font-label-mono text-label-mono text-[11px] font-bold">פרופיל</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-muted gap-1 hover:text-primary-container transition-colors w-16" href="#">
+<span class="material-symbols-outlined text-[24px]">language</span>
+<span class="font-label-mono text-label-mono text-[11px]">שפה</span>
+</a>
+</nav>
+<div class="fixed inset-0 z-[60] pointer-events-none flex items-end justify-center" id="nav-bottom-sheet"><div class="absolute inset-0 bg-background/60 backdrop-blur-sm opacity-0 transition-opacity duration-300" id="nav-overlay"></div><div class="relative w-full max-w-[430px] bg-surface-1 rounded-t-[24px] border-t border-border-light p-gutter pb-12 translate-y-full transition-transform duration-300 ease-out shadow-2xl pointer-events-auto"><div class="w-12 h-1.5 bg-surface-variant rounded-full mx-auto mb-8"></div><h3 class="font-headline-md text-headline-md text-text-primary mb-6 text-center">מעולה! איך אתה מתכנן להגיע?</h3><div class="flex flex-col gap-4"><div class="flex flex-col gap-2"><p class="text-text-muted font-label-mono text-[12px] uppercase px-2">ברגל</p><div class="flex gap-2"><button class="flex-1 bg-surface-2 p-3 rounded-xl border border-border-light flex items-center gap-3 hover:bg-surface-3 transition-colors"><span class="material-symbols-outlined text-primary">directions_walk</span><span class="font-body-md">Google Maps</span></button></div></div><div class="flex flex-col gap-2"><p class="text-text-muted font-label-mono text-[12px] uppercase px-2">באוטו</p><div class="flex gap-2"><button class="flex-1 bg-surface-2 p-3 rounded-xl border border-border-light flex items-center gap-3 hover:bg-surface-3 transition-colors"><span class="material-symbols-outlined text-primary">directions_car</span><span class="font-body-md">Waze</span></button><button class="flex-1 bg-surface-2 p-3 rounded-xl border border-border-light flex items-center gap-3 hover:bg-surface-3 transition-colors"><span class="material-symbols-outlined text-primary">directions_car</span><span class="font-body-md">Google Maps</span></button></div></div><div class="flex flex-col gap-2"><p class="text-text-muted font-label-mono text-[12px] uppercase px-2">תחב״צ</p><div class="flex gap-2"><button class="flex-1 bg-surface-2 p-3 rounded-xl border border-border-light flex items-center gap-3 hover:bg-surface-3 transition-colors"><span class="material-symbols-outlined text-primary">directions_bus</span><span class="font-body-md">Moovit</span></button><button class="flex-1 bg-surface-2 p-3 rounded-xl border border-border-light flex items-center gap-3 hover:bg-surface-3 transition-colors"><span class="material-symbols-outlined text-primary">directions_bus</span><span class="font-body-md">Google Maps</span></button></div></div></div><button class="w-full mt-8 py-4 text-text-muted font-body-lg" onclick="document.getElementById('nav-bottom-sheet').classList.add('pointer-events-none'); document.getElementById('nav-overlay').classList.replace('opacity-100', 'opacity-0'); document.querySelector('#nav-bottom-sheet &gt; div:nth-child(2)').classList.add('translate-y-full');">ביטול</button></div></div></div>
+</body></html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tor - Splash Screen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-background": "#e5e1e4",
+                      "tertiary-fixed-dim": "#7cd0ff",
+                      "on-tertiary-fixed": "#001e2c",
+                      "surface-2": "#131214",
+                      "gold-glow": "rgba(239, 178, 0, 0.15)",
+                      "text-secondary": "#A1A1AA",
+                      "surface-container-highest": "#353437",
+                      "primary-fixed-dim": "#fbbc18",
+                      "surface-bright": "#39393b",
+                      "secondary": "#c6c6c7",
+                      "error-container": "#93000a",
+                      "text-muted": "#71717A",
+                      "inverse-surface": "#e5e1e4",
+                      "tertiary-fixed": "#c4e7ff",
+                      "on-tertiary": "#00344a",
+                      "on-surface": "#e5e1e4",
+                      "on-secondary-fixed": "#1a1c1c",
+                      "on-secondary": "#2f3131",
+                      "on-tertiary-fixed-variant": "#004c69",
+                      "outline-variant": "#504533",
+                      "on-primary-fixed": "#261900",
+                      "surface-4": "#202023",
+                      "surface-3": "#18171A",
+                      "on-surface-variant": "#d4c5ac",
+                      "on-primary": "#402d00",
+                      "secondary-fixed-dim": "#c6c6c7",
+                      "surface-tint": "#fbbc18",
+                      "secondary-container": "#454747",
+                      "surface": "#131315",
+                      "primary": "#ffd174",
+                      "danger": "#FF453A",
+                      "on-primary-container": "#624700",
+                      "error": "#ffb4ab",
+                      "outline": "#9c8f79",
+                      "secondary-fixed": "#e2e2e2",
+                      "on-error": "#690005",
+                      "surface-dim": "#131315",
+                      "on-secondary-container": "#b4b5b5",
+                      "text-primary": "#FAFAF9",
+                      "on-error-container": "#ffdad6",
+                      "surface-1": "#101012",
+                      "inverse-primary": "#7a5900",
+                      "info": "#0A84FF",
+                      "on-primary-fixed-variant": "#5c4300",
+                      "on-secondary-fixed-variant": "#454747",
+                      "surface-container-low": "#1c1b1d",
+                      "tertiary": "#abdeff",
+                      "inverse-on-surface": "#313032",
+                      "background": "#09090B", /* Forced to user's requested #09090B */
+                      "primary-fixed": "#ffdea1",
+                      "success": "#34C759",
+                      "surface-container": "#201f22",
+                      "primary-container": "#efb200",
+                      "surface-variant": "#353437",
+                      "surface-container-lowest": "#0e0e10",
+                      "surface-container-high": "#2a2a2c",
+                      "border-light": "rgba(255, 255, 255, 0.08)",
+                      "tertiary-container": "#57c7ff",
+                      "on-tertiary-container": "#005170"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "20px",
+                      "stack-lg": "24px",
+                      "section-gap": "32px",
+                      "stack-md": "16px",
+                      "base": "4px",
+                      "stack-sm": "8px",
+                      "safe-bottom": "env(safe-area-inset-bottom, 20px)"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Heebo"
+                      ],
+                      "display-lg": [
+                              "Heebo"
+                      ],
+                      "headline-md": [
+                              "Heebo"
+                      ],
+                      "headline-lg-mobile": [
+                              "Heebo"
+                      ],
+                      "headline-sm": [
+                              "Heebo"
+                      ],
+                      "label-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "body-lg": [
+                              "Heebo"
+                      ],
+                      "body-md": [
+                              "Heebo"
+                      ],
+                      "price-lg": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "display-lg": [
+                              "40px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "900"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "price-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "1",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        /* Subtle entrance animations */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .animate-fade-up {
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        .animate-scale-in {
+            animation: scaleIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        .delay-300 {
+            animation-delay: 300ms;
+        }
+
+        /* Glass background for action area */
+        .glass-gradient {
+            background: linear-gradient(to top, rgba(9, 9, 11, 1) 0%, rgba(9, 9, 11, 0.8) 50%, rgba(9, 9, 11, 0) 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-text-primary h-screen w-full overflow-hidden flex flex-col justify-between selection:bg-primary/30 antialiased">
+<!-- Background Image with Overlay -->
+<div class="absolute inset-0 z-0">
+<img alt="Barbershop Background" class="w-full h-full object-cover opacity-20 grayscale" data-alt="A moody, high-end urban barbershop interior. Dark shadows contrast with sharp, cinematic lighting highlighting premium leather chairs and metal grooming tools. The aesthetic is extremely minimal, dark-first, and sophisticated, reflecting a modern corporate luxury feel with subtle hints of gold accenting the deep black surroundings." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCx9EuK6s5hCe_MKNe-2lSNvd_EpML5FrTy7D-KQnsUW5JTOu1d5IfqCR5Ebxfbnsz_dMqTbvdWZiA-BKRZjfMWEqswKPdvfWCp4f_Xdr0Vg8-gh8zaS7HBxApTLk134KHSMFY24FE7TUroWEaAcEkSFBNmv6V0YNWMJcKmRgOyjsACILgul9nF-v1tmuR5ztIxxwidIWMIPOD0L_KqcOPbDYx9OBizIB0YAr7tu9GjqKBber5sZlooTSB497XJ8iKAtsUZ2bTU6asO"/>
+<div class="absolute inset-0 bg-background/80"></div>
+</div>
+<!-- Top Space -->
+<div class="flex-1"></div>
+<!-- Center Logo -->
+<main class="z-10 flex flex-col items-center justify-center animate-scale-in">
+<div class="relative flex flex-col items-center">
+<!-- Glow Effect -->
+<div class="absolute inset-0 rounded-full blur-[60px] bg-primary/20 scale-150"></div>
+<!-- Logo Mark -->
+<div class="w-32 h-32 rounded-full border border-primary flex items-center justify-center bg-background/50 backdrop-blur-sm relative drop-shadow-[0_0_15px_rgba(239,178,0,0.3)]">
+<span class="material-symbols-outlined text-primary text-[64px]" style="font-variation-settings: 'FILL' 1;">
+                    content_cut
+                </span>
+</div>
+<!-- Brand Name -->
+<h1 class="font-display-lg text-display-lg text-text-primary mt-stack-lg tracking-tight">
+                Tor
+            </h1>
+<p class="font-body-md text-body-md text-text-secondary mt-base text-center max-w-[280px]">
+                הזמנת תורים מהירה למספרות פרימיום
+            </p>
+</div>
+</main>
+<!-- Bottom Action Area -->
+<div class="z-10 w-full px-gutter pb-8 pt-20 glass-gradient animate-fade-up delay-300 flex flex-col items-center">
+<!-- High Emphasis White Button -->
+<button class="w-full max-w-md bg-text-primary text-background h-14 rounded-xl font-headline-sm text-headline-sm flex items-center justify-center gap-2 hover:bg-inverse-surface transition-all active:scale-[0.98]">
+            מתחילים
+            <span class="material-symbols-outlined text-background text-xl" style="font-variation-settings: 'FILL' 0;">
+                arrow_back
+            </span>
+</button>
+<p class="font-label-mono text-label-mono text-text-muted mt-stack-md">
+            v 1.0.0
+        </p>
+</div>
+</body></html>

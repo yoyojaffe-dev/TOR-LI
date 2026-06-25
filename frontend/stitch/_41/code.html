@@ -1,0 +1,281 @@
+<!DOCTYPE html><html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Barber Dashboard - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "success": "#34C759",
+                        "on-secondary-fixed-variant": "#454747",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "surface-container-highest": "#353437",
+                        "on-primary-fixed": "#261900",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "tertiary": "#abdeff",
+                        "tertiary-container": "#57c7ff",
+                        "on-surface-variant": "#d4c5ac",
+                        "error": "#ffb4ab",
+                        "primary-container": "#efb200",
+                        "surface-1": "#101012",
+                        "primary-fixed": "#ffdea1",
+                        "outline-variant": "#504533",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "surface-bright": "#39393b",
+                        "secondary-container": "#454747",
+                        "on-secondary": "#2f3131",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#7a5900",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "secondary": "#c6c6c7",
+                        "text-muted": "#71717A",
+                        "on-primary-container": "#624700",
+                        "on-background": "#e5e1e4",
+                        "surface-tint": "#fbbc18",
+                        "surface-4": "#202023",
+                        "on-tertiary-container": "#005170",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#313032",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "text-primary": "#FAFAF9",
+                        "outline": "#9c8f79",
+                        "info": "#0A84FF",
+                        "surface-container-lowest": "#0e0e10",
+                        "on-tertiary": "#00344a",
+                        "inverse-surface": "#e5e1e4",
+                        "primary-fixed-dim": "#fbbc18",
+                        "on-secondary-container": "#b4b5b5",
+                        "surface-dim": "#131315",
+                        "danger": "#FF453A",
+                        "text-secondary": "#A1A1AA",
+                        "on-error-container": "#ffdad6",
+                        "surface-variant": "#353437",
+                        "on-primary": "#402d00",
+                        "tertiary-fixed": "#c4e7ff",
+                        "surface-container": "#201f22",
+                        "surface-2": "#131214",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "background": "#131315",
+                        "secondary-fixed": "#e2e2e2",
+                        "surface-3": "#18171A",
+                        "on-tertiary-fixed": "#001e2c",
+                        "surface-container-low": "#1c1b1d",
+                        "surface-container-high": "#2a2a2c",
+                        "on-surface": "#e5e1e4",
+                        "primary": "#ffd174",
+                        "surface": "#131315"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "base": "4px",
+                        "section-gap": "32px",
+                        "stack-sm": "8px",
+                        "gutter": "20px",
+                        "stack-lg": "24px",
+                        "safe": "env(safe-area-inset-bottom)"
+                    },
+                    "fontFamily": {
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-sm": ["Heebo"],
+                        "body-md": ["Heebo"],
+                        "headline-lg-mobile": ["Heebo"],
+                        "display-lg": ["Heebo"],
+                        "headline-md": ["Heebo"],
+                        "headline-lg": ["Heebo"],
+                        "body-lg": ["Heebo"],
+                        "price-lg": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "label-mono": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "display-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }],
+                        "price-lg": ["24px", { "lineHeight": "1", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1;
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col items-center">
+<!-- Mobile Container (Max 430px) -->
+<main class="w-full max-w-[430px] min-h-screen bg-surface-1 shadow-2xl relative pb-[100px] flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-background flex flex-row-reverse justify-between items-center w-full px-5 py-4 docked full-width top-0 bg-background/80 backdrop-blur-xl sticky z-40" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+<div class="flex items-center gap-4 flex-row-reverse">
+<img alt="Avatar" class="w-10 h-10 rounded-full object-cover border border-border-light grayscale" data-alt="A close-up black and white portrait of a stylish urban barber. High contrast, sharp focus on the face, moody studio lighting. Sleek, premium aesthetic suitable for a modern digital platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1IvnK_g7bY2AJkIF-5dkyfLUQHoLE4GCU3q8q-EZI4k4l76zRWfMC7z0J-73HQKPynluzyl3UD7rGL4mXqifYu-7m_YCfvOm-t04eiCERQLXGKm6Wkm6HrTyAJDe-XZNzGPVFYe5cLTv8GecAvrvIaKSwq5qZkDc9VKUtGZ3Wp9q2Py78sOs14kOeKXPOvOI6GOYnllqoiTsV90HGd2i2u25t0jKbVqvlnwjLmgcOFOxs6URBuf7KgvCgx3gA11jcxIBGRjKJzXbz">
+<div class="flex flex-col text-right">
+<h1 class="text-headline-md font-headline-md font-extrabold text-primary">הגדרות</h1>
+<span class="text-label-mono font-label-mono text-text-muted">הסלון המעוצב</span>
+</div>
+</div>
+<button class="hover:opacity-80 transition-opacity text-on-surface-variant flex items-center justify-center w-10 h-10 rounded-full active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Content Area -->
+<div class="flex-1 px-5 py-6 flex flex-col gap-2">
+<!-- List Items -->
+<!-- פרטי העסק -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<span class="material-symbols-outlined text-2xl" data-icon="store">store</span>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">פרטי העסק</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">הסלון המעוצב</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-muted" data-icon="chevron_left">chevron_left</span>
+</button>
+<!-- תשלומים -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<span class="material-symbols-outlined text-2xl" data-icon="credit_card">credit_card</span>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">תשלומים</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">Apple Pay, כרטיס אשראי, Visa</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-muted" data-icon="chevron_left">chevron_left</span>
+</button>
+<!-- התראות -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<span class="material-symbols-outlined text-2xl" data-icon="notifications_active">notifications_active</span>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">התראות</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">הודעות, תזכורות</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-muted" data-icon="chevron_left">chevron_left</span>
+</button>
+<!-- חיבור אפליקציות -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<span class="material-symbols-outlined text-2xl" data-icon="apps">apps</span>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">חיבור אפליקציות</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">Tor, Google Calendar</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-muted" data-icon="chevron_left">chevron_left</span>
+</button>
+<!-- פרטיות ואבטחה -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<span class="material-symbols-outlined text-2xl" data-icon="lock">lock</span>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">פרטיות ואבטחה</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">סיסמה, גיבוי</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-muted" data-icon="chevron_left">chevron_left</span>
+</button>
+<!-- שפה -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<span class="material-symbols-outlined text-2xl" data-icon="language">language</span>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">שפה</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">עברית</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-muted" data-icon="chevron_left">chevron_left</span>
+</button>
+<!-- עיצוב -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<span class="material-symbols-outlined text-2xl" data-icon="palette">palette</span>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">עיצוב</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">כהה</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-muted" data-icon="chevron_left">chevron_left</span>
+</button>
+<!-- עזרה ותמיכה -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<span class="material-symbols-outlined text-2xl" data-icon="help">help</span>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">עזרה ותמיכה</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">מדריכים, קשר</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-muted" data-icon="chevron_left">chevron_left</span>
+</button>
+<div class="mt-8 text-center">
+<p class="text-label-mono font-label-mono text-text-muted text-sm opacity-50">Tor Dashboard v1.0</p>
+</div>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex flex-row-reverse justify-around items-center h-20 px-2 pb-safe bg-surface/70 backdrop-blur-2xl shadow-lg docked full-width rounded-t-xl md:hidden max-w-[430px] mx-auto right-0" style="border-top: 1px solid rgba(255,255,255,0.05);">
+<a class="flex flex-col items-center justify-center text-text-muted hover:text-primary/80 transition-colors w-16" href="{{DATA:SCREEN:SCREEN_20}}">
+<span class="material-symbols-outlined mb-1" data-icon="calendar_month">calendar_month</span>
+<span class="text-[10px] font-label-mono text-center">לוח שנה</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-muted hover:text-primary/80 transition-colors w-16" href="{{DATA:SCREEN:SCREEN_34}}">
+<span class="material-symbols-outlined mb-1" data-icon="equalizer">equalizer</span>
+<span class="text-[10px] font-label-mono text-center">סטטיסטיקות</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-muted hover:text-primary/80 transition-colors w-16" href="{{DATA:SCREEN:SCREEN_14}}">
+<span class="material-symbols-outlined mb-1" data-icon="group">group</span>
+<span class="text-[10px] font-label-mono text-center">עובדים</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-muted hover:text-primary/80 transition-colors w-16" href="{{DATA:SCREEN:SCREEN_21}}">
+<span class="material-symbols-outlined mb-1" data-icon="content_cut">content_cut</span>
+<span class="text-[10px] font-label-mono text-center">שירותים</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary-container hover:text-primary/80 transition-colors w-16 active:scale-90 duration-150" href="{{DATA:SCREEN:SCREEN_31}}">
+<span class="material-symbols-outlined mb-1" data-icon="settings" data-weight="fill">settings</span>
+<span class="text-[10px] font-label-mono text-center text-primary">הגדרות</span>
+</a>
+</nav>
+</main>
+
+
+</body></html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html><html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ניהול עובדים - Barber Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "success": "#34C759",
+                        "on-secondary-fixed-variant": "#454747",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "surface-container-highest": "#353437",
+                        "on-primary-fixed": "#261900",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "tertiary": "#abdeff",
+                        "tertiary-container": "#57c7ff",
+                        "on-surface-variant": "#d4c5ac",
+                        "error": "#ffb4ab",
+                        "primary-container": "#efb200",
+                        "surface-1": "#101012",
+                        "primary-fixed": "#ffdea1",
+                        "outline-variant": "#504533",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "surface-bright": "#39393b",
+                        "secondary-container": "#454747",
+                        "on-secondary": "#2f3131",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#7a5900",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "secondary": "#c6c6c7",
+                        "text-muted": "#71717A",
+                        "on-primary-container": "#624700",
+                        "on-background": "#e5e1e4",
+                        "surface-tint": "#fbbc18",
+                        "surface-4": "#202023",
+                        "on-tertiary-container": "#005170",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#313032",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "text-primary": "#FAFAF9",
+                        "outline": "#9c8f79",
+                        "info": "#0A84FF",
+                        "surface-container-lowest": "#0e0e10",
+                        "on-tertiary": "#00344a",
+                        "inverse-surface": "#e5e1e4",
+                        "primary-fixed-dim": "#fbbc18",
+                        "on-secondary-container": "#b4b5b5",
+                        "surface-dim": "#131315",
+                        "danger": "#FF453A",
+                        "text-secondary": "#A1A1AA",
+                        "on-error-container": "#ffdad6",
+                        "surface-variant": "#353437",
+                        "on-primary": "#402d00",
+                        "tertiary-fixed": "#c4e7ff",
+                        "surface-container": "#201f22",
+                        "surface-2": "#131214",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "background": "#131315",
+                        "secondary-fixed": "#e2e2e2",
+                        "surface-3": "#18171A",
+                        "on-tertiary-fixed": "#001e2c",
+                        "surface-container-low": "#1c1b1d",
+                        "surface-container-high": "#2a2a2c",
+                        "on-surface": "#e5e1e4",
+                        "primary": "#ffd174",
+                        "surface": "#131315"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "base": "4px",
+                        "section-gap": "32px",
+                        "stack-sm": "8px",
+                        "gutter": "20px",
+                        "stack-lg": "24px"
+                    },
+                    "fontFamily": {
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-sm": ["Heebo"],
+                        "body-md": ["Heebo"],
+                        "headline-lg-mobile": ["Heebo"],
+                        "display-lg": ["Heebo"],
+                        "headline-md": ["Heebo"],
+                        "headline-lg": ["Heebo"],
+                        "body-lg": ["Heebo"],
+                        "price-lg": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "label-mono": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "display-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }],
+                        "price-lg": ["24px", { "lineHeight": "1", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Glassmorphism utilities */
+        .glass-panel {
+            background: rgba(19, 18, 20, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        /* Gold glow utility */
+        .glow-active {
+            box-shadow: 0 0 15px rgba(239, 178, 0, 0.15);
+        }
+        
+        /* Safe area padding for mobile */
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        
+        /* Toggle Switch Custom Styling */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #ffd174;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #efb200;
+        }
+        .toggle-checkbox {
+            right: 0;
+            z-index: 1;
+            border-color: #e2e2e2;
+            transition: all 0.3s;
+        }
+        .toggle-label {
+            width: 3rem;
+            height: 1.5rem;
+            background-color: #353437;
+            border-radius: 9999px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .toggle-label::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 1.25rem;
+            height: 1.25rem;
+            background-color: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        .toggle-checkbox:checked + .toggle-label::after {
+            transform: translateX(-1.5rem);
+        }
+    </style>
+</head>
+<body class="bg-background text-text-primary font-body-md min-h-screen flex flex-col mx-auto max-w-[430px] relative overflow-x-hidden selection:bg-primary/30">
+<!-- TopAppBar -->
+<header class="bg-background/80 backdrop-blur-xl border-b border-white/5 flex flex-row-reverse justify-between items-center w-full px-5 py-4 docked full-width top-0 sticky z-40">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-border-light">
+<img alt="Barber Shop Owner Avatar" class="w-full h-full object-cover grayscale" data-alt="A striking digital portrait of a modern barbershop owner. The lighting is dramatic, high-contrast black and white, highlighting facial features and creating a moody, premium aesthetic. The background is a stark, pitch black to draw focus entirely to the subject, embodying a sleek, urban corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXjJgb1DfqyFT_EsT-drzyM3LikFGWj1FUhfca9L9C9vN9yERXbiQ1a0HdLRYdB6az5IwR4rNi_cyfuAtdbseuLcVQqaM9OJaIO6vxGFHYxKPTJdJ33JITyI-2Wmu-v06p98EggtgKRVWkwb44PQ7XK2TVXlmOcIhsMzhQw3hzpQgOFTM92k0CYeRQn9GcqQoQOvn8wZ6mPnRHhPCu9oHRnhnpr4n8D84SNpiOZvEKPemT7Pa0k745m4PzLEiXXVOQsodxxTw9TDJO">
+</div>
+<h1 class="text-headline-md font-headline-md font-extrabold text-primary dark:text-primary-fixed">ניהול מספרה</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors text-primary dark:text-primary-fixed hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-gutter pt-section-gap pb-[100px] flex flex-col gap-stack-lg">
+<!-- Header / Title area -->
+<div class="flex flex-col gap-stack-sm text-center">
+<h2 class="text-headline-lg-mobile font-headline-lg-mobile text-text-primary">ניהול עובדים</h2>
+<p class="text-body-md font-body-md text-text-muted">נהל את הצוות, הרשאות וזמינות</p>
+</div>
+<!-- Staff List Container (Surface 1 / Glass Panel) -->
+<div class="bg-surface-1 border border-border-light rounded-xl overflow-hidden flex flex-col">
+<!-- Staff Row 1: יוסי כהן (Active) -->
+<div class="p-4 border-b border-border-light flex items-center justify-between hover:bg-white/5 transition-colors group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary relative glow-active">
+<img alt="Yossi Cohen Avatar" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" data-alt="A striking digital portrait of a male barber. The lighting is dramatic, high-contrast black and white, highlighting facial features and creating a moody, premium aesthetic. The background is a stark, pitch black to draw focus entirely to the subject, embodying a sleek, urban corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkZ3BlRZOMjZgFNYf52ongpWs7-EnHnVDDHeX3BvFWqFBFfW3U8LcUc_bqVChZ564LobOUYyPRtdbaw_bcrLw3Ya-iGrUY3yOBD2x8ejQYmIhOYXauPZWBSficcXaUJET-ASs4guLMwaz_2sK9kODXphGlDJV5zcs6SuhLZxvSmlmmIHx3jM0wOJl7rVslxGWY6Xzf7Pz-3sR868wlg9kFEu7Mqy_pu4o5PVVyVCyJQdTVX6RAEi7uUXPc5oFv2tivUq59DOhG0Np6">
+</div>
+<div>
+<h3 class="text-body-lg font-body-lg text-text-primary">יוסי כהן</h3>
+<p class="text-label-mono font-label-mono text-text-muted">ראשי</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="relative inline-block w-12 mr-2 align-middle select-none">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="toggle1" name="toggle1" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer" for="toggle1"></label>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-primary hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-error hover:bg-error/10 hover:border-error/30 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Staff Row 2: שי פינטו (Active) -->
+<div class="p-4 border-b border-border-light flex items-center justify-between hover:bg-white/5 transition-colors group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary relative glow-active">
+<img alt="Shay Pinto Avatar" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" data-alt="A striking digital portrait of a male barber. The lighting is dramatic, high-contrast black and white, highlighting facial features and creating a moody, premium aesthetic. The background is a stark, pitch black to draw focus entirely to the subject, embodying a sleek, urban corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0tKvnApJRzLQSxA6YilsUuI9w0ki36R4oHsFXvw4GBA2tRXKenZE3Qhsgw7zUKilSiWrUI7r1tDZAok5JV7r8_8Z57S_qBVa0nQCNk9ADyKfr_m_-rHGsLX9AOXKNEB4UInd2VWxbA5SBEmlPugwcmWwsq1tGnP1p1ouzL9qj8f7qb4hV92KYv_35ADlJ_55EM4IOr2Uz9jvdP0BtRDokiD_30CfQuOIdB7l_1Ffzk9n8Fq_mCy_W-YNRLOJHUUBcw_NWkkjfgyg-">
+</div>
+<div>
+<h3 class="text-body-lg font-body-lg text-text-primary">שי פינטו</h3>
+<p class="text-label-mono font-label-mono text-text-muted">ספר בכיר</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="relative inline-block w-12 mr-2 align-middle select-none">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="toggle2" name="toggle2" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer" for="toggle2"></label>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-primary hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-error hover:bg-error/10 hover:border-error/30 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Staff Row 3: אורי בן נס (Active) -->
+<div class="p-4 border-b border-border-light flex items-center justify-between hover:bg-white/5 transition-colors group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary relative glow-active">
+<img alt="Uri Ben Ness Avatar" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" data-alt="A striking digital portrait of a male barber. The lighting is dramatic, high-contrast black and white, highlighting facial features and creating a moody, premium aesthetic. The background is a stark, pitch black to draw focus entirely to the subject, embodying a sleek, urban corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnZXFGLighDUHb4fSFfGEhYJRX4WH57qNNcBjY6HdRRIymCbGPI8d5bSXC7gXBE9k9Lc2rFN75iX75a-SiM08RvuKj9rFeYwpfEkc7Ivw_xh5vj7aPvDI3YqJmbNX5rtO4xhIuJPYrb2kjlid1BPP85FA5qA_fqHIWNrbhqssiRSmCgE014SJQIEVb_IU6xptUJXYAnM1NZCO3a81Q1OalpkrRLrM0fCzr1Kb520by9m7YVvdQTiNA6c7nCTjGsqIAIfk_mHvRo039">
+</div>
+<div>
+<h3 class="text-body-lg font-body-lg text-text-primary">אורי בן נס</h3>
+<p class="text-label-mono font-label-mono text-text-muted">ספר</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="relative inline-block w-12 mr-2 align-middle select-none">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="toggle3" name="toggle3" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer" for="toggle3"></label>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-primary hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-error hover:bg-error/10 hover:border-error/30 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Staff Row 4: אור פריינטה (Active) -->
+<div class="p-4 border-b border-border-light flex items-center justify-between hover:bg-white/5 transition-colors group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary relative glow-active">
+<img alt="Or Frienta Avatar" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" data-alt="A striking digital portrait of a male barber. The lighting is dramatic, high-contrast black and white, highlighting facial features and creating a moody, premium aesthetic. The background is a stark, pitch black to draw focus entirely to the subject, embodying a sleek, urban corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuARXPKaTUel8PPTRDXms94XpcQjuHrVJ_Yc0BGZ5N3sIaCiquVgBHDc0SZLlBjO1x5TgtzmJ-DygyNrEgRKosps-089q7t4Hg2tZ8Lo_dRzLDWdAT9YGnZI7QNa3V78YLnJyysV1jeULob_KKpcaJ5urVnvCxGj2QhLtuvMCechYi5bfFecgckxAijflIcCkENeXTurgbgb8uxUjShZYVpwh6ga93SYDXzAMJss3qe-wGr4rZfrtD6jxldBWdNSte9N7IJ6EosmdM59">
+</div>
+<div>
+<h3 class="text-body-lg font-body-lg text-text-primary">אור פריינטה</h3>
+<p class="text-label-mono font-label-mono text-text-muted">ספר</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="relative inline-block w-12 mr-2 align-middle select-none">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="toggle4" name="toggle4" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer" for="toggle4"></label>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-primary hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-error hover:bg-error/10 hover:border-error/30 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Staff Row 5: רביד (Inactive) -->
+<div class="p-4 border-b border-border-light flex items-center justify-between hover:bg-white/5 transition-colors group opacity-60 hover:opacity-100">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-border-light relative">
+<img alt="Ravid Avatar" class="w-full h-full object-cover grayscale" data-alt="A striking digital portrait of a male barber. The lighting is dramatic, high-contrast black and white, highlighting facial features and creating a moody, premium aesthetic. The background is a stark, pitch black to draw focus entirely to the subject, embodying a sleek, urban corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHhShXZ6-DafWy_sxoV1NWBT-sA9rt5MT2DnNa9X3SUjvArJEcM6ngsV_HgaFIK6eMBjW-5pDGYaGJ6q3VMOJ_mIxzN7jL4GV5p3zxVP6LFTHhvFcCHXT9q1St2EKSISDcInEYI4oGKp5N2YjwNTz2pl5RxXQ4siaqKBfsXjJdCBmFwyfyfLUUw3N1PPstOLonrTkN0pSXY1nAI3c4jNOBX3insH_qv0hJYCEPyueg2i6-fbwIqedb3HT-DfTP--3HAyfdPFltLAhx">
+</div>
+<div>
+<h3 class="text-body-lg font-body-lg text-text-muted">רביד</h3>
+<p class="text-label-mono font-label-mono text-text-muted/70">ספר זמני</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="relative inline-block w-12 mr-2 align-middle select-none">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="toggle5" name="toggle5" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer" for="toggle5"></label>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-primary hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-error hover:bg-error/10 hover:border-error/30 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Staff Row 6: עידן גולדשטיין (Active) -->
+<div class="p-4 flex items-center justify-between hover:bg-white/5 transition-colors group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary relative glow-active bg-surface-3 flex items-center justify-center">
+<span class="material-symbols-outlined text-text-muted text-[24px]">person</span>
+</div>
+<div>
+<h3 class="text-body-lg font-body-lg text-text-primary">עידן גולדשטיין</h3>
+<p class="text-label-mono font-label-mono text-text-muted">מתמחה</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="relative inline-block w-12 mr-2 align-middle select-none">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" id="toggle6" name="toggle6" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer" for="toggle6"></label>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-primary hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-error hover:bg-error/10 hover:border-error/30 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (Add Staff) -->
+<button class="fixed bottom-28 left-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center glow-active hover:scale-105 active:scale-95 transition-all z-40">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'wght' 600;">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="bg-surface/70 dark:bg-surface/70 backdrop-blur-2xl border-t border-border-light docked full-width bottom-0 rounded-t-xl shadow-lg fixed bottom-0 left-0 w-full z-50 flex flex-row-reverse justify-around items-center h-20 px-2 pb-safe md:hidden text-primary-fixed-dim dark:text-primary-fixed-dim text-label-mono font-label-mono text-primary hover:text-primary/80 transition-colors">
+<!-- Calendar (Inactive) -->
+<a class="flex flex-col items-center justify-center text-text-muted dark:text-text-muted flex-1 py-2 hover:text-primary/80 transition-colors" href="{{DATA:SCREEN:SCREEN_20}}">
+<span class="material-symbols-outlined mb-1">calendar_month</span>
+<span class="text-[10px] leading-none mt-1">לוח שנה</span>
+</a>
+<!-- Statistics (Inactive) -->
+<a class="flex flex-col items-center justify-center text-text-muted dark:text-text-muted flex-1 py-2 hover:text-primary/80 transition-colors" href="{{DATA:SCREEN:SCREEN_34}}">
+<span class="material-symbols-outlined mb-1">equalizer</span>
+<span class="text-[10px] leading-none mt-1">סטטיסטיקות</span>
+</a>
+<!-- Employees (Active) -->
+<a class="flex flex-col items-center justify-center text-primary-container dark:text-primary-container flex-1 py-2 hover:text-primary/80 transition-colors active:scale-90 duration-150" href="{{DATA:SCREEN:SCREEN_14}}">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="text-[10px] leading-none mt-1 font-bold">עובדים</span>
+</a>
+<!-- Services (Inactive) -->
+<a class="flex flex-col items-center justify-center text-text-muted dark:text-text-muted flex-1 py-2 hover:text-primary/80 transition-colors" href="{{DATA:SCREEN:SCREEN_21}}">
+<span class="material-symbols-outlined mb-1">content_cut</span>
+<span class="text-[10px] leading-none mt-1">שירותים</span>
+</a>
+<!-- Settings (Inactive) -->
+<a class="flex flex-col items-center justify-center text-text-muted dark:text-text-muted flex-1 py-2 hover:text-primary/80 transition-colors" href="{{DATA:SCREEN:SCREEN_31}}">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span class="text-[10px] leading-none mt-1">הגדרות</span>
+</a>
+</nav>
+
+
+</body></html>

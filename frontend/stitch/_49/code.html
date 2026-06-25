@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Booking Success</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#1c1b1d",
+                        "surface-container": "#201f22",
+                        "on-surface": "#e5e1e4",
+                        "surface-variant": "#353437",
+                        "outline": "#9c8f79",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "on-secondary-container": "#b4b5b5",
+                        "inverse-primary": "#7a5900",
+                        "tertiary": "#abdeff",
+                        "secondary": "#c6c6c7",
+                        "surface-dim": "#131315",
+                        "error-container": "#93000a",
+                        "danger": "#FF453A",
+                        "surface": "#131315",
+                        "on-error-container": "#ffdad6",
+                        "primary": "#ffd174",
+                        "success": "#34C759",
+                        "primary-fixed": "#ffdea1",
+                        "surface-3": "#18171A",
+                        "info": "#0A84FF",
+                        "text-secondary": "#A1A1AA",
+                        "on-tertiary-container": "#005170",
+                        "on-primary-fixed": "#261900",
+                        "inverse-on-surface": "#313032",
+                        "surface-bright": "#39393b",
+                        "secondary-fixed": "#e2e2e2",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "surface-tint": "#fbbc18",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "surface-container-highest": "#353437",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "on-surface-variant": "#d4c5ac",
+                        "on-primary": "#402d00",
+                        "error": "#ffb4ab",
+                        "surface-1": "#101012",
+                        "on-background": "#e5e1e4",
+                        "inverse-surface": "#e5e1e4",
+                        "primary-fixed-dim": "#fbbc18",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "tertiary-fixed": "#c4e7ff",
+                        "on-tertiary": "#00344a",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "on-tertiary-fixed": "#001e2c",
+                        "text-primary": "#FAFAF9",
+                        "on-secondary-fixed-variant": "#454747",
+                        "secondary-container": "#454747",
+                        "surface-2": "#131214",
+                        "background": "#131315",
+                        "surface-container-lowest": "#0e0e10",
+                        "surface-container-high": "#2a2a2c",
+                        "outline-variant": "#504533",
+                        "surface-4": "#202023",
+                        "on-primary-container": "#624700",
+                        "tertiary-container": "#57c7ff",
+                        "on-secondary": "#2f3131",
+                        "text-muted": "#71717A",
+                        "primary-container": "#efb200"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "stack-lg": "24px",
+                        "section-gap": "32px",
+                        "stack-md": "16px",
+                        "gutter": "20px",
+                        "stack-sm": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Heebo"],
+                        "headline-lg": ["Heebo"],
+                        "body-lg": ["Heebo"],
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-sm": ["Heebo"],
+                        "display-lg": ["Heebo"],
+                        "price-lg": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Heebo"],
+                        "body-md": ["Heebo"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }],
+                        "label-mono": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "display-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "price-lg": ["24px", { "lineHeight": "1", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #131315; /* Fallback for tailwind config loading */
+        }
+        /* Custom animation for the success glow */
+        @keyframes subtle-pulse {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+        .animate-subtle-pulse {
+            animation: subtle-pulse 3s infinite ease-in-out;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-text-primary min-h-screen flex justify-center items-center font-body-md overflow-x-hidden">
+<!-- Mobile Device Container -->
+<main class="w-full max-w-[430px] h-[884px] flex flex-col relative px-gutter py-section-gap overflow-y-auto hide-scrollbar">
+<!-- Top Spacer -->
+<div class="mt-8 flex-shrink-0"></div>
+<!-- Success Icon Section -->
+<div class="flex justify-center items-center w-full mb-stack-lg relative">
+<!-- Glow background -->
+<div class="absolute w-32 h-32 bg-primary/20 rounded-full blur-2xl animate-subtle-pulse"></div>
+<!-- Icon container -->
+<div class="w-24 h-24 rounded-full bg-surface-1 border border-primary/30 flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(239,178,0,0.15)]">
+<span class="material-symbols-outlined text-[56px] text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<!-- Headline & Subtitle -->
+<div class="text-center mb-section-gap flex flex-col items-center">
+<h1 class="font-display-lg text-display-lg text-text-primary mb-stack-sm tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/80">שריינת!</h1>
+<p class="font-body-lg text-body-lg text-text-secondary max-w-[80%]">נתראה אצל רון ברק ב-14:30</p>
+</div>
+<!-- Summary Card -->
+<!-- Next-Up Card Style: 1px gold border, surface-1 fill, gold-glow drop shadow -->
+<div class="bg-surface-1 rounded-xl p-stack-lg border border-primary/30 shadow-[0_8px_32px_rgba(239,178,0,0.1)] relative overflow-hidden flex-shrink-0">
+<!-- Subtle internal gradient to highlight the top -->
+<div class="absolute inset-0 bg-gradient-to-b from-primary/[0.03] to-transparent pointer-events-none"></div>
+<div class="flex flex-col gap-stack-md relative z-10">
+<!-- Service Detail -->
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center text-primary shrink-0 border border-border-light">
+<span class="material-symbols-outlined">content_cut</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mono text-label-mono text-text-secondary mb-1">שירות</span>
+<span class="font-headline-sm text-headline-sm-mobile text-text-primary">תספורת + זקן</span>
+</div>
+</div>
+<div class="h-[1px] w-full bg-border-light my-1"></div>
+<!-- Date Detail -->
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center text-primary shrink-0 border border-border-light">
+<span class="material-symbols-outlined">calendar_today</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mono text-label-mono text-text-secondary mb-1">תאריך</span>
+<span class="font-headline-sm text-headline-sm-mobile text-text-primary">12 במאי 2026</span>
+</div>
+</div>
+<div class="h-[1px] w-full bg-border-light my-1"></div>
+<!-- Time Detail -->
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center text-primary shrink-0 border border-border-light">
+<span class="material-symbols-outlined">schedule</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mono text-label-mono text-text-secondary mb-1">שעה</span>
+<span class="font-headline-sm text-headline-sm-mobile text-text-primary text-primary">14:30</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Flexible spacer to push button to bottom -->
+<div class="flex-grow min-h-[32px]"></div>
+<!-- Bottom CTA Button -->
+<div class="w-full mt-auto pb-4 pt-2 bg-background/80 backdrop-blur-md sticky bottom-0 z-20">
+<button class="w-full bg-text-primary text-background py-4 rounded-xl font-headline-sm text-headline-sm-mobile text-center transition-all duration-200 hover:bg-white/90 active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg">
+<span>חזרה לדף הבית</span>
+</button>
+</div>
+</main>
+</body></html>

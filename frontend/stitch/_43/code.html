@@ -1,0 +1,356 @@
+<!DOCTYPE html><html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Tor - Barber Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-container": "#efb200",
+                      "on-tertiary-container": "#005170",
+                      "tertiary-fixed-dim": "#7cd0ff",
+                      "surface-variant": "#353437",
+                      "on-background": "#e5e1e4",
+                      "background": "#131315",
+                      "surface-1": "#101012",
+                      "text-primary": "#FAFAF9",
+                      "outline-variant": "#504533",
+                      "on-error-container": "#ffdad6",
+                      "secondary-container": "#454747",
+                      "inverse-on-surface": "#313032",
+                      "surface-container-high": "#2a2a2c",
+                      "success": "#34C759",
+                      "on-primary-fixed": "#261900",
+                      "surface-container": "#201f22",
+                      "text-secondary": "#A1A1AA",
+                      "surface-3": "#18171A",
+                      "primary": "#ffd174",
+                      "info": "#0A84FF",
+                      "surface-2": "#131214",
+                      "inverse-surface": "#e5e1e4",
+                      "error": "#ffb4ab",
+                      "primary-fixed-dim": "#fbbc18",
+                      "on-secondary-container": "#b4b5b5",
+                      "on-surface": "#e5e1e4",
+                      "on-primary-container": "#624700",
+                      "gold-glow": "rgba(239, 178, 0, 0.15)",
+                      "surface-tint": "#fbbc18",
+                      "primary-fixed": "#ffdea1",
+                      "text-muted": "#71717A",
+                      "tertiary-container": "#57c7ff",
+                      "on-tertiary-fixed-variant": "#004c69",
+                      "error-container": "#93000a",
+                      "danger": "#FF453A",
+                      "surface-container-highest": "#353437",
+                      "on-secondary-fixed": "#1a1c1c",
+                      "secondary-fixed-dim": "#c6c6c7",
+                      "surface": "#131315",
+                      "on-secondary": "#2f3131",
+                      "surface-container-low": "#1c1b1d",
+                      "secondary": "#c6c6c7",
+                      "tertiary": "#abdeff",
+                      "on-tertiary-fixed": "#001e2c",
+                      "on-error": "#690005",
+                      "on-surface-variant": "#d4c5ac",
+                      "surface-4": "#202023",
+                      "on-secondary-fixed-variant": "#454747",
+                      "on-primary": "#402d00",
+                      "secondary-fixed": "#e2e2e2",
+                      "surface-container-lowest": "#0e0e10",
+                      "inverse-primary": "#7a5900",
+                      "surface-bright": "#39393b",
+                      "on-primary-fixed-variant": "#5c4300",
+                      "outline": "#9c8f79",
+                      "border-light": "rgba(255, 255, 255, 0.08)",
+                      "surface-dim": "#131315",
+                      "on-tertiary": "#00344a",
+                      "tertiary-fixed": "#c4e7ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "stack-sm": "8px",
+                      "stack-md": "16px",
+                      "stack-lg": "24px",
+                      "section-gap": "32px",
+                      "gutter": "20px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": [
+                              "Heebo"
+                      ],
+                      "display-lg": [
+                              "Heebo"
+                      ],
+                      "headline-md": [
+                              "Heebo"
+                      ],
+                      "body-lg": [
+                              "Heebo"
+                      ],
+                      "headline-sm": [
+                              "Heebo"
+                      ],
+                      "body-md": [
+                              "Heebo"
+                      ],
+                      "price-lg": [
+                              "JetBrains Mono"
+                      ],
+                      "label-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-lg": [
+                              "Heebo"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "display-lg": [
+                              "40px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "900"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "price-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "1",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "800"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        /* Custom scrollbar to match dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #131315;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #353437;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #454747;
+        }
+        .hero-gradient {
+            background: linear-gradient(to bottom, rgba(19, 19, 21, 0.2) 0%, #131315 100%);
+        }
+    </style>
+</head>
+<body class="bg-background text-text-primary min-h-screen pb-[100px] md:pb-0 overflow-x-hidden">
+<!-- Top Navigation (Mobile Floating Actions) -->
+<div class="fixed top-0 left-0 right-0 z-40 p-gutter flex justify-between items-center md:hidden pointer-events-none">
+<button class="w-10 h-10 rounded-full bg-surface-1/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-text-primary pointer-events-auto hover:bg-surface-2 transition-colors" onclick="window.location.href='{{DATA:SCREEN:SCREEN_18}}'">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_forward</span>
+</button>
+<div class="flex gap-2 pointer-events-auto">
+<button class="w-10 h-10 rounded-full bg-surface-1/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-text-primary hover:bg-surface-2 transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">favorite</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-surface-1/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-text-primary hover:bg-surface-2 transition-colors" onclick="toggleShareSheet()">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">share</span>
+</button>
+</div>
+</div>
+<!-- Main Content Area -->
+<main class="max-w-screen-md mx-auto relative">
+<!-- Hero Section -->
+<section class="relative w-full h-[300px] md:h-[400px]">
+<img alt="Barbershop Interior" class="w-full h-full object-cover" data-alt="A cinematic, wide-angle shot of a high-end, modern barbershop interior. The walls are exposed red brick, warmly lit by vintage-style filament bulbs hanging from the ceiling. Multiple premium black leather barber chairs line the room in front of large mirrors. The mood is sophisticated, moody, and masculine, fitting a dark-first UI aesthetic with gold lighting accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHO-EgzN2d2ji69_kypxiXiW6VoVfyg96dMiw6f3mcIaA6vMdO3soTeV_atnFcOWYsCxZQN3gpRGGSMhcBq06y5tpiwmEVRzVbWlab8ikzpDRgWqiF5F4NM2puv5yEDPuJYi_6oC4OQgy_h8Ivbg37sWZ7mjHLCF1-OLF1PyG4T8xopl04ThdAXq7Cd0v6uLTuIZwr8-1Nq--Sk8OrV4hPHrfSjaMiCydn5NwciZO_MPKHbsGBFr29qvWcHxM4B1DYZb7X9jFz8LKB">
+<div class="absolute inset-0 hero-gradient"></div>
+<!-- Avatar Overlay -->
+<div class="absolute bottom-0 right-gutter translate-y-1/2">
+<div class="relative w-24 h-24 md:w-32 md:h-32 rounded-full border-2 border-primary overflow-hidden shadow-[0_0_15px_rgba(239,178,0,0.15)] bg-surface-2">
+<img alt="Ron Barak" class="w-full h-full object-cover grayscale" data-alt="A striking black and white portrait of a modern, stylish barber. The man has a well-groomed beard and is looking confidently into the camera. The lighting is dramatic, highlighting his features against a dark background, perfectly matching a premium, moody aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAKONXkXrLickSmPI7w_m5u5G5cXYvg8Rri5bZYE4y7QluE_6oNFV6hkZevmyBJCGDEex7BPSc-Sw85m_e0WyGB49uFzDoa8HE07lKsjk-6-58OBPhBq_AiqlI5p1x59fjJJu0tUYOqYwNdn7_pE_CEsI1FBIak5taLXnuLQvTcCoshySih39s9eJJ6SW0lrY_eupy2QBpky8UroPRonZcOt4zx2_4P2mA6Yn4NnIDosmvFzppy4u4diaHZmdP90Rpq0PVkXMbSh7f">
+</div>
+</div>
+</section>
+<!-- Profile Info Section -->
+<section class="px-gutter pt-16 md:pt-20 pb-stack-lg">
+<div class="flex flex-col gap-stack-sm">
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-text-primary">רון ברק</h1>
+<p class="font-body-md text-body-md text-text-secondary">Gentlemen's Club</p>
+<div class="flex items-center gap-stack-md mt-stack-sm">
+<div class="flex items-center gap-1 text-text-secondary">
+<span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-mono text-label-mono text-text-primary">4.9</span>
+<span class="font-body-md text-body-md text-text-muted">(312 חוות דעת)</span>
+</div>
+<div class="w-1 h-1 rounded-full bg-surface-variant"></div>
+<div class="flex items-center gap-1 text-text-secondary">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<span class="font-body-md text-body-md">104 מ'</span>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex gap-stack-sm mt-stack-lg">
+<button class="flex-1 h-12 rounded-lg bg-surface-2 border border-border-light flex items-center justify-center gap-2 hover:bg-surface-3 transition-colors">
+<span class="material-symbols-outlined text-[20px]">call</span>
+<span class="font-body-md text-body-md font-medium">התקשר</span>
+</button>
+<button class="flex-1 h-12 rounded-lg bg-surface-2 border border-border-light flex items-center justify-center gap-2 hover:bg-surface-3 transition-colors">
+<svg class="w-5 h-5 text-text-primary" fill="currentColor" viewBox="0 0 24 24">
+<path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"></path>
+</svg>
+<span class="font-body-md text-body-md font-medium">אינסטגרם</span>
+</button>
+</div>
+</section>
+<!-- Tabs -->
+<div class="border-b border-border-light sticky top-0 md:top-16 bg-background/90 backdrop-blur-xl z-30">
+<div class="flex px-gutter">
+<button class="flex-1 py-4 text-center font-body-md text-body-md font-bold text-primary border-b-2 border-primary">
+                    תיק עבודות
+                </button>
+<button class="flex-1 py-4 text-center font-body-md text-body-md text-text-secondary hover:text-text-primary transition-colors">
+                    חוות דעת
+                </button>
+<button class="flex-1 py-4 text-center font-body-md text-body-md text-text-secondary hover:text-text-primary transition-colors" onclick="window.location.href='{{DATA:SCREEN:SCREEN_16}}'">
+                    שירותים
+                </button>
+</div>
+</div>
+<!-- Portfolio Grid (Active Tab Content) -->
+<section class="p-gutter grid grid-cols-3 gap-1 md:gap-2 pb-stack-lg">
+<!-- Grid Items -->
+<div class="aspect-square bg-surface-2 rounded-sm overflow-hidden relative group cursor-pointer">
+<img alt="Haircut 1" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Close up shot of a precise, sharp fade haircut on a male model. The hair is textured on top with perfectly blended sides. The lighting emphasizes the crisp lines of the haircut, fitting a premium, edgy barbershop aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuByegsxXZrKHrH201mruPIXlJovaJfUKmVnjCQk0NKZaFjIj-Hes3NkcPpbG5w9l_vVbS-auXCo9FUr36afzHIXo4Ui2pQis4XhZ_MPwBLG_Uo6KCxVujI1CgqiJYcTLDlZFpzmTrY_lH42_vVUAk49hCC9Y9UiJSC9U8uIWkGJY1lx8ypzIaSa0x7LbXl_QQw7kTRywwdVCEcgX225uLhg8p4roTwvLPBYZudLoprYIqly59mxnAslAHZkOpA8lg_FajpHdnKhYHvb">
+</div>
+<div class="aspect-square bg-surface-2 rounded-sm overflow-hidden relative group cursor-pointer">
+<img alt="Haircut 2" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A stylish man with a well-groomed, structured beard and a slicked-back modern pompadour hairstyle. Shot from a slightly low angle with dramatic, moody lighting to highlight the grooming details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbZcdJYkgAGwOdBZz2yP3cDf53jxzpxrlU6pRtiiTJiTD2fejQutUBf04VZnyzPHdFcJl3_xiW73vxGxzm41cOeJPtjz0GSGRQhGjF9L3WgFhJmrWWTXc1HX9svzLIA1kUvBvx-507Rb7HeJaA6tIxTl5KQWTc92k6qm3ldo1rl-V5RJFBDZCIzvjqHfWgdzPiKEthVgsdT9KB--itPU6wY0ReouO8XtEH0t-lX2Hn0SvrpO-m9FozCjOmYxdgguppvvgXRlVyni6h">
+</div>
+<div class="aspect-square bg-surface-2 rounded-sm overflow-hidden relative group cursor-pointer">
+<img alt="Haircut 3" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Close up detail of a barber's hands using a straight razor to line up a client's beard. The shot is high contrast, focusing on the precision of the tool and the sharp line being created." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIoJLe-Ktvnv8R1elezeJ22bdT6wAE0K_UNvhndKX3os75BySOB8dmt51FlOC43L8n9kz4pQQFbVkn_NNFfaOA_SgHedMvk_b2I1S1EIcbJZHVEWMRLD2i84jFjOjX3ztNzF0daJBkSyhUSdxDG8Di4yDjMv5w2G5yrJCYsFdO50p0U4zNmfiH5tLQAeMCOlGxEApEyI0ofZ4wXR02RtkIiEpX-L8VVShqX19qMVdGZF_dJfzYU7d8xtLVMizAtQCDQqQxsowvzAtr">
+</div>
+<div class="aspect-square bg-surface-2 rounded-sm overflow-hidden relative group cursor-pointer">
+<img alt="Haircut 4" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A classic buzz cut with a surgical line design shaved into the side. The image is stark and modern, showcasing clean, geometric precision in men's hairstyling." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCO8Mdz4ODjPCfmrlK3edRbQQDbe0EAyuU5Am4VyC5IwDVAXbZXegGuf_SWnCfmzzCwj4uxjWMJfJZekw8IqFfpEtaEJOX2_-cAkCVsYfjQeY4gNprDYweJ6UXnwGKcEyTizdZ2YVPBTDz8Bss-UpYuADAN2yefMCJeFEXJBbH0tMTAAIHp4TW_k_Z9eaBJPgQ8bkr0oqrriDrBr4bcnxvjpMIJW1O5bs4ksO2wIxSnEypZ7itrl1Ot5TNTEBQ0s9SZFWVr2pC3swLW">
+</div>
+<div class="aspect-square bg-surface-2 rounded-sm overflow-hidden relative group cursor-pointer">
+<img alt="Haircut 5" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A textured crop hairstyle with a high skin fade. The top is styled with matte clay for a messy yet controlled look. Dark background with side lighting to emphasize texture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvDpKpkT4JSHeA3K7knrmMXqg8k1Ld0bwGZPokTvE9Hai71ZdcaJQGeTItLr_IkE0n16aHV4tIxPMVe0KF_LononSDrJNDz2fWPjflxkkToaMJOTFFEIhvrbUtIi1xgKyYu69ZHgwTGiZrbxAeXfLiJ2wUS21zI9NWhJPehuveQhqzu8qN4tJmONY0OugwH3EUm2GnzUQhelpyYYHruYapD3c373L_WFXORyoZ1tVgjUOW4Ny727RDcP_MpO36TLJUvRWC4AjIP46I">
+</div>
+<div class="aspect-square bg-surface-2 rounded-sm overflow-hidden relative group cursor-pointer">
+<img alt="Haircut 6" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A profile shot of a man with a long, thick, but neatly sculpted beard. The lighting is moody, highlighting the richness and shape of the facial hair against a pure black background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPyK0oqE-0As5MHRnvMyMDI7Tdj6hxHfI-BISCYl_y96N8Emgg3uptew0ednsn8zT9sLclHGK06Wwno4Ut1yE5iVjD3vAFl2P4BhHQgFCpzcLpa8OILp4htalnc6k89x7zAsQIH_3w_VoWhGGcFrBNMn2sVmvVK5hTDpfSzg39Fct2VNF07lf1RikIC0NnJ2xnhoSJXewN70PN-7k2ch-Op31beXSKc1XLvp_bojpJmMIuysvSwYEIG9dDf20zd9MVuA8GCwaseo-K">
+</div>
+<div class="aspect-square bg-surface-2 rounded-sm overflow-hidden relative group cursor-pointer">
+<img alt="Haircut 7" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Close up shot of a precise, sharp fade haircut on a male model. The hair is textured on top with perfectly blended sides. The lighting emphasizes the crisp lines of the haircut, fitting a premium, edgy barbershop aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaWel5zPxrYrUR9XV5vhpNbeokgW0VIP04lWWTaDX6r77sbmPv9nNqlks50rSBLs1MfRJl8jO9C1HyG7OcLjaXGJ2LzrNVjZxBz0OTwWelc-j-nacl60h33IWIVl4FEW-PYTw6dksvzMzS6M_0KkVuRdnZ3lO4V71hnRVGsVkC-JZq6P51rSkIUuMA3WdxNLTVhSWeJYNB-GClkXe0QEa43nf1Cy2ZWlzFbOQWi0Z4NR39NYKOyZtJJyJCpiVdJuBCI68ss0FLkvRM">
+</div>
+<div class="aspect-square bg-surface-2 rounded-sm overflow-hidden relative group cursor-pointer">
+<img alt="Haircut 8" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A stylish man with a well-groomed, structured beard and a slicked-back modern pompadour hairstyle. Shot from a slightly low angle with dramatic, moody lighting to highlight the grooming details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOfz49RqBzq-5wABTlVXbvyP-utKZNPuqwBlhfzZGg2osW35PCftkdg5H27ym9AlS-u882B01UC6Rnh_U10_CBhJU5wDGbVdRQv7DngfYven8UIEknY-uw7TeQpA99Lr_SJMnTqnaJGqqfaaUGJipgTy3uo6TLAH1pzQXqmXK2Jko117sSsMgh-GLUDdGBccrAjxUleYNgYWQQ31eZP0g1q59B5M6bIndVGrkRXaM0NhPp4Kjic4jCKQHP1g375dcS0cqPprn4VbJL">
+</div>
+<div class="aspect-square bg-surface-2 rounded-sm overflow-hidden relative group cursor-pointer">
+<img alt="Haircut 9" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="Close up detail of a barber's hands using a straight razor to line up a client's beard. The shot is high contrast, focusing on the precision of the tool and the sharp line being created." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSMZdzt2JVTeylylL_BnA38kS2J0vUIQUSVNydyisXSU7H-uW5lUoelEVuHQfl3pnE_Jb-MHoSyCbp3Njv66HElQ0xrYr0cGBvEn71dg16fsE_eZ4zTMWuHhtMru6-6gh2g0r3UMTTIAt9Aa2jbMllVBI5zvmYiDrWqe4n7ckBToIxj_SkxeKP0APZznjGXMuckJK555A4T8D1tc-OI3tayxasbLYjKUZ8M1SFP3pT1CDXlQYo96BEO8LzYPy9ruyMq1z_lwcJp90Y">
+</div>
+</section>
+<!-- Spacer for bottom CTA -->
+<div class="h-24 md:h-0"></div>
+</main>
+<!-- Sticky Bottom CTA (Mobile) -->
+<div class="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background/80 backdrop-blur-xl border-t border-border-light md:hidden">
+<button class="w-full h-14 bg-primary text-on-primary rounded-xl font-headline-sm text-headline-sm-mobile font-bold flex items-center justify-center shadow-[0_4px_20px_rgba(239,178,0,0.3)] hover:bg-primary-fixed transition-colors active:scale-[0.98]" onclick="window.location.href='{{DATA:SCREEN:SCREEN_16}}'">
+            הזמן תור עכשיו
+        </button>
+</div>
+<div class="fixed inset-0 z-50 flex items-end justify-center pointer-events-none" id="share-bottom-sheet">
+<div class="absolute inset-0 bg-background/80 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-none" id="share-overlay" onclick="toggleShareSheet()"></div>
+<div class="relative w-full max-w-screen-md bg-surface-1 border-t border-border-light rounded-t-xl p-gutter translate-y-full transition-transform duration-300 pointer-events-auto" id="share-panel">
+<div class="w-12 h-1 bg-surface-variant rounded-full mx-auto mb-6"></div>
+<h3 class="font-headline-sm text-headline-sm-mobile text-text-primary mb-6 text-center">שתף עם חברים</h3>
+<div class="grid grid-cols-4 gap-4 mb-8"><div class="flex flex-col items-center gap-2 cursor-pointer group"><div class="w-14 h-14 rounded-full bg-surface-2 flex items-center justify-center border border-border-light group-hover:bg-surface-3 transition-colors"><span class="material-symbols-outlined text-primary">chat</span></div><span class="text-label-mono text-text-secondary">WhatsApp</span></div><div class="flex flex-col items-center gap-2 cursor-pointer group"><div class="w-14 h-14 rounded-full bg-surface-2 flex items-center justify-center border border-border-light group-hover:bg-surface-3 transition-colors"><span class="material-symbols-outlined text-primary">photo_camera</span></div><span class="text-label-mono text-text-secondary">Instagram</span></div><div class="flex flex-col items-center gap-2 cursor-pointer group"><div class="w-14 h-14 rounded-full bg-surface-2 flex items-center justify-center border border-border-light group-hover:bg-surface-3 transition-colors"><span class="material-symbols-outlined text-primary">facebook</span></div><span class="text-label-mono text-text-secondary">Facebook</span></div><div class="flex flex-col items-center gap-2 cursor-pointer group"><div class="w-14 h-14 rounded-full bg-surface-2 flex items-center justify-center border border-border-light group-hover:bg-surface-3 transition-colors"><span class="material-symbols-outlined text-primary">sms</span></div><span class="text-label-mono text-text-secondary">SMS</span></div></div>
+<button class="w-full h-12 rounded-lg bg-surface-2 border border-border-light font-medium text-text-primary" onclick="toggleShareSheet()">ביטול</button>
+</div>
+</div>
+<script>
+  function toggleShareSheet() {
+    const sheet = document.getElementById('share-bottom-sheet');
+    const overlay = document.getElementById('share-overlay');
+    const panel = document.getElementById('share-panel');
+    const isHidden = panel.classList.contains('translate-y-full');
+    
+    if (isHidden) {
+      sheet.classList.remove('pointer-events-none');
+      overlay.classList.remove('pointer-events-none', 'opacity-0');
+      overlay.classList.add('opacity-100');
+      panel.classList.remove('translate-y-full');
+    } else {
+      overlay.classList.add('opacity-0');
+      overlay.classList.remove('opacity-100');
+      panel.classList.add('translate-y-full');
+      setTimeout(() => {
+        sheet.classList.add('pointer-events-none');
+        overlay.classList.add('pointer-events-none');
+      }, 300);
+    }
+  }
+</script>
+
+</body></html>

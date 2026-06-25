@@ -1,0 +1,556 @@
+<!DOCTYPE html><html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Barber Dashboard - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "success": "#34C759",
+                        "on-secondary-fixed-variant": "#454747",
+                        "border-light": "rgba(255, 255, 255, 0.08)",
+                        "surface-container-highest": "#353437",
+                        "on-primary-fixed": "#261900",
+                        "gold-glow": "rgba(239, 178, 0, 0.15)",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "tertiary": "#abdeff",
+                        "tertiary-container": "#57c7ff",
+                        "on-surface-variant": "#d4c5ac",
+                        "error": "#ffb4ab",
+                        "primary-container": "#efb200",
+                        "surface-1": "#101012",
+                        "primary-fixed": "#ffdea1",
+                        "outline-variant": "#504533",
+                        "on-primary-fixed-variant": "#5c4300",
+                        "surface-bright": "#39393b",
+                        "secondary-container": "#454747",
+                        "on-secondary": "#2f3131",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#7a5900",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "secondary": "#c6c6c7",
+                        "text-muted": "#71717A",
+                        "on-primary-container": "#624700",
+                        "on-background": "#e5e1e4",
+                        "surface-tint": "#fbbc18",
+                        "surface-4": "#202023",
+                        "on-tertiary-container": "#005170",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#313032",
+                        "tertiary-fixed-dim": "#7cd0ff",
+                        "text-primary": "#FAFAF9",
+                        "outline": "#9c8f79",
+                        "info": "#0A84FF",
+                        "surface-container-lowest": "#0e0e10",
+                        "on-tertiary": "#00344a",
+                        "inverse-surface": "#e5e1e4",
+                        "primary-fixed-dim": "#fbbc18",
+                        "on-secondary-container": "#b4b5b5",
+                        "surface-dim": "#131315",
+                        "danger": "#FF453A",
+                        "text-secondary": "#A1A1AA",
+                        "on-error-container": "#ffdad6",
+                        "surface-variant": "#353437",
+                        "on-primary": "#402d00",
+                        "tertiary-fixed": "#c4e7ff",
+                        "surface-container": "#201f22",
+                        "surface-2": "#131214",
+                        "on-tertiary-fixed-variant": "#004c69",
+                        "background": "#131315",
+                        "secondary-fixed": "#e2e2e2",
+                        "surface-3": "#18171A",
+                        "on-tertiary-fixed": "#001e2c",
+                        "surface-container-low": "#1c1b1d",
+                        "surface-container-high": "#2a2a2c",
+                        "on-surface": "#e5e1e4",
+                        "primary": "#ffd174",
+                        "surface": "#131315"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "base": "4px",
+                        "section-gap": "32px",
+                        "stack-sm": "8px",
+                        "gutter": "20px",
+                        "stack-lg": "24px",
+                        "safe": "env(safe-area-inset-bottom)"
+                    },
+                    "fontFamily": {
+                        "label-mono": ["JetBrains Mono"],
+                        "headline-sm": ["Heebo"],
+                        "body-md": ["Heebo"],
+                        "headline-lg-mobile": ["Heebo"],
+                        "display-lg": ["Heebo"],
+                        "headline-md": ["Heebo"],
+                        "headline-lg": ["Heebo"],
+                        "body-lg": ["Heebo"],
+                        "price-lg": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "label-mono": ["14px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "display-lg": ["40px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "900" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "1.5", "fontWeight": "500" }],
+                        "price-lg": ["24px", { "lineHeight": "1", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1;
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .panel {
+            display: none;
+        }
+        .panel.active {
+            display: flex;
+            flex-direction: column;
+        }
+        /* Toggle Switch Styles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #ffd174;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #ffd174;
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            transform: translateX(-100%);
+            border-color: white;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col items-center">
+<!-- Mobile Container (Max 430px) -->
+<main class="w-full max-w-[430px] min-h-screen bg-surface-1 shadow-2xl relative pb-[100px] flex flex-col overflow-hidden">
+<!-- Main Settings View -->
+<div class="panel active h-full flex flex-col w-full absolute top-0 left-0 bottom-0 bg-surface-1 z-10 overflow-y-auto pb-[100px]" id="main-view">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-background flex flex-row-reverse justify-between items-center w-full px-5 py-4 docked full-width top-0 bg-background/80 backdrop-blur-xl sticky z-40" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+<div class="flex items-center gap-4 flex-row-reverse">
+<img alt="Avatar" class="w-10 h-10 rounded-full object-cover border border-border-light grayscale" data-alt="A close-up black and white portrait of a stylish urban barber. High contrast, sharp focus on the face, moody studio lighting. Sleek, premium aesthetic suitable for a modern digital platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1IvnK_g7bY2AJkIF-5dkyfLUQHoLE4GCU3q8q-EZI4k4l76zRWfMC7z0J-73HQKPynluzyl3UD7rGL4mXqifYu-7m_YCfvOm-t04eiCERQLXGKm6Wkm6HrTyAJDe-XZNzGPVFYe5cLTv8GecAvrvIaKSwq5qZkDc9VKUtGZ3Wp9q2Py78sOs14kOeKXPOvOI6GOYnllqoiTsV90HGd2i2u25t0jKbVqvlnwjLmgcOFOxs6URBuf7KgvCgx3gA11jcxIBGRjKJzXbz">
+<div class="flex flex-col text-right">
+<h1 class="text-headline-md font-headline-md font-extrabold text-primary">הגדרות</h1>
+<span class="text-label-mono font-label-mono text-text-muted">הסלון המעוצב</span>
+</div>
+</div>
+<button class="hover:opacity-80 transition-opacity text-on-surface-variant flex items-center justify-center w-10 h-10 rounded-full active:scale-95 duration-200">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="bell" aria-hidden="true" class="lucide lucide-bell w-6 h-6"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+</button>
+</header>
+<!-- Content Area -->
+<div class="flex-1 px-5 py-6 flex flex-col gap-2">
+<!-- List Items -->
+<!-- פרטי העסק -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200" onclick="openPanel('business-panel')">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="store" aria-hidden="true" class="lucide lucide-store w-6 h-6"><path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5"></path><path d="M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244"></path><path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05"></path></svg>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">פרטי העסק</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">הסלון המעוצב</p>
+</div>
+</div>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-left" aria-hidden="true" class="lucide lucide-chevron-left w-5 h-5 text-text-muted"><path d="m15 18-6-6 6-6"></path></svg>
+</button>
+<!-- תשלומים -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200" onclick="openPanel('payments-panel')">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="credit-card" aria-hidden="true" class="lucide lucide-credit-card w-6 h-6"><rect width="20" height="14" x="2" y="5" rx="2"></rect><line x1="2" x2="22" y1="10" y2="10"></line></svg>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">תשלומים</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">Apple Pay, כרטיס אשראי, Visa</p>
+</div>
+</div>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-left" aria-hidden="true" class="lucide lucide-chevron-left w-5 h-5 text-text-muted"><path d="m15 18-6-6 6-6"></path></svg>
+</button>
+<!-- התראות -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200" onclick="openPanel('notifications-panel')">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="bell-ring" aria-hidden="true" class="lucide lucide-bell-ring w-6 h-6"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M22 8c0-2.3-.8-4.3-2-6"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path><path d="M4 2C2.8 3.7 2 5.7 2 8"></path></svg>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">התראות</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">הודעות, תזכורות</p>
+</div>
+</div>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-left" aria-hidden="true" class="lucide lucide-chevron-left w-5 h-5 text-text-muted"><path d="m15 18-6-6 6-6"></path></svg>
+</button>
+<!-- חיבור אפליקציות -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200" onclick="openPanel('apps-panel')">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="layout-grid" aria-hidden="true" class="lucide lucide-layout-grid w-6 h-6"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">חיבור אפליקציות</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">Tor, Google Calendar</p>
+</div>
+</div>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-left" aria-hidden="true" class="lucide lucide-chevron-left w-5 h-5 text-text-muted"><path d="m15 18-6-6 6-6"></path></svg>
+</button>
+<!-- פרטיות ואבטחה -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200" onclick="openPanel('security-panel')">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="lock" aria-hidden="true" class="lucide lucide-lock w-6 h-6"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">פרטיות ואבטחה</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">סיסמה, גיבוי</p>
+</div>
+</div>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-left" aria-hidden="true" class="lucide lucide-chevron-left w-5 h-5 text-text-muted"><path d="m15 18-6-6 6-6"></path></svg>
+</button>
+<!-- שפה -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200" onclick="openPanel('language-panel')">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="globe" aria-hidden="true" class="lucide lucide-globe w-6 h-6"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">שפה</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1" id="current-language">עברית</p>
+</div>
+</div>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-left" aria-hidden="true" class="lucide lucide-chevron-left w-5 h-5 text-text-muted"><path d="m15 18-6-6 6-6"></path></svg>
+</button>
+<!-- עיצוב -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200" onclick="openPanel('theme-panel')">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="palette" aria-hidden="true" class="lucide lucide-palette w-6 h-6"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"></path><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle></svg>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">עיצוב</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1" id="current-theme">כהה</p>
+</div>
+</div>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-left" aria-hidden="true" class="lucide lucide-chevron-left w-5 h-5 text-text-muted"><path d="m15 18-6-6 6-6"></path></svg>
+</button>
+<!-- עזרה ותמיכה -->
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light active:scale-[0.98] duration-200" onclick="openPanel('support-panel')">
+<div class="flex flex-row-reverse items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-3 flex items-center justify-center text-primary border border-border-light">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="help-circle" aria-hidden="true" class="lucide lucide-help-circle w-6 h-6"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+</div>
+<div class="text-right">
+<h3 class="text-body-lg font-body-lg text-text-primary">עזרה ותמיכה</h3>
+<p class="text-body-md font-body-md text-text-muted mt-1">מדריכים, קשר</p>
+</div>
+</div>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-left" aria-hidden="true" class="lucide lucide-chevron-left w-5 h-5 text-text-muted"><path d="m15 18-6-6 6-6"></path></svg>
+</button>
+<div class="mt-8 text-center">
+<p class="text-label-mono font-label-mono text-text-muted text-sm opacity-50">Tor Dashboard v1.0</p>
+</div>
+</div>
+</div>
+<!-- Details Panels -->
+<!-- Business Details Panel -->
+<div class="panel h-full flex flex-col w-full absolute top-0 left-0 bottom-0 bg-surface-1 z-20 overflow-y-auto pb-safe transform translate-x-full transition-transform duration-300" id="business-panel">
+<header class="bg-background/80 backdrop-blur-xl flex flex-row-reverse items-center px-5 py-4 sticky top-0 z-40 border-b border-border-light">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-3 rounded-full transition-colors ml-2" onclick="closePanel('business-panel')">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="arrow-right" aria-hidden="true" class="lucide lucide-arrow-right w-6 h-6"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+</button>
+<h2 class="text-headline-sm font-headline-sm text-text-primary flex-1 text-right">פרטי העסק</h2>
+</header>
+<div class="p-5 flex flex-col gap-6">
+<div class="flex flex-col gap-2 text-right">
+<label class="text-body-md text-text-muted">שם העסק</label>
+<input class="w-full bg-surface-2 border border-border-light rounded-xl p-4 text-text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" dir="rtl" type="text" value="הסלון המעוצב">
+</div>
+<div class="flex flex-col gap-2 text-right">
+<label class="text-body-md text-text-muted">כתובת</label>
+<input class="w-full bg-surface-2 border border-border-light rounded-xl p-4 text-text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" dir="rtl" type="text" value="דיזנגוף 100, תל אביב">
+</div>
+<div class="flex flex-col gap-2 text-right">
+<label class="text-body-md text-text-muted">טלפון</label>
+<input class="w-full bg-surface-2 border border-border-light rounded-xl p-4 text-text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right" dir="ltr" type="tel" value="054-1234567">
+</div>
+<div class="flex flex-col gap-2 text-right">
+<label class="text-body-md text-text-muted">שעות פעילות</label>
+<textarea class="w-full bg-surface-2 border border-border-light rounded-xl p-4 text-text-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right h-24 resize-none" dir="rtl">א'-ה': 09:00 - 20:00
+ו': 09:00 - 15:00</textarea>
+</div>
+<button class="mt-4 w-full bg-primary text-on-primary font-headline-sm py-4 rounded-xl hover:bg-primary/90 transition-colors active:scale-95 duration-200" onclick="showToast('הנתונים נשמרו בהצלחה')">שמור שינויים</button>
+</div>
+</div>
+<!-- Notifications Panel -->
+<div class="panel h-full flex flex-col w-full absolute top-0 left-0 bottom-0 bg-surface-1 z-20 overflow-y-auto pb-safe transform translate-x-full transition-transform duration-300" id="notifications-panel">
+<header class="bg-background/80 backdrop-blur-xl flex flex-row-reverse items-center px-5 py-4 sticky top-0 z-40 border-b border-border-light">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-3 rounded-full transition-colors ml-2" onclick="closePanel('notifications-panel')">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="arrow-right" aria-hidden="true" class="lucide lucide-arrow-right w-6 h-6"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+</button>
+<h2 class="text-headline-sm font-headline-sm text-text-primary flex-1 text-right">התראות</h2>
+</header>
+<div class="p-5 flex flex-col gap-4">
+<div class="flex flex-row-reverse justify-between items-center bg-surface-2 p-4 rounded-xl border border-border-light">
+<div class="text-right">
+<h4 class="text-body-lg text-text-primary">הודעות פוש (Push)</h4>
+<p class="text-body-md text-text-muted">קבל התראות למכשיר</p>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-primary appearance-none cursor-pointer" id="toggle-push" name="toggle" style="left:0; z-index: 1; transition: all 0.3s;" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-primary cursor-pointer" for="toggle-push"></label>
+</div>
+</div>
+<div class="flex flex-row-reverse justify-between items-center bg-surface-2 p-4 rounded-xl border border-border-light">
+<div class="text-right">
+<h4 class="text-body-lg text-text-primary">הודעות SMS</h4>
+<p class="text-body-md text-text-muted">ללקוחות ולצוות</p>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-primary appearance-none cursor-pointer" id="toggle-sms" name="toggle" style="left:0; z-index: 1; transition: all 0.3s;" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-primary cursor-pointer" for="toggle-sms"></label>
+</div>
+</div>
+<div class="flex flex-row-reverse justify-between items-center bg-surface-2 p-4 rounded-xl border border-border-light">
+<div class="text-right">
+<h4 class="text-body-lg text-text-primary">דוא"ל</h4>
+<p class="text-body-md text-text-muted">סיכומים שבועיים וחשבוניות</p>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-surface-variant border-4 border-surface-variant appearance-none cursor-pointer" id="toggle-email" name="toggle" style="right:0; z-index: 1; transition: all 0.3s;" type="checkbox">
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-variant cursor-pointer" for="toggle-email"></label>
+</div>
+</div>
+</div>
+</div>
+<!-- Language Panel -->
+<div class="panel h-full flex flex-col w-full absolute top-0 left-0 bottom-0 bg-surface-1 z-20 overflow-y-auto pb-safe transform translate-x-full transition-transform duration-300" id="language-panel">
+<header class="bg-background/80 backdrop-blur-xl flex flex-row-reverse items-center px-5 py-4 sticky top-0 z-40 border-b border-border-light">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-3 rounded-full transition-colors ml-2" onclick="closePanel('language-panel')">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="arrow-right" aria-hidden="true" class="lucide lucide-arrow-right w-6 h-6"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+</button>
+<h2 class="text-headline-sm font-headline-sm text-text-primary flex-1 text-right">שפה</h2>
+</header>
+<div class="p-5 flex flex-col gap-2">
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light" onclick="selectLanguage('עברית')">
+<span class="text-body-lg text-text-primary">עברית</span>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" aria-hidden="true" class="lucide lucide-check w-5 h-5 text-primary"><path d="M20 6 9 17l-5-5"></path></svg>
+</button>
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light" onclick="selectLanguage('English')">
+<span class="text-body-lg text-text-primary">English</span>
+</button>
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light" onclick="selectLanguage('العربية')">
+<span class="text-body-lg text-text-primary">العربية</span>
+</button>
+</div>
+</div>
+<!-- Theme Panel -->
+<div class="panel h-full flex flex-col w-full absolute top-0 left-0 bottom-0 bg-surface-1 z-20 overflow-y-auto pb-safe transform translate-x-full transition-transform duration-300" id="theme-panel">
+<header class="bg-background/80 backdrop-blur-xl flex flex-row-reverse items-center px-5 py-4 sticky top-0 z-40 border-b border-border-light">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-3 rounded-full transition-colors ml-2" onclick="closePanel('theme-panel')">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="arrow-right" aria-hidden="true" class="lucide lucide-arrow-right w-6 h-6"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+</button>
+<h2 class="text-headline-sm font-headline-sm text-text-primary flex-1 text-right">עיצוב</h2>
+</header>
+<div class="p-5 flex flex-col gap-2">
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light" onclick="selectTheme('כהה')">
+<span class="text-body-lg text-text-primary">כהה</span>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" aria-hidden="true" class="lucide lucide-check w-5 h-5 text-primary"><path d="M20 6 9 17l-5-5"></path></svg>
+</button>
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light" onclick="selectTheme('בהיר')">
+<span class="text-body-lg text-text-primary">בהיר</span>
+</button>
+<button class="w-full flex flex-row-reverse items-center justify-between p-4 bg-surface-2 hover:bg-surface-3 transition-colors rounded-xl border border-border-light" onclick="selectTheme('אוטומטי')">
+<span class="text-body-lg text-text-primary">אוטומטי</span>
+</button>
+</div>
+</div>
+<!-- Placeholder Panels for other sections -->
+<div class="panel h-full flex flex-col w-full absolute top-0 left-0 bottom-0 bg-surface-1 z-20 overflow-y-auto pb-safe transform translate-x-full transition-transform duration-300" id="payments-panel">
+<header class="bg-background/80 backdrop-blur-xl flex flex-row-reverse items-center px-5 py-4 sticky top-0 z-40 border-b border-border-light">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-3 rounded-full transition-colors ml-2" onclick="closePanel('payments-panel')">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="arrow-right" aria-hidden="true" class="lucide lucide-arrow-right w-6 h-6"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+</button>
+<h2 class="text-headline-sm font-headline-sm text-text-primary flex-1 text-right">תשלומים</h2>
+</header>
+<div class="p-5 flex flex-col gap-4 text-center text-text-muted mt-10">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="wrench" aria-hidden="true" class="lucide lucide-wrench w-12 h-12 mx-auto mb-4 opacity-50"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"></path></svg>
+<p class="">תצוגה זו בבנייה</p>
+</div>
+</div>
+<div class="panel h-full flex flex-col w-full absolute top-0 left-0 bottom-0 bg-surface-1 z-20 overflow-y-auto pb-safe transform translate-x-full transition-transform duration-300" id="apps-panel">
+<header class="bg-background/80 backdrop-blur-xl flex flex-row-reverse items-center px-5 py-4 sticky top-0 z-40 border-b border-border-light">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-3 rounded-full transition-colors ml-2" onclick="closePanel('apps-panel')">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="arrow-right" aria-hidden="true" class="lucide lucide-arrow-right w-6 h-6"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+</button>
+<h2 class="text-headline-sm font-headline-sm text-text-primary flex-1 text-right">חיבור אפליקציות</h2>
+</header>
+<div class="p-5 flex flex-col gap-4 text-center text-text-muted mt-10">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="wrench" aria-hidden="true" class="lucide lucide-wrench w-12 h-12 mx-auto mb-4 opacity-50"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"></path></svg>
+<p class="">תצוגה זו בבנייה</p>
+</div>
+</div>
+<div class="panel h-full flex flex-col w-full absolute top-0 left-0 bottom-0 bg-surface-1 z-20 overflow-y-auto pb-safe transform translate-x-full transition-transform duration-300" id="security-panel">
+<header class="bg-background/80 backdrop-blur-xl flex flex-row-reverse items-center px-5 py-4 sticky top-0 z-40 border-b border-border-light">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-3 rounded-full transition-colors ml-2" onclick="closePanel('security-panel')">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="arrow-right" aria-hidden="true" class="lucide lucide-arrow-right w-6 h-6"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+</button>
+<h2 class="text-headline-sm font-headline-sm text-text-primary flex-1 text-right">פרטיות ואבטחה</h2>
+</header>
+<div class="p-5 flex flex-col gap-4 text-center text-text-muted mt-10">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="wrench" aria-hidden="true" class="lucide lucide-wrench w-12 h-12 mx-auto mb-4 opacity-50"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"></path></svg>
+<p class="">תצוגה זו בבנייה</p>
+</div>
+</div>
+<div class="panel h-full flex flex-col w-full absolute top-0 left-0 bottom-0 bg-surface-1 z-20 overflow-y-auto pb-safe transform translate-x-full transition-transform duration-300" id="support-panel">
+<header class="bg-background/80 backdrop-blur-xl flex flex-row-reverse items-center px-5 py-4 sticky top-0 z-40 border-b border-border-light">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:bg-surface-3 rounded-full transition-colors ml-2" onclick="closePanel('support-panel')">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="arrow-right" aria-hidden="true" class="lucide lucide-arrow-right w-6 h-6"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+</button>
+<h2 class="text-headline-sm font-headline-sm text-text-primary flex-1 text-right">עזרה ותמיכה</h2>
+</header>
+<div class="p-5 flex flex-col gap-4 text-center text-text-muted mt-10">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="wrench" aria-hidden="true" class="lucide lucide-wrench w-12 h-12 mx-auto mb-4 opacity-50"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"></path></svg>
+<p class="">תצוגה זו בבנייה</p>
+</div>
+</div>
+<!-- Toast Notification -->
+<div class="fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-surface-3 border border-success/30 text-text-primary px-6 py-3 rounded-full shadow-lg z-50 flex items-center gap-2 opacity-0 pointer-events-none transition-opacity duration-300" id="toast">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check-circle" aria-hidden="true" class="lucide lucide-check-circle w-5 h-5 text-success"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg>
+<span id="toast-message" class="">נשמר בהצלחה</span>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex flex-row-reverse justify-around items-center h-20 px-2 pb-safe bg-surface/70 backdrop-blur-2xl shadow-lg docked full-width rounded-t-xl md:hidden max-w-[430px] mx-auto right-0" style="border-top: 1px solid rgba(255,255,255,0.05);"><a class="flex flex-col items-center justify-center text-primary-container hover:text-primary/80 transition-colors w-16 active:scale-90 duration-150" href="javascript:void(0)">
+<i class="w-6 h-6 mb-1 fill-primary-container" data-lucide="settings"></i>
+<span class="text-[10px] font-label-mono text-center text-primary">הגדרות</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-muted hover:text-primary/80 transition-colors w-16" href="javascript:void(0)" onclick="switchTab(this)">
+<i class="w-6 h-6 mb-1" data-lucide="scissors"></i>
+<span class="text-[10px] font-label-mono text-center">שירותים</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-muted hover:text-primary/80 transition-colors w-16" href="javascript:void(0)" onclick="switchTab(this)">
+<i class="w-6 h-6 mb-1" data-lucide="users"></i>
+<span class="text-[10px] font-label-mono text-center">עובדים</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-muted hover:text-primary/80 transition-colors w-16" href="javascript:void(0)" onclick="switchTab(this)">
+<i class="w-6 h-6 mb-1" data-lucide="bar-chart-2"></i>
+<span class="text-[10px] font-label-mono text-center">סטטיסטיקות</span>
+</a>
+<a class="flex flex-col items-center justify-center text-text-muted hover:text-primary/80 transition-colors w-16" href="javascript:void(0)" onclick="switchTab(this)">
+<i class="w-6 h-6 mb-1" data-lucide="calendar"></i>
+<span class="text-[10px] font-label-mono text-center">לוח שנה</span>
+</a></nav>
+</main>
+<script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Panel handling
+    function openPanel(panelId) {
+        const panel = document.getElementById(panelId);
+        panel.style.display = 'flex';
+        // Small delay to allow display:flex to apply before translating
+        setTimeout(() => {
+            panel.classList.remove('translate-x-full');
+        }, 10);
+    }
+
+    function closePanel(panelId) {
+        const panel = document.getElementById(panelId);
+        panel.classList.add('translate-x-full');
+        // Wait for animation to finish before hiding
+        setTimeout(() => {
+            panel.style.display = 'none';
+        }, 300);
+    }
+
+    // Settings actions
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        document.getElementById('toast-message').innerText = message;
+        toast.classList.remove('opacity-0');
+        setTimeout(() => {
+            toast.classList.add('opacity-0');
+            closePanel('business-panel');
+        }, 2000);
+    }
+
+    function selectLanguage(lang) {
+        document.getElementById('current-language').innerText = lang;
+        closePanel('language-panel');
+        showToast('שפה עודכנה');
+    }
+
+    function selectTheme(theme) {
+        document.getElementById('current-theme').innerText = theme;
+        closePanel('theme-panel');
+        showToast('ערכת נושא עודכנה');
+    }
+
+    // Simple tab switching visual mock
+    function switchTab(clickedTab) {
+        const tabs = document.querySelectorAll('nav a');
+        tabs.forEach(tab => {
+            tab.classList.remove('text-primary-container');
+            tab.classList.add('text-text-muted');
+            const icon = tab.querySelector('i');
+            icon.classList.remove('fill-primary-container');
+            const span = tab.querySelector('span');
+            span.classList.remove('text-primary');
+        });
+
+        clickedTab.classList.remove('text-text-muted');
+        clickedTab.classList.add('text-primary-container');
+        const clickedIcon = clickedTab.querySelector('i');
+        // Not a real toggle for icons since we use lucide, but simulates active state
+        clickedIcon.classList.add('text-primary');
+        const clickedSpan = clickedTab.querySelector('span');
+        clickedSpan.classList.add('text-primary');
+    }
+
+    // Handle checkboxes visual state
+    document.querySelectorAll('.toggle-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if(this.checked) {
+                this.style.right = '0';
+                this.style.left = 'auto';
+                this.classList.add('border-primary');
+                this.classList.remove('border-surface-variant');
+                this.nextElementSibling.classList.add('bg-primary');
+                this.nextElementSibling.classList.remove('bg-surface-variant');
+            } else {
+                this.style.left = '0';
+                this.style.right = 'auto';
+                this.classList.remove('border-primary');
+                this.classList.add('border-surface-variant');
+                this.nextElementSibling.classList.remove('bg-primary');
+                this.nextElementSibling.classList.add('bg-surface-variant');
+            }
+        });
+    });
+</script>
+
+
+</body></html>

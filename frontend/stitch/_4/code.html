@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="he"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>מי אתה? - Tor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-background": "#e5e1e4",
+                      "tertiary-fixed-dim": "#7cd0ff",
+                      "on-tertiary-fixed": "#001e2c",
+                      "surface-2": "#131214",
+                      "gold-glow": "rgba(239, 178, 0, 0.15)",
+                      "text-secondary": "#A1A1AA",
+                      "surface-container-highest": "#353437",
+                      "primary-fixed-dim": "#fbbc18",
+                      "surface-bright": "#39393b",
+                      "secondary": "#c6c6c7",
+                      "error-container": "#93000a",
+                      "text-muted": "#71717A",
+                      "inverse-surface": "#e5e1e4",
+                      "tertiary-fixed": "#c4e7ff",
+                      "on-tertiary": "#00344a",
+                      "on-surface": "#e5e1e4",
+                      "on-secondary-fixed": "#1a1c1c",
+                      "on-secondary": "#2f3131",
+                      "on-tertiary-fixed-variant": "#004c69",
+                      "outline-variant": "#504533",
+                      "on-primary-fixed": "#261900",
+                      "surface-4": "#202023",
+                      "surface-3": "#18171A",
+                      "on-surface-variant": "#d4c5ac",
+                      "on-primary": "#402d00",
+                      "secondary-fixed-dim": "#c6c6c7",
+                      "surface-tint": "#fbbc18",
+                      "secondary-container": "#454747",
+                      "surface": "#131315",
+                      "primary": "#ffd174",
+                      "danger": "#FF453A",
+                      "on-primary-container": "#624700",
+                      "error": "#ffb4ab",
+                      "outline": "#9c8f79",
+                      "secondary-fixed": "#e2e2e2",
+                      "on-error": "#690005",
+                      "surface-dim": "#131315",
+                      "on-secondary-container": "#b4b5b5",
+                      "text-primary": "#FAFAF9",
+                      "on-error-container": "#ffdad6",
+                      "surface-1": "#101012",
+                      "inverse-primary": "#7a5900",
+                      "info": "#0A84FF",
+                      "on-primary-fixed-variant": "#5c4300",
+                      "on-secondary-fixed-variant": "#454747",
+                      "surface-container-low": "#1c1b1d",
+                      "tertiary": "#abdeff",
+                      "inverse-on-surface": "#313032",
+                      "background": "#131315",
+                      "primary-fixed": "#ffdea1",
+                      "success": "#34C759",
+                      "surface-container": "#201f22",
+                      "primary-container": "#efb200",
+                      "surface-variant": "#353437",
+                      "surface-container-lowest": "#0e0e10",
+                      "surface-container-high": "#2a2a2c",
+                      "border-light": "rgba(255, 255, 255, 0.08)",
+                      "tertiary-container": "#57c7ff",
+                      "on-tertiary-container": "#005170"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "20px",
+                      "stack-lg": "24px",
+                      "section-gap": "32px",
+                      "stack-md": "16px",
+                      "base": "4px",
+                      "stack-sm": "8px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Heebo"
+                      ],
+                      "display-lg": [
+                              "Heebo"
+                      ],
+                      "headline-md": [
+                              "Heebo"
+                      ],
+                      "headline-lg-mobile": [
+                              "Heebo"
+                      ],
+                      "headline-sm": [
+                              "Heebo"
+                      ],
+                      "label-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "body-lg": [
+                              "Heebo"
+                      ],
+                      "body-md": [
+                              "Heebo"
+                      ],
+                      "price-lg": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "display-lg": [
+                              "40px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "900"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-mono": [
+                              "14px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "price-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "1",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        .role-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .role-card.selected {
+            border-color: theme('colors.primary');
+            background-color: theme('colors.surface-2');
+            box-shadow: 0 0 20px theme('colors.gold-glow');
+        }
+
+        .role-card.selected .icon-container {
+            color: theme('colors.primary');
+        }
+
+        .role-card:not(.selected) {
+            border-color: theme('colors.border-light');
+            background-color: theme('colors.surface-1');
+        }
+
+        .role-card:not(.selected):hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background-color: theme('colors.surface-container-low');
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="min-h-screen flex flex-col items-center justify-center p-gutter relative overflow-hidden antialiased">
+<!-- Ambient Background Lighting -->
+<div class="absolute inset-0 pointer-events-none">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-[80vw] h-[442px] bg-primary/5 blur-[120px] rounded-full"></div>
+</div>
+<!-- Main Container -->
+<main class="w-full max-w-[430px] flex flex-col h-full relative z-10 flex-grow py-section-gap">
+<!-- Header -->
+<header class="text-center mb-section-gap pt-stack-lg">
+<h1 class="font-display-lg text-display-lg text-text-primary mb-stack-sm">מי אתה?</h1>
+<p class="font-body-md text-body-md text-text-secondary">בחר את סוג המשתמש כדי להתחיל</p>
+</header>
+<!-- Selection Grid -->
+<div class="flex flex-col gap-stack-lg flex-grow justify-center">
+<!-- Option 1: Client -->
+<button class="role-card w-full rounded-xl p-stack-lg border flex flex-col items-center text-center gap-stack-md group" data-role="client">
+<div class="icon-container w-16 h-16 rounded-full bg-surface-container flex items-center justify-center transition-colors duration-300 group-hover:bg-surface-container-highest text-text-muted">
+<span class="material-symbols-outlined text-[32px]">content_cut</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-text-primary mb-base transition-colors duration-300">אני לקוח</h2>
+<p class="font-body-md text-body-md text-text-secondary">חיפוש והזמנת תורים למספרות</p>
+</div>
+</button>
+<!-- Option 2: Barber -->
+<button class="role-card w-full rounded-xl p-stack-lg border flex flex-col items-center text-center gap-stack-md group" data-role="barber">
+<div class="icon-container w-16 h-16 rounded-full bg-surface-container flex items-center justify-center transition-colors duration-300 group-hover:bg-surface-container-highest text-text-muted">
+<span class="material-symbols-outlined text-[32px]">calendar_month</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-text-primary mb-base transition-colors duration-300">אני ספר / בעל עסק</h2>
+<p class="font-body-md text-body-md text-text-secondary">ניהול יומן, לקוחות והעסק שלי</p>
+</div>
+</button>
+</div>
+<!-- Sticky Bottom Action -->
+<div class="mt-section-gap pb-safe w-full">
+<button class="w-full bg-surface-container text-text-muted font-headline-sm text-headline-sm py-4 rounded-lg transition-all duration-300 cursor-not-allowed opacity-50 border border-border-light" disabled="" id="continue-btn">
+                המשך
+            </button>
+</div>
+</main>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.role-card');
+            const continueBtn = document.getElementById('continue-btn');
+            let selectedRole = null;
+
+            cards.forEach(card => {
+                card.addEventListener('click', () => {
+                    // Remove selected state from all
+                    cards.forEach(c => c.classList.remove('selected'));
+                    
+                    // Add selected state to clicked
+                    card.classList.add('selected');
+                    selectedRole = card.dataset.role;
+
+                    // Enable continue button and style it
+                    continueBtn.disabled = false;
+                    continueBtn.classList.remove('bg-surface-container', 'text-text-muted', 'cursor-not-allowed', 'opacity-50');
+                    continueBtn.classList.add('bg-text-primary', 'text-background', 'hover:opacity-90', 'cursor-pointer');
+                    
+                    // Add subtle scale animation to button to draw attention
+                    continueBtn.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        continueBtn.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+
+            continueBtn.addEventListener('click', () => {
+                if(selectedRole) {
+                    // Logic to proceed based on role
+                    console.log('Proceeding as:', selectedRole);
+                    // Add transition out effect
+                    document.body.style.opacity = '0';
+                    document.body.style.transition = 'opacity 0.5s ease';
+                }
+            });
+        });
+    </script>
+</body></html>
