@@ -8,7 +8,18 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class _RequestModel(BaseModel):
+    """Base for inbound payloads: trims surrounding whitespace on all strings.
+
+    With ``str_strip_whitespace`` a whitespace-only value collapses to "" and
+    then fails the ``min_length=1`` constraints below, so blank identifiers /
+    customer details are rejected with HTTP 422 instead of reaching the DB.
+    """
+
+    model_config = ConfigDict(str_strip_whitespace=True)
 
 
 class SlotStatus(str, Enum):
@@ -47,9 +58,9 @@ class Slot(BaseModel):
     locked_until: datetime | None = None
 
 
-class LockRequest(BaseModel):
-    slot_id: str
-    user_token: str = Field(description="Opaque client identifier holding the lock.")
+class LockRequest(_RequestModel):
+    slot_id: str = Field(min_length=1)
+    user_token: str = Field(min_length=1, description="Opaque client identifier holding the lock.")
 
 
 class LockResponse(BaseModel):
@@ -59,16 +70,24 @@ class LockResponse(BaseModel):
     message: str | None = None
 
 
-class BookingRequest(BaseModel):
-    slot_id: str
-    user_token: str
-    customer_name: str
-    customer_phone: str
+class BookingRequest(_RequestModel):
+    slot_id: str = Field(min_length=1)
+    user_token: str = Field(min_length=1)
+    customer_name: str = Field(min_length=1, max_length=80)
+    customer_phone: str = Field(min_length=7, max_length=20)
+
+    @field_validator("customer_phone")
+    @classmethod
+    def _phone_has_enough_digits(cls, v: str) -> str:
+        """Require at least 7 digits so a punctuation-only phone is rejected."""
+        if sum(c.isdigit() for c in v) < 7:
+            raise ValueError("phone must contain at least 7 digits")
+        return v
 
 
-class CancelRequest(BaseModel):
-    booking_id: str
-    user_token: str
+class CancelRequest(_RequestModel):
+    booking_id: str = Field(min_length=1)
+    user_token: str = Field(min_length=1)
 
 
 class BookingResponse(BaseModel):
@@ -78,11 +97,11 @@ class BookingResponse(BaseModel):
     message: str | None = None
 
 
-class ReviewRequest(BaseModel):
-    booking_id: str
-    user_token: str
+class ReviewRequest(_RequestModel):
+    booking_id: str = Field(min_length=1)
+    user_token: str = Field(min_length=1)
     rating: int = Field(ge=1, le=5)
-    comment: str | None = None
+    comment: str | None = Field(default=None, max_length=1000)
 
 
 class Review(BaseModel):

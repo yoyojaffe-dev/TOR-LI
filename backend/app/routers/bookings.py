@@ -10,7 +10,7 @@ The Playwright submission in step 2 is stubbed for now (foundation phase).
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, status
 
 from app.agents.booking_agent import BookingAgent
 from app.models.schemas import (
@@ -60,7 +60,7 @@ def release_slot(req: LockRequest) -> LockResponse:
     return locking.release_lock(req.slot_id, req.user_token)
 
 
-@router.post("/confirm", response_model=BookingResponse)
+@router.post("/confirm", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
 def confirm_booking(req: BookingRequest) -> BookingResponse:
     """Confirm a locked slot: run the Booking Agent, then mark it booked."""
     booking_id = str(uuid.uuid4())

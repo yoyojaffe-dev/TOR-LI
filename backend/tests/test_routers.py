@@ -145,7 +145,7 @@ def test_confirm_success_path() -> None:
                 "customer_phone": "+972500000000",
             },
         )
-    assert res.status_code == 200
+    assert res.status_code == 201  # booking resource created
     assert res.json()["status"] == "booked"
     conf.assert_called_once()
 
@@ -307,3 +307,75 @@ def test_admin_scraping_error_becomes_502() -> None:
         Agent.return_value.run_once = boom
         res = client.post("/admin/scraping/run")
     assert res.status_code == 502
+
+
+# ── Input validation (Pydantic V2 request hardening) ─────────────────────────
+
+
+def test_confirm_rejects_blank_customer_name() -> None:
+    res = client.post(
+        "/bookings/confirm",
+        json={
+            "slot_id": "s1",
+            "user_token": "u1",
+            "customer_name": "   ",  # whitespace -> stripped to "" -> min_length fails
+            "customer_phone": "+972500000000",
+        },
+    )
+    assert res.status_code == 422
+
+
+def test_confirm_rejects_phone_without_enough_digits() -> None:
+    res = client.post(
+        "/bookings/confirm",
+        json={
+            "slot_id": "s1",
+            "user_token": "u1",
+            "customer_name": "Dana",
+            "customer_phone": "+++----",  # no digits
+        },
+    )
+    assert res.status_code == 422
+
+
+def test_confirm_strips_whitespace_on_customer_name() -> None:
+    from app.models.schemas import BookingResponse
+
+    confirmed = BookingResponse(success=True, booking_id="bk1", status="booked")
+    with (
+        patch("app.routers.bookings.BookingAgent") as Agent,
+        patch("app.routers.bookings.locking.confirm_booking", return_value=confirmed) as conf,
+    ):
+        Agent.return_value.submit.return_value = {"success": True}
+        client.post(
+            "/bookings/confirm",
+            json={
+                "slot_id": "s1",
+                "user_token": "u1",
+                "customer_name": "  Dana  ",
+                "customer_phone": "  +972 50 000 0000 ",
+            },
+        )
+    # str_strip_whitespace trims before the value reaches the service layer.
+    assert conf.call_args.kwargs["customer_name"] == "Dana"
+
+
+def test_lock_rejects_blank_slot_id() -> None:
+    res = client.post("/bookings/lock", json={"slot_id": "", "user_token": "u1"})
+    assert res.status_code == 422
+
+
+def test_review_rejects_blank_user_token() -> None:
+    res = client.post(
+        "/reviews",
+        json={"booking_id": "bk1", "user_token": "  ", "rating": 5},
+    )
+    assert res.status_code == 422
+
+
+def test_review_rejects_overlong_comment() -> None:
+    res = client.post(
+        "/reviews",
+        json={"booking_id": "bk1", "user_token": "u1", "rating": 5, "comment": "x" * 1001},
+    )
+    assert res.status_code == 422
