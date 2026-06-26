@@ -134,6 +134,9 @@
 
 <body class="bg-background text-text-primary min-h-screen pb-28 max-w-[430px] mx-auto relative overflow-x-hidden">
 
+  <!-- ═══ VIEW: Home (list/map/search/filter) ═══ -->
+  <div id="view-home">
+
   <!-- Geo fallback banner -->
   <div id="geo-banner" hidden
        class="bg-surface-container border-b border-border-light px-gutter py-2 text-center font-body-md text-text-secondary text-sm">
@@ -233,18 +236,26 @@
 
   </div><!-- /list-panel -->
 
+  </div><!-- /view-home -->
+
+  <!-- ═══ Other views (rendered by app.js / router) ═══ -->
+  <div id="view-barber" class="hidden"></div>
+  <div id="view-success" class="hidden"></div>
+  <div id="view-bookings" class="hidden"></div>
+  <div id="view-profile" class="hidden"></div>
+
   <!-- Bottom Navigation -->
   <nav class="bg-surface-1/90 font-label-mono text-label-mono fixed bottom-0 w-full max-w-[430px] z-50 h-20 backdrop-blur-2xl flex flex-row-reverse justify-around items-center px-4 pb-safe border-t border-border-light"
        style="box-shadow: 0 -4px 20px rgba(0,0,0,0.5);">
-    <a class="flex flex-col items-center justify-center text-primary gap-1 scale-110" href="#">
-      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">home</span>
+    <a data-route="#/home" class="nav-link flex flex-col items-center justify-center gap-1 transition-colors" href="#/home">
+      <span class="material-symbols-outlined">home</span>
       <span class="text-[10px]">בית</span>
     </a>
-    <a class="flex flex-col items-center justify-center text-text-muted gap-1 hover:text-primary transition-colors" href="#">
+    <a data-route="#/bookings" class="nav-link flex flex-col items-center justify-center gap-1 transition-colors" href="#/bookings">
       <span class="material-symbols-outlined">calendar_month</span>
       <span class="text-[10px]">התורים שלי</span>
     </a>
-    <a class="flex flex-col items-center justify-center text-text-muted gap-1 hover:text-primary transition-colors" href="#">
+    <a data-route="#/profile" class="nav-link flex flex-col items-center justify-center gap-1 transition-colors" href="#/profile">
       <span class="material-symbols-outlined">person</span>
       <span class="text-[10px]">פרופיל</span>
     </a>

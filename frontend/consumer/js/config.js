@@ -9,7 +9,9 @@ export const config = {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrdWdmenJtaXR2b2lhbWV2dGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMDU4ODAsImV4cCI6MjA5Nzc4MTg4MH0.ATNqChnGJFXj8SN9g7qr4EhDtms-QRbAEXbDdOkO_iY",
   GOOGLE_MAPS_API_KEY: "AIzaSyDD05RMhEYeM6X58RwHgR3HQEKIG4RVYg8",
   // Pessimistic lock window shown as a countdown in the booking UI (seconds).
-  LOCK_TTL_SECONDS: 90,
+  // Mirrors backend slot_lock_ttl_seconds; actual countdown uses the server's
+  // locked_until, this is just a UI fallback.
+  LOCK_TTL_SECONDS: 300,
   // Default radius for nearby search (metres).
   DEFAULT_RADIUS_M: 2000,
 };

@@ -43,7 +43,9 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # --- Booking ---
-    slot_lock_ttl_seconds: int = 90  # pessimistic lock window (1-2 min per spec)
+    # Pessimistic lock window: the slot is held for the booker (and blocked for
+    # everyone else) while they complete checkout. 5 min matches the Stitch UX.
+    slot_lock_ttl_seconds: int = 300
 
 
 @lru_cache

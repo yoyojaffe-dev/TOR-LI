@@ -22,6 +22,11 @@ const els = {
   btnListView:  () => document.getElementById("btn-list-view"),
   btnMapView:   () => document.getElementById("btn-map-view"),
   searchInput:  () => document.getElementById("search-input"),
+  viewHome:     () => document.getElementById("view-home"),
+  viewBarber:   () => document.getElementById("view-barber"),
+  viewSuccess:  () => document.getElementById("view-success"),
+  viewBookings: () => document.getElementById("view-bookings"),
+  viewProfile:  () => document.getElementById("view-profile"),
 };
 
 let unsubscribeSlots = null;
@@ -162,6 +167,7 @@ async function bookSlot(slotId) {
   const slot = (store.get().slots || []).find((s) => s.id === slotId);
   const shop = store.get().selectedBarbershop;
   if (!slot || !shop) return;
+  store.set({ pendingSlot: slot });
 
   try {
     await startBooking(slotId, {
@@ -238,7 +244,10 @@ function renderBarbershops(barbershops) {
 
   list.querySelectorAll("[data-id]").forEach((el) => {
     const shop = barbershops.find((b) => b.id === el.dataset.id);
-    el.addEventListener("click", () => selectBarbershop(shop));
+    el.addEventListener("click", () => {
+      store.set({ selectedBarbershop: shop });
+      location.hash = `#/barber/${shop.id}`;
+    });
   });
 }
 
@@ -295,6 +304,219 @@ function renderSlots(slots) {
   list.querySelectorAll("[data-id]").forEach((el) => {
     el.addEventListener("click", () => bookSlot(el.dataset.id));
   });
+}
+
+// ── Slot row (shared markup) ─────────────────────────────────────────────────
+
+function slotRowHTML(s) {
+  const time = new Date(s.slot_time).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+  const date = new Date(s.slot_time).toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "short" });
+  return `
+    <div data-id="${s.id}"
+         class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center
+                cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
+      <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
+        <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
+        <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
+      </div>
+      <div class="flex-1 text-right flex flex-col justify-center pr-3">
+        <span class="font-headline-sm text-base">${s.service_name}</span>
+        <span class="font-body-md text-text-secondary text-xs mt-0.5">${time} · ${date}</span>
+      </div>
+      <span class="material-symbols-outlined text-text-muted">chevron_left</span>
+    </div>`;
+}
+
+function wireSlotTaps(container) {
+  container.querySelectorAll("[data-id]").forEach((el) =>
+    el.addEventListener("click", () => bookSlot(el.dataset.id))
+  );
+}
+
+// ── Router (hash-based) ──────────────────────────────────────────────────────
+
+const VIEW_IDS = ["view-home", "view-barber", "view-success", "view-bookings", "view-profile"];
+
+function showView(id) {
+  VIEW_IDS.forEach((v) => document.getElementById(v)?.classList.toggle("hidden", v !== id));
+  // Active nav state.
+  const route = id === "view-home" ? "#/home" : id === "view-bookings" ? "#/bookings" : id === "view-profile" ? "#/profile" : null;
+  document.querySelectorAll(".nav-link").forEach((a) => {
+    const on = a.dataset.route === route;
+    a.classList.toggle("text-primary", on);
+    a.classList.toggle("scale-110", on);
+    a.classList.toggle("text-text-muted", !on);
+  });
+  window.scrollTo({ top: 0 });
+}
+
+async function router() {
+  const hash = location.hash || "#/home";
+  const barberMatch = hash.match(/^#\/barber\/(.+)$/);
+
+  if (barberMatch) {
+    showView("view-barber");
+    await renderBarberView(barberMatch[1]);
+  } else if (hash.startsWith("#/bookings")) {
+    showView("view-bookings");
+    renderBookingsView();
+  } else if (hash.startsWith("#/profile")) {
+    showView("view-profile");
+    renderProfileView();
+  } else if (hash.startsWith("#/success")) {
+    showView("view-success");
+    renderSuccessView();
+  } else {
+    showView("view-home");
+  }
+}
+
+// ── View: Barber Profile ─────────────────────────────────────────────────────
+
+async function renderBarberView(shopId) {
+  const view = els.viewBarber();
+  let shop = store.get().selectedBarbershop;
+  if (!shop || shop.id !== shopId) {
+    try { shop = await api.getBarbershop(shopId); store.set({ selectedBarbershop: shop }); }
+    catch { view.innerHTML = `<p class="p-gutter text-text-muted">לא נמצא</p>`; return; }
+  }
+
+  view.innerHTML = `
+    <!-- Hero -->
+    <section class="relative w-full h-[240px]">
+      <div class="w-full h-full bg-surface-3 flex items-center justify-center">
+        <span class="material-symbols-outlined text-7xl text-surface-variant">content_cut</span>
+      </div>
+      <div class="absolute inset-0" style="background:linear-gradient(to bottom,rgba(19,19,21,.2),#131315)"></div>
+      <button id="bp-back" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-surface-1/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-text-primary">
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+      <div class="absolute bottom-0 right-gutter translate-y-1/2">
+        <div class="w-24 h-24 rounded-full border-2 border-primary overflow-hidden bg-surface-2 flex items-center justify-center shadow-[0_0_15px_rgba(239,178,0,0.15)]">
+          <span class="material-symbols-outlined text-4xl text-primary" style="font-variation-settings:'FILL' 1;">storefront</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Info -->
+    <section class="px-gutter pt-16 pb-stack-lg">
+      <h1 class="font-headline-lg-mobile text-headline-lg-mobile text-text-primary">${shop.name}</h1>
+      <p class="font-body-md text-body-md text-text-secondary mt-1">${shop.address || ""}</p>
+      <div class="flex items-center gap-stack-md mt-stack-sm">
+        ${shop.distance_m != null ? `
+        <div class="flex items-center gap-1 text-text-secondary">
+          <span class="material-symbols-outlined text-[18px]">location_on</span>
+          <span class="font-body-md text-body-md">${Math.round(shop.distance_m)} מ'</span>
+        </div>` : ""}
+      </div>
+      <div class="flex gap-stack-sm mt-stack-lg">
+        ${shop.phone ? `
+        <a href="tel:${shop.phone}" class="flex-1 h-12 rounded-lg bg-surface-2 border border-border-light flex items-center justify-center gap-2 hover:bg-surface-3 transition-colors">
+          <span class="material-symbols-outlined text-[20px]">call</span>
+          <span class="font-body-md text-body-md font-medium">התקשר</span>
+        </a>` : ""}
+        ${shop.booking_url ? `
+        <a href="${shop.booking_url}" target="_blank" rel="noopener" class="flex-1 h-12 rounded-lg bg-surface-2 border border-border-light flex items-center justify-center gap-2 hover:bg-surface-3 transition-colors">
+          <span class="material-symbols-outlined text-[20px]">public</span>
+          <span class="font-body-md text-body-md font-medium">אתר</span>
+        </a>` : ""}
+      </div>
+    </section>
+
+    <!-- Slots -->
+    <section class="px-gutter pb-stack-lg">
+      <h2 class="font-headline-md text-headline-md mb-stack-md">תורים פנויים</h2>
+      <div id="bp-slots" class="flex flex-col gap-3">
+        <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
+        <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
+      </div>
+    </section>`;
+
+  document.getElementById("bp-back").addEventListener("click", () => { location.hash = "#/home"; });
+
+  // Load slots (real) + live updates.
+  const fill = (slots) => {
+    store.set({ slots });
+    const box = document.getElementById("bp-slots");
+    if (!box) return;
+    box.innerHTML = slots.length
+      ? slots.map(slotRowHTML).join("")
+      : `<p class="text-text-muted font-body-md py-6 text-center">אין תורים פנויים כרגע</p>`;
+    wireSlotTaps(box);
+  };
+  fill(await api.listSlots(shop.id));
+  if (unsubscribeSlots) unsubscribeSlots();
+  unsubscribeSlots = subscribeToSlots({
+    barbershopId: shop.id,
+    onChange: () => api.listSlots(shop.id).then(fill),
+  });
+}
+
+// ── View: Booking Success ────────────────────────────────────────────────────
+
+function renderSuccessView() {
+  const b = store.get().lastBooking;
+  const view = els.viewSuccess();
+  if (!b) { location.hash = "#/home"; return; }
+  const d = new Date(b.slot.slot_time);
+  view.innerHTML = `
+    <main class="px-gutter py-section-gap min-h-screen flex flex-col">
+      <div class="mt-8"></div>
+      <div class="flex justify-center items-center w-full mb-stack-lg relative">
+        <div class="absolute w-32 h-32 bg-primary/20 rounded-full blur-2xl"></div>
+        <div class="w-24 h-24 rounded-full bg-surface-1 border border-primary/30 flex items-center justify-center relative z-10 shadow-[0_0_30px_rgba(239,178,0,0.15)]">
+          <span class="material-symbols-outlined text-[56px] text-primary" style="font-variation-settings:'FILL' 1;">check_circle</span>
+        </div>
+      </div>
+      <div class="text-center mb-section-gap flex flex-col items-center">
+        <h1 class="font-display-lg text-display-lg text-text-primary mb-stack-sm">שריינת!</h1>
+        <p class="font-body-lg text-body-lg text-text-secondary">נתראה אצל ${b.shop.name} ב-${d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</p>
+      </div>
+      <div class="bg-surface-1 rounded-xl p-stack-lg border border-primary/30 shadow-[0_8px_32px_rgba(239,178,0,0.1)] flex flex-col gap-stack-md">
+        ${successRow("content_cut", "שירות", b.slot.service_name)}
+        <div class="h-px w-full bg-border-light"></div>
+        ${successRow("calendar_today", "תאריך", d.toLocaleDateString("he-IL", { day: "numeric", month: "long", year: "numeric" }))}
+        <div class="h-px w-full bg-border-light"></div>
+        ${successRow("schedule", "שעה", d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }))}
+      </div>
+      <div class="flex-grow min-h-[32px]"></div>
+      <button id="bs-home" class="w-full bg-text-primary text-background py-4 rounded-xl font-headline-sm text-headline-sm active:scale-[0.98] transition-all">
+        חזרה לדף הבית
+      </button>
+    </main>`;
+  document.getElementById("bs-home").addEventListener("click", () => { location.hash = "#/home"; });
+}
+
+function successRow(icon, label, value) {
+  return `
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center text-primary shrink-0 border border-border-light">
+        <span class="material-symbols-outlined">${icon}</span>
+      </div>
+      <div class="flex flex-col">
+        <span class="font-label-mono text-label-mono text-text-secondary mb-1">${label}</span>
+        <span class="font-headline-sm text-headline-sm text-text-primary">${value}</span>
+      </div>
+    </div>`;
+}
+
+// ── View: My Bookings + Profile (placeholders pending bookings-history API) ───
+
+function placeholderView(view, icon, title, sub) {
+  view.innerHTML = `
+    <header class="px-gutter pt-8 pb-4"><h1 class="font-headline-lg text-headline-lg">${title}</h1></header>
+    <div class="flex flex-col items-center justify-center text-center gap-3 px-gutter" style="min-height:60vh">
+      <span class="material-symbols-outlined text-6xl text-surface-variant">${icon}</span>
+      <p class="font-body-lg text-body-lg text-text-secondary">${sub}</p>
+    </div>`;
+}
+
+function renderBookingsView() {
+  placeholderView(els.viewBookings(), "calendar_month", "התורים שלי", "היסטוריית ההזמנות תופיע כאן בקרוב");
+}
+
+function renderProfileView() {
+  placeholderView(els.viewProfile(), "person", "פרופיל", "ניהול החשבון יתווסף בקרוב");
 }
 
 // ── Manual location search ───────────────────────────────────────────────────
@@ -677,9 +899,11 @@ async function onConfirmBooking() {
   try {
     const result = await confirmBooking(name, phone);
     if (result.success) {
+      store.set({
+        lastBooking: { shop: store.get().selectedBarbershop, slot: store.get().pendingSlot },
+      });
       closeConfirmSheet();
-      els.slotsSection()?.classList.add("hidden");
-      toast("ההזמנה בוצעה בהצלחה! 🎉");
+      location.hash = "#/success";
     } else {
       toast(`שגיאה: ${result.message || "נסה שוב"}`);
       btn.disabled = false;
@@ -726,26 +950,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Bottom nav: prevent dead "#" jumps; surface not-yet-built tabs cleanly.
-  document.querySelectorAll("nav a").forEach((link) => {
-    const label = link.textContent.trim();
-    link.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (label.includes("בית")) {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        toast("בקרוב 🚧");
-      }
-    });
-  });
+  // Hash router: nav links + deep links + back/forward all flow through here.
+  window.addEventListener("hashchange", router);
 
-  // Close slots panel — also release any active pessimistic lock (no orphan locks).
-  document.getElementById("btn-close-slots")?.addEventListener("click", () => {
-    cancelBooking();
-    els.slotsSection()?.classList.add("hidden");
-  });
-
-  init();
+  init().then(router);
 });
 
 window.addEventListener("beforeunload", () => {
