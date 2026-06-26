@@ -22,13 +22,21 @@ logging.basicConfig(
 )
 
 from app.agents.discovery_agent import DiscoveryAgent  # noqa: E402
+from scripts._cli import (  # noqa: E402
+    add_version,
+    latitude,
+    longitude,
+    positive_int,
+    run_safely,
+)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Tor-li Discovery Agent once.")
-    parser.add_argument("--lat", type=float, default=32.0853, help="Centre latitude")
-    parser.add_argument("--lng", type=float, default=34.7818, help="Centre longitude")
-    parser.add_argument("--radius", type=int, default=5000, help="Search radius in metres")
+    add_version(parser)
+    parser.add_argument("--lat", type=latitude, default=32.0853, help="Centre latitude")
+    parser.add_argument("--lng", type=longitude, default=34.7818, help="Centre longitude")
+    parser.add_argument("--radius", type=positive_int, default=5000, help="Search radius in metres")
     args = parser.parse_args()
 
     print(f"Discovery: lat={args.lat}, lng={args.lng}, radius={args.radius}m")
@@ -37,4 +45,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_safely(main)

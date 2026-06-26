@@ -30,6 +30,7 @@ logging.basicConfig(
 )
 
 from app.agents.discovery_agent import DiscoveryAgent  # noqa: E402
+from scripts._cli import add_version, nonneg_float, positive_int, run_safely  # noqa: E402
 
 logger = logging.getLogger("national_discovery")
 
@@ -63,9 +64,10 @@ def _select_cities(filter_csv: str | None) -> list[dict]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Tor-li nationwide discovery grid.")
+    add_version(parser)
     parser.add_argument(
         "--radius",
-        type=int,
+        type=positive_int,
         default=DEFAULT_RADIUS_M,
         help=f"Search radius per city in metres (default {DEFAULT_RADIUS_M})",
     )
@@ -77,7 +79,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--sleep",
-        type=float,
+        type=nonneg_float,
         default=DEFAULT_SLEEP_S,
         help=f"Seconds to sleep between cities (default {DEFAULT_SLEEP_S})",
     )
@@ -133,4 +135,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    run_safely(main)
