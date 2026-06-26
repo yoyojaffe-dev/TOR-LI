@@ -12,10 +12,6 @@ const els = {
   map:          () => document.getElementById("map"),
   shopList:     () => document.getElementById("barbershop-list"),
   slotList:     () => document.getElementById("slot-list"),
-  lockTimer:    () => document.getElementById("lock-timer"),
-  lockTimerBar: () => document.getElementById("lock-timer-bar"),
-  bookingForm:  () => document.getElementById("booking-form"),
-  bookingSection:()=> document.getElementById("booking-section"),
   slotsSection: () => document.getElementById("slots-section"),
   slotsTitle:   () => document.getElementById("slots-title"),
   shopCount:    () => document.getElementById("shop-count"),
@@ -163,24 +159,27 @@ async function selectBarbershop(shop) {
 }
 
 async function bookSlot(slotId) {
+  const slot = (store.get().slots || []).find((s) => s.id === slotId);
+  const shop = store.get().selectedBarbershop;
+  if (!slot || !shop) return;
+
   try {
     await startBooking(slotId, {
       onTick: (remaining) => {
-        const t = els.lockTimer();
-        if (t) t.textContent = `${remaining}s`;
-        els.lockTimerBar()?.classList.remove("hidden");
+        const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
+        const ss = String(remaining % 60).padStart(2, "0");
+        const el = document.getElementById("cs-countdown");
+        if (el) el.textContent = `${mm}:${ss}`;
       },
       onExpire: () => {
-        alert("פג תוקף ההזמנה — אנא בחר תור מחדש.");
-        els.lockTimerBar()?.classList.add("hidden");
-        els.bookingSection()?.classList.add("hidden");
+        closeConfirmSheet();
+        toast("פג תוקף ההזמנה — בחר תור מחדש");
       },
     });
-    els.bookingSection()?.classList.remove("hidden");
-    els.bookingSection()?.scrollIntoView({ behavior: "smooth", block: "start" });
+    openConfirmSheet(shop, slot);
   } catch (err) {
     if (err instanceof ApiError && err.status === 409) {
-      alert("מצטערים, התור הזה כבר נתפס.");
+      toast("מצטערים, התור הזה כבר נתפס");
     } else {
       console.error(err);
     }
@@ -452,6 +451,248 @@ function closeFilterSheet() {
   backdrop.classList.add("opacity-0", "pointer-events-none");
 }
 
+// ── Confirm & Pay bottom-sheet (Stitch frame "אישור ותשלום") ─────────────────
+
+const PAY_METHODS = [
+  { value: "pay_at_shop", icon: "storefront", label: "שלם במספרה", sub: "הבטחת התור באמצעות פרטים" },
+  { value: "apple_pay", icon: "apps", label: "Apple Pay", sub: null },
+  { value: "credit_card", icon: "credit_card", label: "כרטיס אשראי חדש", sub: null },
+];
+
+function buildConfirmSheet() {
+  let backdrop = document.getElementById("confirm-backdrop");
+  if (backdrop) return backdrop;
+
+  backdrop = document.createElement("div");
+  backdrop.id = "confirm-backdrop";
+  backdrop.className =
+    "fixed inset-0 z-[80] bg-black/60 opacity-0 pointer-events-none " +
+    "transition-opacity duration-200 flex items-end justify-center";
+
+  const methods = PAY_METHODS.map(
+    (m, i) => `
+    <label class="block cursor-pointer">
+      <input class="cs-pay sr-only" name="cs_pay" type="radio" value="${m.value}" ${i === 0 ? "checked" : ""}/>
+      <div class="cs-pay-card bg-surface-2 border border-border-light rounded-lg p-stack-md flex items-center gap-stack-md transition-all">
+        <div class="w-10 h-6 bg-surface-3 rounded flex items-center justify-center border border-border-light">
+          <span class="material-symbols-outlined text-text-muted text-[18px]">${m.icon}</span>
+        </div>
+        <div class="flex-1">
+          <p class="text-body-md font-body-md text-text-primary">${m.label}</p>
+          ${m.sub ? `<p class="text-label-mono font-label-mono text-text-muted text-[11px]">${m.sub}</p>` : ""}
+        </div>
+        <div class="cs-check w-6 h-6 rounded-full bg-primary flex items-center justify-center opacity-0 scale-50 transition-all duration-300">
+          <span class="material-symbols-outlined text-on-primary text-sm">check</span>
+        </div>
+      </div>
+    </label>`
+  ).join("");
+
+  backdrop.innerHTML = `
+    <div id="confirm-sheet"
+         class="w-full max-w-[430px] bg-surface-1 border-t border-border-light rounded-t-3xl
+                max-h-[92vh] overflow-y-auto hide-scrollbar translate-y-full
+                transition-transform duration-300 ease-out">
+      <div class="sticky top-0 bg-surface-1 pt-3 pb-2 z-10">
+        <div class="w-10 h-1 bg-surface-variant rounded-full mx-auto"></div>
+      </div>
+      <div class="px-gutter pb-3 flex justify-between items-center">
+        <h2 class="font-headline-md text-headline-md">אישור ותשלום</h2>
+        <button id="cs-close" class="text-text-muted hover:text-text-primary transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="px-gutter flex flex-col gap-stack-lg pb-4">
+        <!-- Order summary -->
+        <section class="bg-surface-2 rounded-xl p-stack-md border border-border-light">
+          <h3 class="text-label-mono font-label-mono text-text-muted mb-stack-sm">סיכום הזמנה</h3>
+          <div class="flex items-center gap-stack-sm mb-stack-md pb-stack-md border-b border-border-light">
+            <div class="w-12 h-12 rounded-full bg-surface-3 border border-border-light flex items-center justify-center text-primary">
+              <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">content_cut</span>
+            </div>
+            <div class="text-right flex-1 min-w-0">
+              <p id="cs-shop" class="text-body-lg font-body-lg text-text-primary truncate"></p>
+              <p id="cs-addr" class="text-body-md font-body-md text-text-muted truncate"></p>
+            </div>
+          </div>
+          <div class="space-y-stack-sm mb-stack-md">
+            <div class="flex justify-between items-center">
+              <span class="text-body-md font-body-md text-text-muted">שירות</span>
+              <span id="cs-service" class="text-body-md font-body-md text-text-primary"></span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-body-md font-body-md text-text-muted">תאריך ושעה</span>
+              <span id="cs-time" class="text-body-md font-body-md text-text-primary"></span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center pt-stack-sm border-t border-border-light">
+            <span class="text-body-lg font-body-lg text-text-primary">סה"כ</span>
+            <span id="cs-total" class="text-price-lg font-price-lg text-primary drop-shadow-[0_0_8px_rgba(239,178,0,0.3)]"></span>
+          </div>
+        </section>
+
+        <!-- Customer details (required by booking API; not shown in Stitch which assumes auth) -->
+        <section class="flex flex-col gap-stack-sm">
+          <h3 class="text-label-mono font-label-mono text-text-muted">פרטי לקוח</h3>
+          <input id="cs-name" placeholder="שם מלא" required
+                 class="w-full bg-surface-2 border border-border-light rounded-lg h-12 px-4 font-body-md text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50 transition-colors"/>
+          <input id="cs-phone" type="tel" placeholder="מספר טלפון" required
+                 class="w-full bg-surface-2 border border-border-light rounded-lg h-12 px-4 font-body-md text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50 transition-colors"/>
+        </section>
+
+        <!-- Payment methods -->
+        <section>
+          <h3 class="text-label-mono font-label-mono text-text-muted mb-stack-sm">אמצעי תשלום</h3>
+          <div class="space-y-stack-sm">${methods}</div>
+        </section>
+
+        <!-- No-show protection -->
+        <section class="bg-surface-2 border border-border-light rounded-lg p-stack-md flex gap-stack-sm items-start">
+          <span class="material-symbols-outlined text-primary mt-0.5">shield_lock</span>
+          <div>
+            <p class="text-body-md font-body-md text-text-primary mb-1">הגנה מפני אי-הגעה</p>
+            <p class="text-label-mono font-label-mono text-text-muted text-[11px] leading-relaxed">הפרטים נשמרים בצורה מאובטחת לביטחון התור בלבד. חיוב יבוצע רק במקרה של אי-הגעה בהתאם למדיניות הביטול.</p>
+          </div>
+        </section>
+        <!-- Cancellation policy -->
+        <section class="bg-error-container/10 border border-error/20 rounded-lg p-stack-md flex gap-stack-sm items-start">
+          <span class="material-symbols-outlined text-error mt-0.5" style="font-variation-settings:'FILL' 1;">warning</span>
+          <div>
+            <p class="text-body-md font-body-md text-error mb-1">מדיניות ביטולים</p>
+            <p class="text-label-mono font-label-mono text-text-muted text-[11px] leading-relaxed">ביטול אפשרי עד שעתיים לפני התור. אי הגעה תחויב בדמי ביטול של ₪40.</p>
+          </div>
+        </section>
+      </div>
+
+      <!-- Sticky action -->
+      <div class="sticky bottom-0 bg-surface-1/95 backdrop-blur-xl border-t border-border-light p-gutter pb-[calc(16px+env(safe-area-inset-bottom))]">
+        <div class="flex items-center justify-center gap-2 bg-primary-container/10 border border-primary-container/30 py-2 px-4 rounded-full mb-stack-md animate-pulse">
+          <span class="material-symbols-outlined text-primary-container text-sm">timer</span>
+          <span class="font-label-mono text-label-mono text-primary-container text-xs">התור ננעל עבורך</span>
+          <span id="cs-countdown" class="font-label-mono text-label-mono text-primary-container text-xs font-bold mr-auto">--:--</span>
+        </div>
+        <label class="flex items-center gap-stack-sm mb-stack-md cursor-pointer">
+          <input id="cs-terms" type="checkbox"
+                 class="w-5 h-5 rounded border-border-light bg-surface-3 text-primary focus:ring-primary"/>
+          <span class="text-label-mono font-label-mono text-text-muted text-[11px]">אני מסכים/ה לתנאי השימוש ולמדיניות הביטולים.</span>
+        </label>
+        <button id="cs-confirm" disabled
+                class="w-full bg-text-primary text-black h-14 rounded-xl text-body-lg font-body-lg font-bold
+                       enabled:hover:opacity-90 enabled:active:scale-[0.98] transition-all duration-200
+                       flex justify-center items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+          <span>אשר תור</span><span class="opacity-30 px-1">·</span><span id="cs-cta-price"></span>
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(backdrop);
+
+  // Payment radio gold-check toggle.
+  backdrop.querySelectorAll(".cs-pay").forEach((radio) => {
+    radio.addEventListener("change", () => {
+      backdrop.querySelectorAll("label").forEach((lbl) => {
+        const r = lbl.querySelector(".cs-pay");
+        const card = lbl.querySelector(".cs-pay-card");
+        const check = lbl.querySelector(".cs-check");
+        if (!r || !card || !check) return;
+        const on = r.checked;
+        card.classList.toggle("border-primary", on);
+        check.classList.toggle("opacity-0", !on);
+        check.classList.toggle("scale-50", !on);
+      });
+    });
+  });
+
+  // CTA gating: terms + name + phone.
+  const gate = () => {
+    const ok =
+      backdrop.querySelector("#cs-terms").checked &&
+      backdrop.querySelector("#cs-name").value.trim() &&
+      backdrop.querySelector("#cs-phone").value.trim();
+    backdrop.querySelector("#cs-confirm").disabled = !ok;
+  };
+  ["#cs-terms", "#cs-name", "#cs-phone"].forEach((sel) =>
+    backdrop.querySelector(sel).addEventListener("input", gate)
+  );
+
+  backdrop.querySelector("#cs-close").addEventListener("click", () => {
+    cancelBooking();
+    closeConfirmSheet();
+  });
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) {
+      cancelBooking();
+      closeConfirmSheet();
+    }
+  });
+  backdrop.querySelector("#cs-confirm").addEventListener("click", onConfirmBooking);
+
+  // Trigger initial check styling for the default-selected method.
+  backdrop.querySelector(".cs-pay").dispatchEvent(new Event("change"));
+  return backdrop;
+}
+
+function openConfirmSheet(shop, slot) {
+  const backdrop = buildConfirmSheet();
+  const $ = (s) => backdrop.querySelector(s);
+
+  $("#cs-shop").textContent = shop.name;
+  $("#cs-addr").textContent = shop.address || "";
+  $("#cs-service").textContent = slot.service_name;
+  $("#cs-time").textContent = new Date(slot.slot_time).toLocaleString("he-IL", {
+    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+  });
+  const price = slot.price != null ? `₪${slot.price}` : "—";
+  $("#cs-total").textContent = price;
+  $("#cs-cta-price").textContent = price;
+
+  // Prefill saved customer details.
+  $("#cs-name").value = localStorage.getItem("torli_customer_name") || "";
+  $("#cs-phone").value = localStorage.getItem("torli_customer_phone") || "";
+  $("#cs-terms").checked = false;
+  $("#cs-confirm").disabled = true;
+
+  backdrop.classList.remove("opacity-0", "pointer-events-none");
+  requestAnimationFrame(() => $("#confirm-sheet").classList.remove("translate-y-full"));
+}
+
+function closeConfirmSheet() {
+  const backdrop = document.getElementById("confirm-backdrop");
+  if (!backdrop) return;
+  backdrop.querySelector("#confirm-sheet").classList.add("translate-y-full");
+  backdrop.classList.add("opacity-0", "pointer-events-none");
+}
+
+async function onConfirmBooking() {
+  const backdrop = document.getElementById("confirm-backdrop");
+  const name = backdrop.querySelector("#cs-name").value.trim();
+  const phone = backdrop.querySelector("#cs-phone").value.trim();
+  const btn = backdrop.querySelector("#cs-confirm");
+
+  localStorage.setItem("torli_customer_name", name);
+  localStorage.setItem("torli_customer_phone", phone);
+
+  btn.disabled = true;
+  btn.querySelector("span").textContent = "מאשר...";
+  try {
+    const result = await confirmBooking(name, phone);
+    if (result.success) {
+      closeConfirmSheet();
+      els.slotsSection()?.classList.add("hidden");
+      toast("ההזמנה בוצעה בהצלחה! 🎉");
+    } else {
+      toast(`שגיאה: ${result.message || "נסה שוב"}`);
+      btn.disabled = false;
+      btn.querySelector("span").textContent = "אשר תור";
+    }
+  } catch (err) {
+    console.error(err);
+    toast("ההזמנה נכשלה — נסה שוב");
+    btn.disabled = false;
+    btn.querySelector("span").textContent = "אשר תור";
+  }
+}
+
 // ── Event wiring ─────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -501,28 +742,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Close slots panel — also release any active pessimistic lock (no orphan locks).
   document.getElementById("btn-close-slots")?.addEventListener("click", () => {
     cancelBooking();
-    els.lockTimerBar()?.classList.add("hidden");
     els.slotsSection()?.classList.add("hidden");
-    els.bookingSection()?.classList.add("hidden");
-  });
-
-  // Booking form submit.
-  els.bookingForm()?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const data = new FormData(e.target);
-    try {
-      const result = await confirmBooking(data.get("name"), data.get("phone"));
-      if (result.success) {
-        alert("ההזמנה בוצעה בהצלחה! 🎉");
-        els.bookingSection()?.classList.add("hidden");
-        els.slotsSection()?.classList.add("hidden");
-        els.lockTimerBar()?.classList.add("hidden");
-      } else {
-        alert(`שגיאה: ${result.message}`);
-      }
-    } catch (err) {
-      console.error(err);
-    }
   });
 
   init();

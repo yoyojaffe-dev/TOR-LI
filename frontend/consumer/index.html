@@ -229,22 +229,7 @@
       <div id="slot-list" class="flex flex-col gap-3"></div>
     </section>
 
-    <!-- Booking form (hidden until a slot is locked) -->
-    <section id="booking-section" class="px-gutter mb-section-gap hidden">
-      <h2 class="font-headline-md text-headline-md mb-stack-md">פרטי הזמנה</h2>
-      <form id="booking-form" class="flex flex-col gap-3">
-        <input name="name"
-               class="w-full bg-surface-1 border border-border-light rounded-xl h-12 px-4 font-body-md text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 transition-colors"
-               placeholder="שם מלא" required/>
-        <input name="phone"
-               class="w-full bg-surface-1 border border-border-light rounded-xl h-12 px-4 font-body-md text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 transition-colors"
-               placeholder="מספר טלפון" type="tel" required/>
-        <button type="submit"
-                class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-xl flex justify-center items-center transition-transform duration-200 active:scale-95">
-          אישור הזמנה
-        </button>
-      </form>
-    </section>
+    <!-- Booking confirm/pay UI is a slide-up bottom-sheet injected by app.js. -->
 
   </div><!-- /list-panel -->
 
