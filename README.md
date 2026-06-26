@@ -122,6 +122,11 @@ Reference HTML/CSS frames + design docs (`DESIGN.md`, `MASTER-PROMPT.md`,
 | `migrations/…000200_grant_anon_select.sql` | Grant anon SELECT + SECURITY DEFINER on radius RPC. |
 | `migrations/…000300_upsert_free_slot.sql` | `upsert_free_slot` RPC (never resets a locked/booked slot). |
 | `migrations/…20260626000000_persist_bookings.sql` | `bookings.user_token`; `confirm_booking` now inserts the booking row; `bookings_for_user` read RPC. |
+| `migrations/…120000_additive_core_tables_users_services_staff.sql` | New `users`, `services`, `staff`; `barbershops.is_active_partner`; FK indexes. Additive — leaves `available_slots`/`bookings` untouched. |
+| `migrations/…120100_owner_scoped_writes_and_appointments.sql` | `barbershops.owner_id` + `is_shop_owner()`; owner-scoped write RLS on shops/services/staff/slots; `available_slots.staff_id`; new spec `appointments` table (parallel to `bookings`). |
+| `migrations/…120200_harden_is_shop_owner_invoker.sql` | `is_shop_owner` → SECURITY INVOKER + EXECUTE revoked from anon. |
+| `migrations/…120300_grant_dml_new_tables.sql` | **Fix:** grant DML on new tables (MCP-created tables got no default grants → RLS was unreachable). |
+| `migrations/…120400_grant_owner_dml_existing_tables.sql` | **Fix:** grant authenticated write on `barbershops`/`available_slots` so owner policies can fire. |
 
 ---
 
@@ -139,6 +144,54 @@ Reference HTML/CSS frames + design docs (`DESIGN.md`, `MASTER-PROMPT.md`,
   (re-entrant); blocks only *other* users.
 - `release_slot`, `confirm_booking` (inserts booking + flips slot), `upsert_free_slot`,
   `bookings_for_user`, `upsert_barbershop`.
+
+---
+
+## Identity & multi-tenant schema (auth + owner RLS)
+
+Added on top of the discovery/booking core to give the app real user identity
+and shop-owner self-service, secured entirely with Row-Level Security. **Additive
+only** — existing tables/RPCs are unchanged, so the running app keeps working.
+
+### New / changed tables
+- **users** — profile coupled 1:1 to `auth.users` (`id` FK, `on delete cascade`):
+  `role (client|barber|owner), full_name, phone, created_at`. RLS: a user reads/
+  updates/inserts **only their own row** (`auth.uid() = id`).
+- **services** — per-shop catalog: `id, shop_id→barbershops, name, duration_mins,
+  price`. RLS: authenticated read; insert/update/delete only by the shop owner.
+- **staff** — per-shop employees: `id, shop_id→barbershops, name, is_active`.
+  RLS: authenticated read; owner-only writes.
+- **appointments** — spec booking model, **parallel to `bookings`** (not a
+  replacement yet): `client_id→users, slot_id→available_slots (unique), status
+  (pending|confirmed|completed|cancelled), client_notes, locked_until`. RLS:
+  client reads/inserts own; shop owner reads appointments for slots in their shop.
+- **barbershops** (existing) — added `is_active_partner` and `owner_id→users`.
+  RLS: existing public read kept; owner insert/update added.
+- **available_slots** (existing) — added `staff_id→staff`. RLS: existing public
+  read kept; owner insert/update/delete added.
+
+### Ownership model
+`barbershops.owner_id = auth.uid()` ties a user to their shop. The
+`is_shop_owner(shop_id)` predicate (SECURITY INVOKER, authenticated-only EXECUTE)
+backs every owner-scoped write policy on services/staff/slots; `barbershops`
+checks `owner_id` directly. `service_role` and the existing SECURITY DEFINER RPCs
+(Discovery/Scraping agents) bypass RLS and are unaffected.
+
+### Grants — important gotcha
+Tables created via the Supabase MCP did **not** inherit Supabase's default
+privilege grants. They had only `REFERENCES,TRIGGER,TRUNCATE`, so RLS policies
+were dead (PostgREST returns *permission denied* before evaluating RLS) and even
+`service_role` could not write. Migrations `…120300` / `…120400` grant the DML
+each policy gates. `anon` is intentionally left out (these tables are
+authenticated-only).
+
+### Verification
+A rolled-back transaction simulated `authenticated` owners/clients (setting
+`request.jwt.claims`) and asserted **14 allow/deny cases** — owner can write own
+shop's services/staff/slots but not others'; owner can update own shop only;
+client can book/see only their own appointment; an unrelated client sees none;
+the shop owner can see appointments for their slots. All passed; zero test rows
+persisted.
 
 ---
 
