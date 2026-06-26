@@ -33,7 +33,7 @@ _DETAIL_FIELDS = [
     "website",
     "opening_hours",
     "geometry",
-    "photos",
+    "photo",
 ]
 
 
