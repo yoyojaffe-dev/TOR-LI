@@ -44,6 +44,12 @@ export const api = {
   listBookings: (userToken) =>
     request(`/bookings?user_token=${encodeURIComponent(userToken)}`),
 
+  cancelBooking: (bookingId, userToken) =>
+    request("/bookings/cancel", {
+      method: "POST",
+      body: JSON.stringify({ booking_id: bookingId, user_token: userToken }),
+    }),
+
   // Pessimistic lock lifecycle.
   lockSlot: (slotId, userToken) =>
     request("/bookings/lock", {

@@ -176,6 +176,26 @@ def test_list_bookings_requires_user_token() -> None:
     assert client.get("/bookings").status_code == 422
 
 
+def test_cancel_booking_ok() -> None:
+    with patch("app.routers.bookings.locking.cancel_booking",
+               return_value={"success": True, "message": "cancelled"}) as cb:
+        res = client.post("/bookings/cancel", json={"booking_id": "bk1", "user_token": "u1"})
+    assert res.status_code == 200
+    assert res.json()["success"] is True
+    assert cb.call_args[0] == ("bk1", "u1")
+
+
+def test_cancel_booking_conflict() -> None:
+    with patch("app.routers.bookings.locking.cancel_booking",
+               return_value={"success": False, "message": "not found"}):
+        res = client.post("/bookings/cancel", json={"booking_id": "bk1", "user_token": "u1"})
+    assert res.status_code == 409
+
+
+def test_cancel_booking_validation() -> None:
+    assert client.post("/bookings/cancel", json={"booking_id": "bk1"}).status_code == 422
+
+
 # ── /admin ───────────────────────────────────────────────────────────────────
 
 def test_admin_discovery_run() -> None:

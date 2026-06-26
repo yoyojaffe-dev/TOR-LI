@@ -27,6 +27,9 @@ const els = {
   viewSuccess:  () => document.getElementById("view-success"),
   viewBookings: () => document.getElementById("view-bookings"),
   viewProfile:  () => document.getElementById("view-profile"),
+  viewSplash:   () => document.getElementById("view-splash"),
+  viewRole:     () => document.getElementById("view-role"),
+  viewVerify:   () => document.getElementById("view-verify"),
 };
 
 let unsubscribeSlots = null;
@@ -86,6 +89,11 @@ function setView(view) {
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 async function init() {
+  // First-run: send new visitors through onboarding before the home loads.
+  if (!localStorage.getItem("torli_onboarded") && (!location.hash || location.hash === "#/home")) {
+    location.hash = "#/splash";
+  }
+
   // Priority on load: GPS -> Jerusalem fallback. (Manual search overrides later.)
   try {
     const position = await getCurrentPosition();
@@ -362,10 +370,16 @@ function wireSlotTaps(container) {
 
 // ── Router (hash-based) ──────────────────────────────────────────────────────
 
-const VIEW_IDS = ["view-home", "view-barber", "view-success", "view-bookings", "view-profile"];
+const VIEW_IDS = [
+  "view-home", "view-barber", "view-success", "view-bookings", "view-profile",
+  "view-splash", "view-role", "view-verify",
+];
+const ONBOARDING_VIEWS = ["view-splash", "view-role", "view-verify"];
 
 function showView(id) {
   VIEW_IDS.forEach((v) => document.getElementById(v)?.classList.toggle("hidden", v !== id));
+  // Hide bottom nav during onboarding (full-screen flow).
+  document.getElementById("bottom-nav")?.classList.toggle("hidden", ONBOARDING_VIEWS.includes(id));
   // Active nav state.
   const route = id === "view-home" ? "#/home" : id === "view-bookings" ? "#/bookings" : id === "view-profile" ? "#/profile" : null;
   document.querySelectorAll(".nav-link").forEach((a) => {
@@ -393,6 +407,15 @@ async function router() {
   } else if (hash.startsWith("#/success")) {
     showView("view-success");
     renderSuccessView();
+  } else if (hash.startsWith("#/splash")) {
+    showView("view-splash");
+    renderSplashView();
+  } else if (hash.startsWith("#/role")) {
+    showView("view-role");
+    renderRoleView();
+  } else if (hash.startsWith("#/verify")) {
+    showView("view-verify");
+    renderVerifyView();
   } else {
     showView("view-home");
   }
@@ -615,25 +638,85 @@ async function renderBookingsView() {
   box.innerHTML = bookings
     .map((b) => {
       const d = new Date(b.slot_time);
-      const upcoming = d.getTime() >= now;
+      const cancelled = b.status === "cancelled";
+      const upcoming = !cancelled && d.getTime() >= now;
+      const chip = cancelled
+        ? `<span class="font-label-mono text-label-mono text-[10px] px-2 py-1 rounded-full bg-error-container/20 text-error border border-error/20">מבוטל</span>`
+        : `<span class="font-label-mono text-label-mono text-[10px] px-2 py-1 rounded-full ${upcoming ? "bg-primary/10 text-primary border border-primary/30" : "bg-surface-3 text-text-muted"}">${upcoming ? "מתוכנן" : "עבר"}</span>`;
       return `
-      <div class="bg-surface-1 border ${upcoming ? "border-primary/30" : "border-border-light"} rounded-2xl p-stack-md flex items-center gap-stack-md">
-        <div class="w-12 h-12 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary shrink-0">
-          <span class="material-symbols-outlined">content_cut</span>
+      <div class="bg-surface-1 border ${upcoming ? "border-primary/30" : "border-border-light"} rounded-2xl p-stack-md ${cancelled ? "opacity-60" : ""}">
+        <div class="flex items-center gap-stack-md">
+          <div class="w-12 h-12 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary shrink-0">
+            <span class="material-symbols-outlined">content_cut</span>
+          </div>
+          <div class="flex-1 text-right min-w-0">
+            <p class="font-headline-sm text-base truncate">${b.shop_name}</p>
+            <p class="font-body-md text-text-secondary text-sm truncate">${b.service_name}${b.price != null ? " · ₪" + b.price : ""}</p>
+            <p class="font-label-mono text-label-mono text-text-muted text-[11px] mt-0.5">
+              ${d.toLocaleDateString("he-IL", { day: "numeric", month: "short" })} · ${d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+            </p>
+          </div>
+          ${chip}
         </div>
-        <div class="flex-1 text-right min-w-0">
-          <p class="font-headline-sm text-base truncate">${b.shop_name}</p>
-          <p class="font-body-md text-text-secondary text-sm truncate">${b.service_name}${b.price != null ? " · ₪" + b.price : ""}</p>
-          <p class="font-label-mono text-label-mono text-text-muted text-[11px] mt-0.5">
-            ${d.toLocaleDateString("he-IL", { day: "numeric", month: "short" })} · ${d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
-          </p>
-        </div>
-        <span class="font-label-mono text-label-mono text-[10px] px-2 py-1 rounded-full ${upcoming ? "bg-primary/10 text-primary border border-primary/30" : "bg-surface-3 text-text-muted"}">
-          ${upcoming ? "מתוכנן" : "עבר"}
-        </span>
+        ${upcoming ? `
+        <button data-cancel-id="${b.booking_id}"
+                class="mt-stack-md w-full h-10 rounded-lg border border-error/30 text-error font-body-md text-sm
+                       hover:bg-error-container/10 transition-colors">
+          בטל תור
+        </button>` : ""}
       </div>`;
     })
     .join("");
+
+  box.querySelectorAll("[data-cancel-id]").forEach((btn) =>
+    btn.addEventListener("click", async () => {
+      const ok = await confirmDialog("ביטול תור", "לבטל את התור? לא ניתן לשחזר.", "בטל תור");
+      if (!ok) return;
+      try {
+        await api.cancelBooking(btn.dataset.cancelId, store.get().userToken);
+        toast("התור בוטל");
+        renderBookingsView();
+      } catch (err) {
+        console.error(err);
+        toast("ביטול נכשל — נסה שוב");
+      }
+    })
+  );
+}
+
+// Styled yes/no confirm dialog. Returns a Promise<boolean>.
+function confirmDialog(title, body, confirmLabel = "אישור") {
+  return new Promise((resolve) => {
+    const backdrop = document.createElement("div");
+    backdrop.className =
+      "fixed inset-0 z-[90] bg-black/60 flex items-end justify-center opacity-0 transition-opacity duration-200";
+    backdrop.innerHTML = `
+      <div class="confirm-card w-full max-w-[430px] bg-surface-1 border-t border-border-light rounded-t-3xl
+                  p-gutter pb-[calc(20px+env(safe-area-inset-bottom))] translate-y-full transition-transform duration-300 ease-out">
+        <div class="w-10 h-1 bg-surface-variant rounded-full mx-auto mb-stack-lg"></div>
+        <h2 class="font-headline-md text-headline-md mb-stack-sm">${title}</h2>
+        <p class="font-body-md text-body-md text-text-secondary mb-stack-lg">${body}</p>
+        <div class="flex gap-3">
+          <button data-act="no" class="flex-1 py-3 rounded-xl border border-border-light text-text-primary font-body-lg hover:bg-surface-2 transition-colors">חזרה</button>
+          <button data-act="yes" class="flex-1 py-3 rounded-xl bg-error text-on-error font-headline-sm active:scale-95 transition-transform">${confirmLabel}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const card = backdrop.querySelector(".confirm-card");
+    requestAnimationFrame(() => {
+      backdrop.classList.remove("opacity-0");
+      card.classList.remove("translate-y-full");
+    });
+    const close = (val) => {
+      card.classList.add("translate-y-full");
+      backdrop.classList.add("opacity-0");
+      setTimeout(() => backdrop.remove(), 250);
+      resolve(val);
+    };
+    backdrop.querySelector('[data-act="yes"]').addEventListener("click", () => close(true));
+    backdrop.querySelector('[data-act="no"]').addEventListener("click", () => close(false));
+    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(false); });
+  });
 }
 
 async function renderProfileView() {
@@ -718,6 +801,134 @@ async function renderProfileView() {
     const c = document.getElementById("pf-count");
     if (c) c.textContent = String(bookings.length);
   } catch { /* leave dash */ }
+}
+
+// ── Onboarding: Splash / Role / Verify (UI flow; no auth backend) ────────────
+
+function renderSplashView() {
+  els.viewSplash().innerHTML = `
+    <main class="min-h-screen flex flex-col items-center justify-between px-gutter py-section-gap text-center">
+      <div class="flex-grow flex flex-col items-center justify-center gap-stack-lg">
+        <div class="relative">
+          <div class="absolute inset-0 bg-primary/20 rounded-full blur-2xl"></div>
+          <div class="relative w-24 h-24 rounded-full bg-surface-1 border border-primary/30 flex items-center justify-center shadow-[0_0_30px_rgba(239,178,0,0.15)]">
+            <span class="material-symbols-outlined text-5xl text-primary" style="font-variation-settings:'FILL' 1;">content_cut</span>
+          </div>
+        </div>
+        <div>
+          <h1 class="font-display-lg text-display-lg text-text-primary">Tor</h1>
+          <p class="font-body-lg text-body-lg text-text-secondary mt-stack-sm">הזמנת תורים מהירה למספרות פרימיום</p>
+        </div>
+      </div>
+      <div class="w-full">
+        <button id="sp-start" class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+          מתחילים <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <p class="font-label-mono text-label-mono text-text-muted text-[11px] mt-stack-md">v 1.0.0</p>
+      </div>
+    </main>`;
+  document.getElementById("sp-start").addEventListener("click", () => { location.hash = "#/role"; });
+}
+
+function renderRoleView() {
+  els.viewRole().innerHTML = `
+    <main class="min-h-screen flex flex-col px-gutter py-section-gap">
+      <button id="rl-back" class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-primary mb-section-gap">
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+      <h1 class="font-headline-lg-mobile text-headline-lg-mobile text-text-primary mb-stack-sm">ברוכים הבאים ל-Tor</h1>
+      <p class="font-body-md text-body-md text-text-secondary mb-section-gap">אנא בחרו את סוג המשתמש שלכם כדי שנוכל להתאים את החוויה עבורכם.</p>
+      <div class="flex flex-col gap-stack-md">
+        <button id="rl-customer" class="text-right bg-surface-1 border border-primary/30 rounded-2xl p-stack-lg flex items-center gap-stack-md hover:border-primary transition-colors gold-ring">
+          <div class="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center text-primary shrink-0">
+            <span class="material-symbols-outlined">content_cut</span>
+          </div>
+          <div class="flex-1">
+            <p class="font-headline-sm text-headline-sm">אני לקוח</p>
+            <p class="font-body-md text-text-secondary text-sm">חיפוש והזמנת תורים למספרות</p>
+          </div>
+          <span class="material-symbols-outlined text-primary">chevron_left</span>
+        </button>
+        <button id="rl-barber" class="text-right bg-surface-1 border border-border-light rounded-2xl p-stack-lg flex items-center gap-stack-md hover:border-surface-variant transition-colors">
+          <div class="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center text-text-secondary shrink-0">
+            <span class="material-symbols-outlined">calendar_month</span>
+          </div>
+          <div class="flex-1">
+            <p class="font-headline-sm text-headline-sm">אני ספר / בעל עסק</p>
+            <p class="font-body-md text-text-secondary text-sm">ניהול יומן, לקוחות והעסק שלי</p>
+          </div>
+          <span class="material-symbols-outlined text-text-muted">chevron_left</span>
+        </button>
+      </div>
+    </main>`;
+  document.getElementById("rl-back").addEventListener("click", () => { location.hash = "#/splash"; });
+  document.getElementById("rl-customer").addEventListener("click", () => { location.hash = "#/verify"; });
+  document.getElementById("rl-barber").addEventListener("click", () => toast("אפליקציית הספרים בקרוב 🚧"));
+}
+
+function renderVerifyView() {
+  const view = els.viewVerify();
+  const phonePrefill = localStorage.getItem("torli_customer_phone") || "";
+
+  // Step 1 — phone entry.
+  const phoneStep = () => {
+    view.innerHTML = `
+      <main class="min-h-screen flex flex-col px-gutter py-section-gap">
+        <button id="vf-back" class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-primary mb-section-gap">
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+        <h1 class="font-headline-lg-mobile text-headline-lg-mobile mb-stack-sm">מה מספר הטלפון שלך?</h1>
+        <p class="font-body-md text-body-md text-text-secondary mb-section-gap">נשלח קוד אימות חד-פעמי ב-SMS.</p>
+        <input id="vf-phone" type="tel" inputmode="tel" placeholder="05X-XXXXXXX" value="${phonePrefill}"
+               class="w-full bg-surface-1 border border-border-light rounded-xl h-14 px-4 text-center font-price-lg text-price-lg tracking-widest text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50"/>
+        <div class="flex-grow"></div>
+        <button id="vf-send" class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-xl active:scale-[0.98] transition-transform">שלח קוד</button>
+      </main>`;
+    document.getElementById("vf-back").addEventListener("click", () => { location.hash = "#/role"; });
+    document.getElementById("vf-send").addEventListener("click", () => {
+      const phone = document.getElementById("vf-phone").value.trim();
+      if (!phone) { toast("הזן מספר טלפון"); return; }
+      localStorage.setItem("torli_customer_phone", phone);
+      otpStep(phone);
+    });
+  };
+
+  // Step 2 — OTP (mock: any 4 digits confirm).
+  const otpStep = (phone) => {
+    view.innerHTML = `
+      <main class="min-h-screen flex flex-col px-gutter py-section-gap">
+        <button id="vf-back2" class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-primary mb-section-gap">
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+        <h1 class="font-headline-lg-mobile text-headline-lg-mobile mb-stack-sm">אימות מספר טלפון</h1>
+        <p class="font-body-md text-body-md text-text-secondary mb-section-gap">שלחנו קוד ל-${phone}</p>
+        <div dir="ltr" class="flex justify-center gap-3 mb-stack-lg">
+          ${[0,1,2,3].map(() => `
+            <input class="vf-otp w-14 h-16 bg-surface-1 border border-border-light rounded-xl text-center font-price-lg text-price-lg text-text-primary focus:outline-none focus:border-primary" maxlength="1" inputmode="numeric"/>`).join("")}
+        </div>
+        <button id="vf-resend" class="font-label-mono text-label-mono text-primary text-sm mx-auto mb-section-gap">שלח שוב</button>
+        <div class="flex-grow"></div>
+        <button id="vf-confirm" class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-xl active:scale-[0.98] transition-transform">אמת והמשך</button>
+        <p class="font-label-mono text-label-mono text-text-muted text-[10px] text-center mt-stack-sm">דמו: כל קוד בן 4 ספרות יתקבל</p>
+      </main>`;
+    document.getElementById("vf-back2").addEventListener("click", phoneStep);
+    document.getElementById("vf-resend").addEventListener("click", () => toast("קוד נשלח שוב"));
+    const otps = [...view.querySelectorAll(".vf-otp")];
+    otps.forEach((inp, i) => {
+      inp.addEventListener("input", () => { if (inp.value && i < 3) otps[i + 1].focus(); });
+      inp.addEventListener("keydown", (e) => { if (e.key === "Backspace" && !inp.value && i > 0) otps[i - 1].focus(); });
+    });
+    otps[0].focus();
+    document.getElementById("vf-confirm").addEventListener("click", () => {
+      const code = otps.map((o) => o.value).join("");
+      if (code.length < 4) { toast("הזן קוד בן 4 ספרות"); return; }
+      localStorage.setItem("torli_onboarded", "1");
+      toast("ברוך הבא! 🎉");
+      location.hash = "#/home";
+    });
+  };
+
+  phoneStep();
 }
 
 // ── Manual location search ───────────────────────────────────────────────────

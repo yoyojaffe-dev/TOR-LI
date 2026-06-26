@@ -82,3 +82,12 @@ def list_bookings(user_token: str) -> list[dict]:
         "bookings_for_user", {"p_user": user_token}
     ).execute()
     return res.data or []
+
+
+def cancel_booking(booking_id: str, user_token: str) -> dict:
+    """Cancel a user's booking and free the slot. Returns {success, message}."""
+    res = get_supabase().rpc(
+        "cancel_booking", {"p_booking_id": booking_id, "p_user": user_token}
+    ).execute()
+    row = res.data[0] if isinstance(res.data, list) and res.data else res.data or {}
+    return {"success": bool(row.get("success")), "message": row.get("message")}

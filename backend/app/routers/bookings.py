@@ -15,6 +15,7 @@ from app.agents.booking_agent import BookingAgent
 from app.models.schemas import (
     BookingRequest,
     BookingResponse,
+    CancelRequest,
     LockRequest,
     LockResponse,
 )
@@ -29,6 +30,15 @@ def list_bookings(
 ) -> list[dict]:
     """Return the caller's bookings (slot + shop detail), newest slot first."""
     return locking.list_bookings(user_token)
+
+
+@router.post("/cancel")
+def cancel_booking(req: CancelRequest) -> dict:
+    """Cancel the caller's booking and free the slot."""
+    result = locking.cancel_booking(req.booking_id, req.user_token)
+    if not result["success"]:
+        raise HTTPException(status_code=409, detail=result["message"] or "cannot cancel")
+    return result
 
 
 @router.post("/lock", response_model=LockResponse)

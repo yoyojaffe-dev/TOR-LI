@@ -113,3 +113,22 @@ def test_list_bookings_empty() -> None:
     client.rpc.return_value.execute.return_value = SimpleNamespace(data=None)
     with patch.object(locking, "get_supabase", return_value=client):
         assert locking.list_bookings("user-A") == []
+
+
+def test_cancel_booking_success() -> None:
+    client = _mock_supabase({"success": True, "message": "cancelled"})
+    with patch.object(locking, "get_supabase", return_value=client):
+        out = locking.cancel_booking("bk1", "user-A")
+    assert out["success"] is True
+    name, args = client.rpc.call_args[0]
+    assert name == "cancel_booking"
+    assert args["p_booking_id"] == "bk1"
+    assert args["p_user"] == "user-A"
+
+
+def test_cancel_booking_failure() -> None:
+    client = _mock_supabase({"success": False, "message": "not found"})
+    with patch.object(locking, "get_supabase", return_value=client):
+        out = locking.cancel_booking("bk1", "user-A")
+    assert out["success"] is False
+    assert out["message"] == "not found"

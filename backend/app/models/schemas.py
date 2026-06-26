@@ -60,6 +60,11 @@ class BookingRequest(BaseModel):
     customer_phone: str
 
 
+class CancelRequest(BaseModel):
+    booking_id: str
+    user_token: str
+
+
 class BookingResponse(BaseModel):
     success: bool
     booking_id: str | None = None
