@@ -57,6 +57,33 @@ def test_create_review_validation_rating_out_of_range() -> None:
     assert res.status_code == 422
 
 
+import pytest
+
+
+@pytest.mark.parametrize("rating,expected", [
+    (0, 422),   # below min (Field ge=1)
+    (1, 200),   # lower bound, valid
+    (5, 200),   # upper bound, valid
+    (6, 422),   # above max (Field le=5)
+    (-3, 422),  # negative
+])
+def test_create_review_rating_boundaries(rating: int, expected: int) -> None:
+    with patch("app.routers.reviews.locking.submit_review",
+               return_value={"success": True, "message": "saved"}):
+        res = client.post("/reviews", json={
+            "booking_id": "bk1", "user_token": "u1", "rating": rating,
+        })
+    assert res.status_code == expected
+
+
+def test_create_review_rating_must_be_integer() -> None:
+    # A fractional rating is rejected (schema is int).
+    res = client.post("/reviews", json={
+        "booking_id": "bk1", "user_token": "u1", "rating": 3.5,
+    })
+    assert res.status_code == 422
+
+
 # ── GET /reviews ──────────────────────────────────────────────────────────────
 
 def test_list_reviews_returns_rows() -> None:
@@ -97,6 +124,30 @@ def test_nearby_slots_returns_rows() -> None:
 
 def test_nearby_slots_requires_lat_lng() -> None:
     assert client.get("/slots/nearby").status_code == 422
+
+
+def test_nearby_slots_rejects_out_of_range_radius() -> None:
+    # radius bounds: ge=1, le=50000
+    assert client.get("/slots/nearby", params={"lat": 32, "lng": 34, "radius": 0}).status_code == 422
+    assert client.get("/slots/nearby", params={"lat": 32, "lng": 34, "radius": 99999}).status_code == 422
+
+
+def test_nearby_slots_rejects_out_of_range_limit() -> None:
+    # limit bounds: ge=1, le=100
+    assert client.get("/slots/nearby", params={"lat": 32, "lng": 34, "limit": 0}).status_code == 422
+    assert client.get("/slots/nearby", params={"lat": 32, "lng": 34, "limit": 101}).status_code == 422
+
+
+def test_nearby_slots_forwards_radius_and_limit() -> None:
+    with patch("app.routers.slots.locking.nearby_slots", return_value=[]) as ns:
+        res = client.get("/slots/nearby", params={"lat": 32.0, "lng": 34.7, "radius": 3000, "limit": 7})
+    assert res.status_code == 200
+    # positional call: (lat, lng, radius, limit)
+    assert ns.call_args[0] == (32.0, 34.7, 3000, 7)
+
+
+def test_nearby_slots_invalid_lat_type_422() -> None:
+    assert client.get("/slots/nearby", params={"lat": "abc", "lng": 34.7}).status_code == 422
 
 
 def test_nearby_slots_db_error_becomes_502() -> None:
