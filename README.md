@@ -127,6 +127,7 @@ Reference HTML/CSS frames + design docs (`DESIGN.md`, `MASTER-PROMPT.md`,
 | `migrations/…120200_harden_is_shop_owner_invoker.sql` | `is_shop_owner` → SECURITY INVOKER + EXECUTE revoked from anon. |
 | `migrations/…120300_grant_dml_new_tables.sql` | **Fix:** grant DML on new tables (MCP-created tables got no default grants → RLS was unreachable). |
 | `migrations/…120400_grant_owner_dml_existing_tables.sql` | **Fix:** grant authenticated write on `barbershops`/`available_slots` so owner policies can fire. |
+| `migrations/…130000_rls_perf_wrap_auth_uid_initplan.sql` | **Perf:** wrap `auth.uid()` as `(select auth.uid())` (per-row → per-query initplan, ~100x on large tables); cache it inside `is_shop_owner`. |
 
 ---
 
@@ -191,7 +192,13 @@ A rolled-back transaction simulated `authenticated` owners/clients (setting
 shop's services/staff/slots but not others'; owner can update own shop only;
 client can book/see only their own appointment; an unrelated client sees none;
 the shop owner can see appointments for their slots. All passed; zero test rows
-persisted.
+persisted (re-run after the perf rewrite — still 14/14).
+
+### Performance
+All policies follow the Supabase RLS rule: `auth.uid()` is wrapped as
+`(select auth.uid())` so it is evaluated once per query (initplan) instead of
+once per row, and is cached inside `is_shop_owner`. Every column referenced by a
+policy is indexed (`owner_id`, `shop_id`, `client_id`, PKs).
 
 ---
 
