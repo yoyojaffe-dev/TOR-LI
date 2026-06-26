@@ -450,18 +450,63 @@ async function renderBarberView(shopId) {
       </div>
     </section>
 
-    <!-- Slots -->
-    <section class="px-gutter pb-stack-lg">
-      <h2 class="font-headline-md text-headline-md mb-stack-md">תורים פנויים</h2>
+    <!-- Tabs -->
+    <div class="border-b border-border-light sticky top-0 bg-background/90 backdrop-blur-xl z-30">
+      <div class="flex px-gutter">
+        <button data-tab="services" class="bp-tab flex-1 py-4 text-center font-body-md text-body-md">שירותים</button>
+        <button data-tab="portfolio" class="bp-tab flex-1 py-4 text-center font-body-md text-body-md">תיק עבודות</button>
+        <button data-tab="reviews" class="bp-tab flex-1 py-4 text-center font-body-md text-body-md">חוות דעת</button>
+      </div>
+    </div>
+
+    <!-- Tab: Services (slots) — default -->
+    <section id="bp-services" class="px-gutter py-stack-lg">
       <div id="bp-slots" class="flex flex-col gap-3">
         <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
         <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
+      </div>
+    </section>
+
+    <!-- Tab: Portfolio (placeholder grid until real photos) -->
+    <section id="bp-portfolio" class="p-gutter grid grid-cols-3 gap-1 hidden">
+      ${Array.from({ length: 9 }).map(() => `
+        <div class="aspect-square photo-placeholder rounded-sm flex items-center justify-center">
+          <span class="material-symbols-outlined text-primary/20 text-2xl">content_cut</span>
+        </div>`).join("")}
+    </section>
+
+    <!-- Tab: Reviews (empty until data) -->
+    <section id="bp-reviews" class="px-gutter py-section-gap hidden">
+      <div class="flex flex-col items-center justify-center text-center gap-3 py-10">
+        <span class="material-symbols-outlined text-5xl text-surface-variant">reviews</span>
+        <p class="font-body-lg text-body-lg text-text-secondary">אין עדיין חוות דעת</p>
+        <p class="font-body-md text-text-muted text-sm">היה הראשון לדרג אחרי התור</p>
       </div>
     </section>`;
 
   document.getElementById("bp-back").addEventListener("click", () => { location.hash = "#/home"; });
 
-  // Load slots (real) + live updates.
+  // Tabs.
+  const tabPanels = { services: "bp-services", portfolio: "bp-portfolio", reviews: "bp-reviews" };
+  const setTab = (name) => {
+    Object.entries(tabPanels).forEach(([t, id]) =>
+      document.getElementById(id)?.classList.toggle("hidden", t !== name)
+    );
+    view.querySelectorAll(".bp-tab").forEach((b) => {
+      const on = b.dataset.tab === name;
+      b.classList.toggle("text-primary", on);
+      b.classList.toggle("font-bold", on);
+      b.classList.toggle("border-b-2", on);
+      b.classList.toggle("border-primary", on);
+      b.classList.toggle("text-text-secondary", !on);
+    });
+  };
+  view.querySelectorAll(".bp-tab").forEach((b) =>
+    b.addEventListener("click", () => setTab(b.dataset.tab))
+  );
+  setTab("services");
+
+  // Load slots (real) + live updates into the Services tab.
   const fill = (slots) => {
     store.set({ slots });
     const box = document.getElementById("bp-slots");
@@ -591,8 +636,88 @@ async function renderBookingsView() {
     .join("");
 }
 
-function renderProfileView() {
-  placeholderView(els.viewProfile(), "person", "פרופיל", "ניהול החשבון יתווסף בקרוב");
+async function renderProfileView() {
+  const view = els.viewProfile();
+  const name = localStorage.getItem("torli_customer_name") || "אורח";
+  const phone = localStorage.getItem("torli_customer_phone") || "";
+
+  const row = (icon, label, attrs = "") => `
+    <button ${attrs} class="w-full flex items-center gap-stack-md p-stack-md bg-surface-1 border border-border-light rounded-xl hover:bg-surface-2 transition-colors">
+      <span class="material-symbols-outlined text-text-secondary">${icon}</span>
+      <span class="flex-1 text-right font-body-md text-body-md text-text-primary">${label}</span>
+      <span class="material-symbols-outlined text-text-muted">chevron_left</span>
+    </button>`;
+
+  view.innerHTML = `
+    <header class="px-gutter pt-8 pb-4"><h1 class="font-headline-lg text-headline-lg">פרופיל</h1></header>
+
+    <!-- Identity card -->
+    <section class="px-gutter mb-section-gap">
+      <div class="bg-surface-1 border border-border-light rounded-2xl p-stack-lg flex items-center gap-stack-md">
+        <div class="w-16 h-16 rounded-full bg-surface-2 border border-primary/40 flex items-center justify-center text-primary shrink-0">
+          <span class="material-symbols-outlined text-3xl" style="font-variation-settings:'FILL' 1;">person</span>
+        </div>
+        <div class="flex-1 text-right min-w-0">
+          <p id="pf-name" class="font-headline-sm text-headline-sm truncate">${name}</p>
+          <p id="pf-phone" class="font-body-md text-text-secondary text-sm truncate">${phone || "אין מספר טלפון"}</p>
+        </div>
+        <button id="pf-edit" class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary hover:bg-surface-3 transition-colors">
+          <span class="material-symbols-outlined text-[20px]">edit</span>
+        </button>
+      </div>
+      <!-- Inline edit (hidden) -->
+      <div id="pf-edit-form" class="hidden mt-stack-md flex flex-col gap-stack-sm">
+        <input id="pf-name-input" placeholder="שם מלא" value="${name === "אורח" ? "" : name}"
+               class="w-full bg-surface-2 border border-border-light rounded-lg h-12 px-4 font-body-md text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50"/>
+        <input id="pf-phone-input" type="tel" placeholder="מספר טלפון" value="${phone}"
+               class="w-full bg-surface-2 border border-border-light rounded-lg h-12 px-4 font-body-md text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50"/>
+        <button id="pf-save" class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-3 rounded-xl active:scale-95 transition-transform">שמור</button>
+      </div>
+    </section>
+
+    <!-- Stat -->
+    <section class="px-gutter mb-section-gap">
+      <div class="bg-surface-1 border border-border-light rounded-2xl p-stack-lg flex items-center justify-between">
+        <span class="font-body-md text-body-md text-text-secondary">סך התורים שלי</span>
+        <span id="pf-count" class="font-price-lg text-price-lg text-primary">—</span>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section class="px-gutter flex flex-col gap-stack-sm">
+      ${row("calendar_month", "התורים שלי", 'id="pf-bookings"')}
+      ${row("language", "שפה · עברית", 'id="pf-lang"')}
+      ${row("notifications", "התראות", 'id="pf-notif"')}
+      ${row("help", "עזרה ותמיכה", 'id="pf-help"')}
+    </section>`;
+
+  // Edit toggle + save.
+  document.getElementById("pf-edit").addEventListener("click", () =>
+    document.getElementById("pf-edit-form").classList.toggle("hidden")
+  );
+  document.getElementById("pf-save").addEventListener("click", () => {
+    const n = document.getElementById("pf-name-input").value.trim();
+    const p = document.getElementById("pf-phone-input").value.trim();
+    if (n) localStorage.setItem("torli_customer_name", n);
+    if (p) localStorage.setItem("torli_customer_phone", p);
+    document.getElementById("pf-name").textContent = n || "אורח";
+    document.getElementById("pf-phone").textContent = p || "אין מספר טלפון";
+    document.getElementById("pf-edit-form").classList.add("hidden");
+    toast("הפרטים נשמרו");
+  });
+
+  // Row actions.
+  document.getElementById("pf-bookings").addEventListener("click", () => { location.hash = "#/bookings"; });
+  ["pf-lang", "pf-notif", "pf-help"].forEach((id) =>
+    document.getElementById(id).addEventListener("click", () => toast("בקרוב 🚧"))
+  );
+
+  // Bookings count.
+  try {
+    const bookings = await api.listBookings(store.get().userToken);
+    const c = document.getElementById("pf-count");
+    if (c) c.textContent = String(bookings.length);
+  } catch { /* leave dash */ }
 }
 
 // ── Manual location search ───────────────────────────────────────────────────
