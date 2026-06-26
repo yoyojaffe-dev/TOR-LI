@@ -163,7 +163,7 @@
   <!-- Header -->
   <header class="px-gutter pt-8 pb-4 flex justify-between items-center">
     <button id="location-btn" class="flex items-center gap-3 text-right hover:opacity-80 transition-opacity">
-      <div class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary">
+      <div data-avatar-slot="sm" class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary overflow-hidden">
         <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">person</span>
       </div>
       <div class="flex flex-col justify-center">
@@ -213,18 +213,26 @@
            class="absolute bottom-3 left-3 right-3 z-10 translate-y-[130%] opacity-0 pointer-events-none
                   transition-all duration-300 ease-out
                   bg-surface-1/95 backdrop-blur-md rounded-[20px] border border-border-light p-3
-                  shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center gap-3">
-        <div class="w-14 h-14 rounded-full bg-surface-3 border border-border-light flex items-center justify-center text-primary shrink-0">
-          <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">storefront</span>
+                  shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex flex-col gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-14 h-14 rounded-full bg-surface-3 border border-border-light flex items-center justify-center text-primary shrink-0">
+            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">storefront</span>
+          </div>
+          <div class="flex-1 text-right min-w-0">
+            <h3 id="mp-name" class="font-headline-sm text-base truncate"></h3>
+            <p id="mp-addr" class="font-body-md text-text-secondary text-xs truncate"></p>
+          </div>
+          <button id="mp-go"
+                  class="shrink-0 bg-primary text-on-primary font-label-mono text-label-mono text-xs rounded-full px-4 py-2 active:scale-95 transition-transform">
+            הצג תורים ←
+          </button>
         </div>
-        <div class="flex-1 text-right min-w-0">
-          <h3 id="mp-name" class="font-headline-sm text-base truncate"></h3>
-          <p id="mp-addr" class="font-body-md text-text-secondary text-xs truncate"></p>
-          <p id="mp-dist" class="font-label-mono text-label-mono text-text-muted text-[11px] mt-0.5"></p>
-        </div>
-        <button id="mp-go"
-                class="shrink-0 bg-primary text-on-primary font-label-mono text-label-mono text-xs rounded-full px-4 py-2 active:scale-95 transition-transform">
-          הצג תורים ←
+        <!-- Travel ETA row (driving / walking / bicycling / transit) -->
+        <div id="mp-eta" class="grid grid-cols-4 gap-1 border-t border-border-light pt-2" dir="ltr"></div>
+        <button id="mp-nav"
+                class="w-full h-10 rounded-lg bg-surface-2 border border-border-light flex items-center justify-center gap-2 hover:bg-surface-3 transition-colors">
+          <span class="material-symbols-outlined text-primary text-[20px]">navigation</span>
+          <span class="font-body-md text-body-md font-medium">נווט</span>
         </button>
       </div>
     </div>
@@ -248,6 +256,15 @@
         <div class="min-w-[240px] h-52 bg-surface-2 rounded-[20px] border border-border-light animate-pulse flex-shrink-0"></div>
         <div class="min-w-[240px] h-52 bg-surface-2 rounded-[20px] border border-border-light animate-pulse flex-shrink-0"></div>
       </div>
+    </section>
+
+    <!-- Quick-book: free slots near you (tap → confirm → book) -->
+    <section id="nearby-slots-section" class="mb-section-gap px-gutter hidden">
+      <div class="flex justify-between items-end mb-stack-md">
+        <h2 class="font-headline-md text-headline-md">תורים זמינים<br/>בקרבתך</h2>
+        <span class="font-body-md text-text-muted text-sm" id="nearby-slots-count"></span>
+      </div>
+      <div id="nearby-slots-list" class="flex flex-col gap-3"></div>
     </section>
 
     <!-- Slots for selected barbershop (hidden until a shop is selected) -->

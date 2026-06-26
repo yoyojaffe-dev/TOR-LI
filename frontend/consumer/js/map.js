@@ -51,17 +51,19 @@ export async function renderMap(el, { lat, lng }, radiusM = config.DEFAULT_RADIU
     zoomControlOptions: { position: maps.ControlPosition.LEFT_BOTTOM },
   });
 
+  // User location: blue dot (distinct from gold barbershop pins).
   const userMarker = new maps.Marker({
     position: { lat, lng },
     map,
     title: "You",
+    zIndex: 999,
     icon: {
       path: maps.SymbolPath.CIRCLE,
       scale: 8,
-      fillColor: "#EFB200",
+      fillColor: "#4285F4",
       fillOpacity: 1,
-      strokeColor: "#1a1a2e",
-      strokeWeight: 2,
+      strokeColor: "#ffffff",
+      strokeWeight: 3,
     },
   });
   const circle = new maps.Circle({
@@ -90,6 +92,47 @@ export function recenterMap(map, { lat, lng }) {
     refs.userMarker.setPosition(center);
     refs.circle.setCenter(center);
   }
+}
+
+// Travel ETAs from origin -> dest for the 4 modes. Each mode is independent so
+// one failing (e.g. TRANSIT with no routes) doesn't break the others.
+// Returns { driving, walking, bicycling, transit } each {distanceKm, durationText} | null.
+export async function travelEtas(origin, dest) {
+  const maps = await loadGoogleMaps();
+  const svc = new maps.DistanceMatrixService();
+  const modes = {
+    driving:   maps.TravelMode.DRIVING,
+    walking:   maps.TravelMode.WALKING,
+    bicycling: maps.TravelMode.BICYCLING,
+    transit:   maps.TravelMode.TRANSIT,
+  };
+
+  const one = (travelMode) =>
+    new Promise((resolve) => {
+      const req = {
+        origins: [origin],
+        destinations: [dest],
+        travelMode,
+        unitSystem: maps.UnitSystem.METRIC,
+      };
+      if (travelMode === maps.TravelMode.TRANSIT) {
+        req.transitOptions = { departureTime: new Date() };
+      }
+      svc.getDistanceMatrix(req, (res, status) => {
+        if (status !== "OK") return resolve(null);
+        const el = res?.rows?.[0]?.elements?.[0];
+        if (!el || el.status !== "OK") return resolve(null);
+        resolve({
+          distanceKm: el.distance ? (el.distance.value / 1000).toFixed(1) : null,
+          durationText: el.duration ? el.duration.text : null,
+        });
+      });
+    });
+
+  const [driving, walking, bicycling, transit] = await Promise.all([
+    one(modes.driving), one(modes.walking), one(modes.bicycling), one(modes.transit),
+  ]);
+  return { driving, walking, bicycling, transit };
 }
 
 // Drop markers for a list of barbershops; returns the marker array.

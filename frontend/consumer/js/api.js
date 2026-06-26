@@ -38,6 +38,25 @@ export const api = {
   listSlots: (barbershopId, onlyFree = true) =>
     request(`/slots?barbershop_id=${barbershopId}&only_free=${onlyFree}`),
 
+  // Free upcoming slots near a point (home "Available Nearby" quick-book).
+  nearbySlots: (lat, lng, radius = 5000, limit = 20) =>
+    request(`/slots/nearby?lat=${lat}&lng=${lng}&radius=${radius}&limit=${limit}`),
+
+  // Reviews: list for a barbershop, submit one for a past booking.
+  listReviews: (barbershopId) =>
+    request(`/reviews?barbershop_id=${encodeURIComponent(barbershopId)}`),
+
+  submitReview: (bookingId, userToken, rating, comment) =>
+    request("/reviews", {
+      method: "POST",
+      body: JSON.stringify({
+        booking_id: bookingId,
+        user_token: userToken,
+        rating,
+        comment,
+      }),
+    }),
+
   realtimeInfo: () => request("/slots/realtime-info"),
 
   // A user's booking history (joined with slot + shop detail).

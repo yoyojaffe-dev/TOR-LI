@@ -75,3 +75,31 @@ class BookingResponse(BaseModel):
     booking_id: str | None = None
     status: str
     message: str | None = None
+
+
+class ReviewRequest(BaseModel):
+    booking_id: str
+    user_token: str
+    rating: int = Field(ge=1, le=5)
+    comment: str | None = None
+
+
+class Review(BaseModel):
+    id: str
+    rating: int
+    comment: str | None = None
+    created_at: str | None = None
+    display_name: str | None = None
+
+
+class NearbySlot(BaseModel):
+    slot_id: str
+    slot_time: str
+    service_name: str
+    price: float | None = None
+    barbershop_id: str
+    shop_name: str
+    shop_address: str | None = None
+    lat_out: float | None = None
+    lng_out: float | None = None
+    distance_m: float | None = None

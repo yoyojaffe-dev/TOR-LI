@@ -91,3 +91,27 @@ def cancel_booking(booking_id: str, user_token: str) -> dict:
     ).execute()
     row = res.data[0] if isinstance(res.data, list) and res.data else res.data or {}
     return {"success": bool(row.get("success")), "message": row.get("message")}
+
+
+def submit_review(booking_id: str, user_token: str, rating: int, comment: str | None = None) -> dict:
+    """Submit (or update) a review for a completed booking. Returns {success, message}."""
+    res = get_supabase().rpc("submit_review", {
+        "p_booking_id": booking_id, "p_user": user_token,
+        "p_rating": rating, "p_comment": comment,
+    }).execute()
+    row = res.data[0] if isinstance(res.data, list) and res.data else res.data or {}
+    return {"success": bool(row.get("success")), "message": row.get("message")}
+
+
+def list_reviews(barbershop_id: str) -> list[dict]:
+    """Return recent reviews for a barbershop (most recent first)."""
+    res = get_supabase().rpc("reviews_for_barbershop", {"p_shop": barbershop_id}).execute()
+    return res.data or []
+
+
+def nearby_slots(lat: float, lng: float, radius_m: int = 5000, lim: int = 20) -> list[dict]:
+    """Return free upcoming slots near a point, joined to shop info."""
+    res = get_supabase().rpc("available_slots_nearby", {
+        "lat": lat, "lng": lng, "radius_m": radius_m, "lim": lim,
+    }).execute()
+    return res.data or []
