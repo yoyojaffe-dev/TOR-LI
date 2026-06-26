@@ -85,3 +85,31 @@ def test_confirm_booking_failure_defaults_status_unknown() -> None:
         res = locking.confirm_booking("slot-1", "user-A", "booking-9")
     assert res.success is False
     assert res.status == "unknown"
+
+
+def test_confirm_booking_passes_customer_details_to_rpc() -> None:
+    client = _mock_supabase({"success": True, "status": "booked"})
+    with patch.object(locking, "get_supabase", return_value=client):
+        locking.confirm_booking("slot-1", "user-A", "bk1", "Dana", "+972500000000")
+    args = client.rpc.call_args[0][1]
+    assert args["p_customer_name"] == "Dana"
+    assert args["p_customer_phone"] == "+972500000000"
+
+
+def test_list_bookings_returns_rows() -> None:
+    rows = [{"booking_id": "bk1", "shop_name": "Cuts", "service_name": "Fade"}]
+    client = MagicMock()
+    client.rpc.return_value.execute.return_value = SimpleNamespace(data=rows)
+    with patch.object(locking, "get_supabase", return_value=client):
+        out = locking.list_bookings("user-A")
+    assert out == rows
+    name, args = client.rpc.call_args[0]
+    assert name == "bookings_for_user"
+    assert args["p_user"] == "user-A"
+
+
+def test_list_bookings_empty() -> None:
+    client = MagicMock()
+    client.rpc.return_value.execute.return_value = SimpleNamespace(data=None)
+    with patch.object(locking, "get_supabase", return_value=client):
+        assert locking.list_bookings("user-A") == []

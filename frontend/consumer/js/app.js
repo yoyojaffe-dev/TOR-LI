@@ -511,8 +511,57 @@ function placeholderView(view, icon, title, sub) {
     </div>`;
 }
 
-function renderBookingsView() {
-  placeholderView(els.viewBookings(), "calendar_month", "התורים שלי", "היסטוריית ההזמנות תופיע כאן בקרוב");
+async function renderBookingsView() {
+  const view = els.viewBookings();
+  view.innerHTML = `
+    <header class="px-gutter pt-8 pb-4"><h1 class="font-headline-lg text-headline-lg">התורים שלי</h1></header>
+    <div id="mb-list" class="px-gutter flex flex-col gap-3">
+      <div class="h-20 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
+      <div class="h-20 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
+    </div>`;
+
+  let bookings = [];
+  try {
+    bookings = await api.listBookings(store.get().userToken);
+  } catch (err) {
+    console.error("listBookings failed:", err);
+  }
+
+  const box = document.getElementById("mb-list");
+  if (!box) return;
+  if (!bookings.length) {
+    box.innerHTML = `
+      <div class="flex flex-col items-center justify-center text-center gap-3 py-16">
+        <span class="material-symbols-outlined text-6xl text-surface-variant">event_busy</span>
+        <p class="font-body-lg text-body-lg text-text-secondary">עדיין אין לך תורים</p>
+        <a href="#/home" class="font-label-mono text-label-mono text-primary border border-primary/30 rounded-full px-4 py-1.5">מצא ספר ←</a>
+      </div>`;
+    return;
+  }
+
+  const now = Date.now();
+  box.innerHTML = bookings
+    .map((b) => {
+      const d = new Date(b.slot_time);
+      const upcoming = d.getTime() >= now;
+      return `
+      <div class="bg-surface-1 border ${upcoming ? "border-primary/30" : "border-border-light"} rounded-2xl p-stack-md flex items-center gap-stack-md">
+        <div class="w-12 h-12 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary shrink-0">
+          <span class="material-symbols-outlined">content_cut</span>
+        </div>
+        <div class="flex-1 text-right min-w-0">
+          <p class="font-headline-sm text-base truncate">${b.shop_name}</p>
+          <p class="font-body-md text-text-secondary text-sm truncate">${b.service_name}${b.price != null ? " · ₪" + b.price : ""}</p>
+          <p class="font-label-mono text-label-mono text-text-muted text-[11px] mt-0.5">
+            ${d.toLocaleDateString("he-IL", { day: "numeric", month: "short" })} · ${d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+          </p>
+        </div>
+        <span class="font-label-mono text-label-mono text-[10px] px-2 py-1 rounded-full ${upcoming ? "bg-primary/10 text-primary border border-primary/30" : "bg-surface-3 text-text-muted"}">
+          ${upcoming ? "מתוכנן" : "עבר"}
+        </span>
+      </div>`;
+    })
+    .join("");
 }
 
 function renderProfileView() {

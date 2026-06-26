@@ -148,6 +148,34 @@ def test_confirm_validation_error_missing_fields() -> None:
     assert res.status_code == 422
 
 
+def test_confirm_forwards_customer_details() -> None:
+    from app.models.schemas import BookingResponse
+    confirmed = BookingResponse(success=True, booking_id="bk1", status="booked")
+    with patch("app.routers.bookings.BookingAgent") as Agent, \
+         patch("app.routers.bookings.locking.confirm_booking", return_value=confirmed) as conf:
+        Agent.return_value.submit.return_value = {"success": True}
+        client.post("/bookings/confirm", json={
+            "slot_id": "s1", "user_token": "u1",
+            "customer_name": "Dana", "customer_phone": "+972500000000",
+        })
+    # name/phone forwarded to the service as kwargs.
+    assert conf.call_args.kwargs["customer_name"] == "Dana"
+    assert conf.call_args.kwargs["customer_phone"] == "+972500000000"
+
+
+def test_list_bookings_endpoint() -> None:
+    rows = [{"booking_id": "bk1", "shop_name": "Cuts", "service_name": "Fade", "price": 120}]
+    with patch("app.routers.bookings.locking.list_bookings", return_value=rows) as lb:
+        res = client.get("/bookings", params={"user_token": "u1"})
+    assert res.status_code == 200
+    assert res.json()[0]["shop_name"] == "Cuts"
+    assert lb.call_args[0][0] == "u1"
+
+
+def test_list_bookings_requires_user_token() -> None:
+    assert client.get("/bookings").status_code == 422
+
+
 # ── /admin ───────────────────────────────────────────────────────────────────
 
 def test_admin_discovery_run() -> None:

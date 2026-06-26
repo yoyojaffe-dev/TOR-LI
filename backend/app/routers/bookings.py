@@ -9,7 +9,7 @@ The Playwright submission in step 2 is stubbed for now (foundation phase).
 
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.agents.booking_agent import BookingAgent
 from app.models.schemas import (
@@ -21,6 +21,14 @@ from app.models.schemas import (
 from app.services import locking
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
+
+
+@router.get("")
+def list_bookings(
+    user_token: str = Query(..., description="Browser token that holds the bookings."),
+) -> list[dict]:
+    """Return the caller's bookings (slot + shop detail), newest slot first."""
+    return locking.list_bookings(user_token)
 
 
 @router.post("/lock", response_model=LockResponse)
@@ -54,4 +62,10 @@ def confirm_booking(req: BookingRequest) -> BookingResponse:
         locking.release_lock(req.slot_id, req.user_token)
         raise HTTPException(status_code=502, detail="booking submission failed")
 
-    return locking.confirm_booking(req.slot_id, req.user_token, booking_id)
+    return locking.confirm_booking(
+        req.slot_id,
+        req.user_token,
+        booking_id,
+        customer_name=req.customer_name,
+        customer_phone=req.customer_phone,
+    )

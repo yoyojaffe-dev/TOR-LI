@@ -40,6 +40,10 @@ export const api = {
 
   realtimeInfo: () => request("/slots/realtime-info"),
 
+  // A user's booking history (joined with slot + shop detail).
+  listBookings: (userToken) =>
+    request(`/bookings?user_token=${encodeURIComponent(userToken)}`),
+
   // Pessimistic lock lifecycle.
   lockSlot: (slotId, userToken) =>
     request("/bookings/lock", {

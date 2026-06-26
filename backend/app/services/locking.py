@@ -45,14 +45,27 @@ def release_lock(slot_id: str, user_token: str) -> LockResponse:
     )
 
 
-def confirm_booking(slot_id: str, user_token: str, booking_id: str) -> BookingResponse:
+def confirm_booking(
+    slot_id: str,
+    user_token: str,
+    booking_id: str,
+    customer_name: str | None = None,
+    customer_phone: str | None = None,
+) -> BookingResponse:
     """Finalize a locked slot into a confirmed booking (status -> booked).
 
-    Only succeeds if ``user_token`` still holds a non-expired lock.
+    Only succeeds if ``user_token`` still holds a non-expired lock. The RPC also
+    inserts the bookings row (with customer details) so it shows in history.
     """
     res = get_supabase().rpc(
         "confirm_booking",
-        {"p_slot_id": slot_id, "p_user": user_token, "p_booking_id": booking_id},
+        {
+            "p_slot_id": slot_id,
+            "p_user": user_token,
+            "p_booking_id": booking_id,
+            "p_customer_name": customer_name,
+            "p_customer_phone": customer_phone,
+        },
     ).execute()
     row = res.data[0] if isinstance(res.data, list) and res.data else res.data or {}
     return BookingResponse(
@@ -61,3 +74,11 @@ def confirm_booking(slot_id: str, user_token: str, booking_id: str) -> BookingRe
         status=row.get("status", "unknown"),
         message=row.get("message"),
     )
+
+
+def list_bookings(user_token: str) -> list[dict]:
+    """Return a user's bookings (joined with slot + shop detail) for history."""
+    res = get_supabase().rpc(
+        "bookings_for_user", {"p_user": user_token}
+    ).execute()
+    return res.data or []
