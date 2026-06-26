@@ -15,7 +15,8 @@ Trigger manually via:
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any, cast
 
 from openai import AsyncOpenAI
 from playwright.async_api import Browser, async_playwright
@@ -87,7 +88,7 @@ class ScrapingAgent:
     # Supabase (sync, called via asyncio.to_thread)
     # ------------------------------------------------------------------
 
-    def fetch_targets(self) -> list[dict]:
+    def fetch_targets(self) -> list[dict[str, Any]]:
         """Return barbershops with a scrappable booking_url."""
         res = (
             self.db.table("barbershops")
@@ -96,12 +97,10 @@ class ScrapingAgent:
             .execute()
         )
         return [
-            shop
-            for shop in (res.data or [])
-            if not _is_skippable_url(shop.get("booking_url", ""))
+            shop for shop in (res.data or []) if not _is_skippable_url(shop.get("booking_url", ""))
         ]
 
-    def _sync_slots(self, barbershop_id: str, slots: list[dict]) -> int:
+    def _sync_slots(self, barbershop_id: str, slots: list[dict[str, Any]]) -> int:
         """Upsert slots via upsert_free_slot RPC. Returns count written."""
         written = 0
         for slot in slots:
@@ -147,10 +146,10 @@ class ScrapingAgent:
     # OpenAI
     # ------------------------------------------------------------------
 
-    async def parse_html(self, text: str, shop_name: str) -> list[dict]:
+    async def parse_html(self, text: str, shop_name: str) -> list[dict[str, Any]]:
         """Send visible page text to OpenAI; return extracted slot dicts."""
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        response = await self.openai.chat.completions.create(
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        response = await self.openai.chat.completions.create(  # type: ignore[call-overload]
             model="gpt-4o-mini",
             messages=[
                 {
@@ -172,13 +171,13 @@ class ScrapingAgent:
         )
         tool_call = response.choices[0].message.tool_calls[0]
         args = json.loads(tool_call.function.arguments)
-        return args.get("slots", [])
+        return cast(list[dict[str, Any]], args.get("slots", []))
 
     # ------------------------------------------------------------------
     # Orchestration
     # ------------------------------------------------------------------
 
-    async def process_shop(self, browser: Browser, shop: dict) -> int:
+    async def process_shop(self, browser: Browser, shop: dict[str, Any]) -> int:
         """Scrape one shop and sync its slots. Returns slot count written."""
         shop_id = shop["id"]
         name = shop.get("name", "Unknown")

@@ -9,6 +9,8 @@ Foundation phase: returns a stubbed success so the booking flow is wired
 end-to-end. The real Playwright automation lands in the post-review phase.
 """
 
+from typing import Any
+
 from app.config import get_settings
 from app.supabase_client import supabase_admin
 
@@ -21,7 +23,7 @@ class BookingAgent:
         # Service-role client: background agents bypass RLS to write directly.
         self.db = supabase_admin
 
-    def submit(self, slot_id: str, customer_name: str, customer_phone: str) -> dict:
+    def submit(self, slot_id: str, customer_name: str, customer_phone: str) -> dict[str, Any]:
         """Submit the booking for ``slot_id``.
 
         STUB: returns success without touching a real site so the lock/confirm

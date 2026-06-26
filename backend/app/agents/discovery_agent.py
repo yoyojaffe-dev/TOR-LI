@@ -10,9 +10,9 @@ Trigger manually via:
     python -m scripts.run_discovery  (standalone script)
 """
 
-import json
 import logging
 import time
+from typing import Any, cast
 
 import googlemaps
 
@@ -110,12 +110,12 @@ class DiscoveryAgent:
 
         return count
 
-    def _get_details(self, place_id: str) -> dict:
+    def _get_details(self, place_id: str) -> dict[str, Any]:
         """Fetch full Place Details for one place_id."""
         result = self.gmaps.place(place_id, fields=_DETAIL_FIELDS)
-        return result.get("result", {})
+        return cast(dict[str, Any], result.get("result", {}))
 
-    def _upsert(self, place: dict, place_type: str = "barber_shop") -> None:
+    def _upsert(self, place: dict[str, Any], place_type: str = "barber_shop") -> None:
         """Write one barbershop to Supabase via the upsert_barbershop RPC.
 
         After the RPC, a separate UPDATE stores opening_hours (the RPC does
@@ -174,14 +174,15 @@ class DiscoveryAgent:
                 "open_now": oh_raw.get("open_now"),
             }
             if place_id:
-                self.db.table("barbershops").update(
-                    {"opening_hours": opening_hours}
-                ).eq("google_place_id", place_id).execute()
+                self.db.table("barbershops").update({"opening_hours": opening_hours}).eq(
+                    "google_place_id", place_id
+                ).execute()
 
 
 # ---------------------------------------------------------------------------
 # Module-level entry points
 # ---------------------------------------------------------------------------
+
 
 def run(lat: float = 32.0853, lng: float = 34.7818, radius_m: int = 5000) -> int:
     """Run one discovery pass and return the count of shops upserted."""

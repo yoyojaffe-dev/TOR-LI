@@ -5,6 +5,7 @@ workers are started from the lifespan hook in a later phase (left commented so
 the foundation boots without running the not-yet-implemented agents).
 """
 
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -17,7 +18,7 @@ settings = get_settings()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Startup/shutdown hooks for background agents."""
     # TODO (Playwright phase): start Discovery APScheduler cron + Scraping loop here.
     #   scheduler = AsyncIOScheduler(); scheduler.add_job(discovery_agent.run, "cron", ...)
@@ -47,6 +48,6 @@ app.include_router(admin.router)
 
 
 @app.get("/health", tags=["meta"])
-def health() -> dict:
+def health() -> dict[str, str]:
     """Liveness probe."""
     return {"status": "ok", "service": "tor-li", "environment": settings.environment}

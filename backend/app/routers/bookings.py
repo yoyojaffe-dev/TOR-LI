@@ -8,6 +8,7 @@ The Playwright submission in step 2 is stubbed for now (foundation phase).
 """
 
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -20,6 +21,7 @@ from app.models.schemas import (
     LockResponse,
 )
 from app.services import locking
+from app.supabase_client import Row
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -27,13 +29,13 @@ router = APIRouter(prefix="/bookings", tags=["bookings"])
 @router.get("")
 def list_bookings(
     user_token: str = Query(..., description="Browser token that holds the bookings."),
-) -> list[dict]:
+) -> list[Row]:
     """Return the caller's bookings (slot + shop detail), newest slot first."""
     return locking.list_bookings(user_token)
 
 
 @router.post("/cancel")
-def cancel_booking(req: CancelRequest) -> dict:
+def cancel_booking(req: CancelRequest) -> dict[str, Any]:
     """Cancel the caller's booking and free the slot."""
     result = locking.cancel_booking(req.booking_id, req.user_token)
     if not result["success"]:

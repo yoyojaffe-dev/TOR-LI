@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.models.schemas import NearbySlot, Slot, SlotStatus
 from app.services import locking
-from app.supabase_client import get_supabase
+from app.supabase_client import all_rows, get_supabase
 
 router = APIRouter(prefix="/slots", tags=["slots"])
 
@@ -34,7 +34,7 @@ def list_slots(
         query = query.eq("status", SlotStatus.free.value)
 
     res = query.execute()
-    return [Slot(**row) for row in (res.data or [])]
+    return [Slot(**row) for row in all_rows(res.data)]
 
 
 @router.get("/nearby", response_model=list[NearbySlot])
@@ -54,6 +54,6 @@ def list_nearby_slots(
 
 
 @router.get("/realtime-info")
-def realtime_info() -> dict:
+def realtime_info() -> dict[str, str]:
     """Expose the channel + table the frontend should subscribe to."""
     return {"channel": REALTIME_CHANNEL, "table": "available_slots", "schema": "public"}

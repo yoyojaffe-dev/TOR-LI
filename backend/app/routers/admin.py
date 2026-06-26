@@ -3,9 +3,9 @@
 Mounted only when ENVIRONMENT != "production".
 """
 
-import asyncio
+from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from app.agents.discovery_agent import DiscoveryAgent
 from app.agents.scraping_agent import ScrapingAgent
@@ -18,7 +18,7 @@ def trigger_discovery(
     lat: float = Query(32.0853, description="Centre latitude (default: Tel Aviv)."),
     lng: float = Query(34.7818, description="Centre longitude (default: Tel Aviv)."),
     radius_m: int = Query(5000, ge=100, le=50000, description="Search radius in metres."),
-) -> dict:
+) -> dict[str, Any]:
     """Trigger one Discovery Agent pass and return the count of shops upserted.
 
     Example:
@@ -37,7 +37,7 @@ def trigger_discovery(
 
 
 @router.post("/scraping/run")
-async def trigger_scraping() -> dict:
+async def trigger_scraping() -> dict[str, Any]:
     """Run one full Scraping Agent pass synchronously and return stats.
 
     Example:

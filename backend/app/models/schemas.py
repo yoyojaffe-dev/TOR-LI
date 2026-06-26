@@ -6,6 +6,7 @@ These mirror the Supabase tables (``barbershops``, ``available_slots``,
 
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -25,7 +26,7 @@ class Barbershop(BaseModel):
     google_place_id: str | None = None
     lat: float | None = None
     lng: float | None = None
-    opening_hours: dict | None = None
+    opening_hours: dict[str, Any] | None = None
     photo_url: str | None = None
     photo_urls: list[str] = []
     rating: float | None = None
