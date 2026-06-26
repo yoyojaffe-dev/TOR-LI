@@ -33,6 +33,7 @@ _DETAIL_FIELDS = [
     "website",
     "opening_hours",
     "geometry",
+    "photos",
 ]
 
 
@@ -133,6 +134,18 @@ class DiscoveryAgent:
         phone = place.get("formatted_phone_number")
         website = place.get("website")
 
+        # Build photo URL from the first Places photo reference (if any).
+        photo_url: str | None = None
+        photos = place.get("photos") or []
+        if photos:
+            ref = photos[0].get("photo_reference")
+            if ref:
+                key = self.settings.google_maps_api_key
+                photo_url = (
+                    f"https://maps.googleapis.com/maps/api/place/photo"
+                    f"?maxwidth=800&photo_reference={ref}&key={key}"
+                )
+
         # Upsert core row + PostGIS point via RPC.
         self.db.rpc(
             "upsert_barbershop",
@@ -144,6 +157,7 @@ class DiscoveryAgent:
                 "p_phone": phone,
                 "p_booking_url": website,
                 "p_google_place_id": place_id,
+                "p_photo_url": photo_url,
             },
         ).execute()
 

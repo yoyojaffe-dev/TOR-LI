@@ -244,9 +244,12 @@ function renderBarbershops(barbershops) {
     <div data-id="${b.id}"
          class="min-w-[260px] bg-surface-2 rounded-[20px] overflow-hidden border border-border-light
                 relative flex-shrink-0 cursor-pointer hover:border-primary/40 transition-colors group">
-      <!-- Photo placeholder (gold-tinted gradient until real photos) -->
-      <div class="h-32 w-full photo-placeholder flex items-center justify-center relative overflow-hidden">
-        <span class="material-symbols-outlined text-5xl text-primary/30 group-hover:scale-110 transition-transform duration-300">content_cut</span>
+      <!-- Card photo: real image when available, gradient fallback otherwise -->
+      <div class="h-32 w-full relative overflow-hidden ${b.photo_url ? "" : "photo-placeholder"}">
+        ${b.photo_url
+          ? `<img src="${b.photo_url}" alt="${b.name}" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.classList.add('photo-placeholder');this.remove()">`
+          : `<span class="material-symbols-outlined text-5xl text-primary/30 group-hover:scale-110 transition-transform duration-300 absolute inset-0 flex items-center justify-center">content_cut</span>`
+        }
         <div class="absolute inset-0 card-gradient"></div>
         <!-- Barber avatar overlay (Stitch motif) -->
         <div class="absolute -bottom-5 right-4 z-10 w-12 h-12 rounded-full bg-surface-2 border-2 border-surface-2 gold-ring flex items-center justify-center">
@@ -434,8 +437,11 @@ async function renderBarberView(shopId) {
   view.innerHTML = `
     <!-- Hero -->
     <section class="relative w-full h-[240px]">
-      <div class="w-full h-full photo-placeholder flex items-center justify-center">
-        <span class="material-symbols-outlined text-7xl text-primary/25">content_cut</span>
+      <div class="w-full h-full ${shop.photo_url ? "" : "photo-placeholder"} flex items-center justify-center overflow-hidden">
+        ${shop.photo_url
+          ? `<img src="${shop.photo_url}" alt="${shop.name}" class="w-full h-full object-cover" loading="eager" onerror="this.parentElement.classList.add('photo-placeholder');this.remove()">`
+          : `<span class="material-symbols-outlined text-7xl text-primary/25">content_cut</span>`
+        }
       </div>
       <div class="absolute inset-0" style="background:linear-gradient(to bottom,rgba(19,19,21,.2),#131315)"></div>
       <button id="bp-back" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-surface-1/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-text-primary">
@@ -443,7 +449,10 @@ async function renderBarberView(shopId) {
       </button>
       <div class="absolute bottom-0 right-gutter translate-y-1/2">
         <div class="w-24 h-24 rounded-full border-2 border-primary overflow-hidden bg-surface-2 flex items-center justify-center shadow-[0_0_15px_rgba(239,178,0,0.15)]">
-          <span class="material-symbols-outlined text-4xl text-primary" style="font-variation-settings:'FILL' 1;">storefront</span>
+          ${shop.photo_url
+            ? `<img src="${shop.photo_url}" alt="${shop.name}" class="w-full h-full object-cover">`
+            : `<span class="material-symbols-outlined text-4xl text-primary" style="font-variation-settings:'FILL' 1;">storefront</span>`
+          }
         </div>
       </div>
     </section>
@@ -490,12 +499,17 @@ async function renderBarberView(shopId) {
       </div>
     </section>
 
-    <!-- Tab: Portfolio (placeholder grid until real photos) -->
+    <!-- Tab: Portfolio — first cell shows real photo if available -->
     <section id="bp-portfolio" class="p-gutter grid grid-cols-3 gap-1 hidden">
-      ${Array.from({ length: 9 }).map(() => `
-        <div class="aspect-square photo-placeholder rounded-sm flex items-center justify-center">
-          <span class="material-symbols-outlined text-primary/20 text-2xl">content_cut</span>
-        </div>`).join("")}
+      ${Array.from({ length: 9 }).map((_, i) => {
+        const isFirst = i === 0 && shop.photo_url;
+        return `<div class="aspect-square rounded-sm overflow-hidden ${isFirst ? "" : "photo-placeholder flex items-center justify-center"}">
+          ${isFirst
+            ? `<img src="${shop.photo_url}" alt="${shop.name}" class="w-full h-full object-cover">`
+            : `<span class="material-symbols-outlined text-primary/20 text-2xl">content_cut</span>`
+          }
+        </div>`;
+      }).join("")}
     </section>
 
     <!-- Tab: Reviews (empty until data) -->
