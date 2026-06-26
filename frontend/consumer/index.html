@@ -162,7 +162,7 @@
 
   <!-- Header -->
   <header class="px-gutter pt-8 pb-4 flex justify-between items-center">
-    <div class="flex items-center gap-3">
+    <button id="location-btn" class="flex items-center gap-3 text-right hover:opacity-80 transition-opacity">
       <div class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary">
         <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">person</span>
       </div>
@@ -171,11 +171,9 @@
         <div class="flex items-center gap-1">
           <span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings:'FILL' 1;">location_on</span>
           <span id="location-label" class="font-headline-sm text-[16px] font-bold">מאתר...</span>
+          <span class="material-symbols-outlined text-text-muted text-sm">expand_more</span>
         </div>
       </div>
-    </div>
-    <button class="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center border border-border-light text-text-primary hover:bg-surface-3 transition-colors">
-      <span class="material-symbols-outlined">notifications</span>
     </button>
   </header>
 

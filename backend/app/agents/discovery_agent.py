@@ -95,7 +95,7 @@ class DiscoveryAgent:
 
                 try:
                     details = self._get_details(place_id)
-                    self._upsert(details)
+                    self._upsert(details, place_type)
                     count += 1
                     logger.debug("Upserted: %s (%s)", details.get("name"), place_id)
                 except Exception as exc:
@@ -115,7 +115,7 @@ class DiscoveryAgent:
         result = self.gmaps.place(place_id, fields=_DETAIL_FIELDS)
         return result.get("result", {})
 
-    def _upsert(self, place: dict) -> None:
+    def _upsert(self, place: dict, place_type: str = "barber_shop") -> None:
         """Write one barbershop to Supabase via the upsert_barbershop RPC.
 
         After the RPC, a separate UPDATE stores opening_hours (the RPC does
@@ -134,17 +134,18 @@ class DiscoveryAgent:
         phone = place.get("formatted_phone_number")
         website = place.get("website")
 
-        # Build photo URL from the first Places photo reference (if any).
-        photo_url: str | None = None
+        # Build photo URLs from up to 6 Places photo references.
+        key = self.settings.google_maps_api_key
         photos = place.get("photos") or []
-        if photos:
-            ref = photos[0].get("photo_reference")
+        photo_urls: list[str] = []
+        for ph in photos[:6]:
+            ref = ph.get("photo_reference")
             if ref:
-                key = self.settings.google_maps_api_key
-                photo_url = (
+                photo_urls.append(
                     f"https://maps.googleapis.com/maps/api/place/photo"
                     f"?maxwidth=800&photo_reference={ref}&key={key}"
                 )
+        photo_url = photo_urls[0] if photo_urls else None
 
         # Upsert core row + PostGIS point via RPC.
         self.db.rpc(
@@ -158,6 +159,10 @@ class DiscoveryAgent:
                 "p_booking_url": website,
                 "p_google_place_id": place_id,
                 "p_photo_url": photo_url,
+                "p_place_type": place_type,
+                "p_photo_urls": photo_urls,
+                "p_rating": place.get("rating"),
+                "p_rating_count": place.get("user_ratings_total"),
             },
         ).execute()
 

@@ -37,7 +37,10 @@ let unsubscribeSlots = null;
 const DEFAULT_POSITION = { lat: 31.7683, lng: 35.2137 };
 
 // Client-side filter state (applied over the fetched shops, persists across searches).
-const filterState = { maxDistanceM: null };
+const filterState = { maxDistanceM: null, openNow: false, serviceTypes: [] };
+
+// Client-side text search query (filters loaded shops by name/address).
+let searchQuery = "";
 
 // Clear barbershop pins from the map between location changes (avoids pileup).
 function clearMarkers() {
@@ -46,13 +49,41 @@ function clearMarkers() {
   store.set({ markers: [] });
 }
 
-// The shops currently visible after applying the active filter.
+// The shops currently visible after applying all active filters + search query.
 function visibleShops() {
-  const all = store.get().barbershops || [];
-  if (filterState.maxDistanceM == null) return all;
-  return all.filter(
-    (b) => b.distance_m == null || b.distance_m <= filterState.maxDistanceM
-  );
+  let shops = store.get().barbershops || [];
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    shops = shops.filter(
+      (b) =>
+        b.name?.toLowerCase().includes(q) ||
+        b.address?.toLowerCase().includes(q)
+    );
+  }
+  if (filterState.maxDistanceM != null) {
+    shops = shops.filter(
+      (b) => b.distance_m == null || b.distance_m <= filterState.maxDistanceM
+    );
+  }
+  if (filterState.openNow) {
+    shops = shops.filter((b) => b.opening_hours?.open_now === true);
+  }
+  if (filterState.serviceTypes.length > 0) {
+    const serviceKeywords = {
+      תספורת: ["תספורת", "תסרוקת", "קאט", "cut", "hair"],
+      זקן:    ["זקן", "beard", "שפם"],
+      ילדים:  ["ילדים", "ילד", "kids", "children"],
+      צבע:    ["צבע", "color", "colour", "highlights"],
+    };
+    shops = shops.filter((b) =>
+      filterState.serviceTypes.some((type) => {
+        const kws = serviceKeywords[type] || [type];
+        return kws.some((kw) => b.name?.toLowerCase().includes(kw.toLowerCase()));
+      })
+    );
+  }
+  return shops;
 }
 
 // ── View toggle (List ↔ Map) ─────────────────────────────────────────────────
@@ -269,6 +300,12 @@ function renderBarbershops(barbershops) {
       <div class="p-4 pt-6">
         <h3 class="font-headline-sm text-headline-sm text-right mb-0.5 truncate">${b.name}</h3>
         <p class="font-body-md text-text-secondary text-sm text-right truncate">${b.address || ""}</p>
+        ${b.rating != null ? `
+        <div class="mt-1.5 flex items-center justify-end gap-1">
+          <span class="font-label-mono text-label-mono text-[11px] text-text-muted">(${b.rating_count ?? 0})</span>
+          <span class="font-label-mono text-label-mono text-[11px] text-text-secondary">${b.rating.toFixed(1)}</span>
+          <span class="material-symbols-outlined text-primary text-[14px]" style="font-variation-settings:'FILL' 1;">star</span>
+        </div>` : ""}
         <div class="mt-3 flex justify-end">
           <span class="font-label-mono text-label-mono text-[11px] text-primary border border-primary/30 rounded-full px-3 py-1
                        group-hover:bg-primary group-hover:text-on-primary transition-colors">
@@ -461,11 +498,17 @@ async function renderBarberView(shopId) {
     <section class="px-gutter pt-16 pb-stack-lg">
       <h1 class="font-headline-lg-mobile text-headline-lg-mobile text-text-primary">${shop.name}</h1>
       <p class="font-body-md text-body-md text-text-secondary mt-1">${shop.address || ""}</p>
-      <div class="flex items-center gap-stack-md mt-stack-sm">
+      <div class="flex items-center gap-stack-md mt-stack-sm flex-wrap">
         ${shop.distance_m != null ? `
         <div class="flex items-center gap-1 text-text-secondary">
           <span class="material-symbols-outlined text-[18px]">location_on</span>
           <span class="font-body-md text-body-md">${Math.round(shop.distance_m)} מ'</span>
+        </div>` : ""}
+        ${shop.rating != null ? `
+        <div class="flex items-center gap-1">
+          <span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings:'FILL' 1;">star</span>
+          <span class="font-body-md text-body-md text-text-primary">${shop.rating.toFixed(1)}</span>
+          <span class="font-body-md text-body-md text-text-secondary">(${shop.rating_count ?? 0})</span>
         </div>` : ""}
       </div>
       <div class="flex gap-stack-sm mt-stack-lg">
@@ -499,25 +542,39 @@ async function renderBarberView(shopId) {
       </div>
     </section>
 
-    <!-- Tab: Portfolio — first cell shows real photo if available -->
+    <!-- Tab: Portfolio — real photos from photo_urls, gradient fallback for empty slots -->
     <section id="bp-portfolio" class="p-gutter grid grid-cols-3 gap-1 hidden">
       ${Array.from({ length: 9 }).map((_, i) => {
-        const isFirst = i === 0 && shop.photo_url;
-        return `<div class="aspect-square rounded-sm overflow-hidden ${isFirst ? "" : "photo-placeholder flex items-center justify-center"}">
-          ${isFirst
-            ? `<img src="${shop.photo_url}" alt="${shop.name}" class="w-full h-full object-cover">`
-            : `<span class="material-symbols-outlined text-primary/20 text-2xl">content_cut</span>`
-          }
-        </div>`;
+        const urls = shop.photo_urls || [];
+        const url = urls[i] || null;
+        return url
+          ? `<div class="aspect-square rounded-sm overflow-hidden">
+               <img src="${url}" alt="${shop.name}" class="w-full h-full object-cover" loading="lazy"
+                    onerror="this.parentElement.classList.add('photo-placeholder','flex','items-center','justify-center');this.remove()">
+             </div>`
+          : `<div class="aspect-square rounded-sm photo-placeholder flex items-center justify-center">
+               <span class="material-symbols-outlined text-primary/20 text-2xl">content_cut</span>
+             </div>`;
       }).join("")}
     </section>
 
-    <!-- Tab: Reviews (empty until data) -->
+    <!-- Tab: Reviews — Google rating summary + CTA -->
     <section id="bp-reviews" class="px-gutter py-section-gap hidden">
-      <div class="flex flex-col items-center justify-center text-center gap-3 py-10">
-        <span class="material-symbols-outlined text-5xl text-surface-variant">reviews</span>
-        <p class="font-body-lg text-body-lg text-text-secondary">אין עדיין חוות דעת</p>
-        <p class="font-body-md text-text-muted text-sm">היה הראשון לדרג אחרי התור</p>
+      ${shop.rating != null ? `
+      <div class="bg-surface-1 border border-border-light rounded-2xl p-stack-lg mb-stack-lg text-center">
+        <p class="font-price-lg text-price-lg text-primary drop-shadow-[0_0_8px_rgba(239,178,0,0.3)]">${shop.rating.toFixed(1)}</p>
+        <div class="flex items-center justify-center gap-0.5 my-stack-sm">
+          ${Array.from({ length: 5 }).map((_, i) => {
+            const filled = i < Math.round(shop.rating);
+            return `<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings:'FILL' ${filled ? 1 : 0};">star</span>`;
+          }).join("")}
+        </div>
+        <p class="font-body-md text-body-md text-text-secondary">מבוסס על ${shop.rating_count ?? 0} חוות דעת בגוגל</p>
+      </div>` : ""}
+      <div class="flex flex-col items-center justify-center text-center gap-3 py-6">
+        <span class="material-symbols-outlined text-5xl text-surface-variant">rate_review</span>
+        <p class="font-body-lg text-body-lg text-text-secondary">שתף את החוויה שלך</p>
+        <p class="font-body-md text-text-muted text-sm">לאחר התור תוכל לדרג את הספר</p>
       </div>
     </section>`;
 
@@ -782,7 +839,8 @@ async function renderProfileView() {
 
     <!-- Settings -->
     <section class="px-gutter flex flex-col gap-stack-sm">
-      ${row("calendar_month", "התורים שלי", 'id="pf-bookings"')}
+      ${row("favorite", "המועדפים שלי", 'id="pf-bookings"')}
+      ${row("history", "תורים קודמים", 'id="pf-past-bookings"')}
       ${row("language", "שפה · עברית", 'id="pf-lang"')}
       ${row("notifications", "התראות", 'id="pf-notif"')}
       ${row("help", "עזרה ותמיכה", 'id="pf-help"')}
@@ -804,10 +862,11 @@ async function renderProfileView() {
   });
 
   // Row actions.
-  document.getElementById("pf-bookings").addEventListener("click", () => { location.hash = "#/bookings"; });
-  ["pf-lang", "pf-notif", "pf-help"].forEach((id) =>
-    document.getElementById(id).addEventListener("click", () => toast("בקרוב 🚧"))
-  );
+  document.getElementById("pf-bookings").addEventListener("click", () => toast("המועדפים בקרוב"));
+  document.getElementById("pf-past-bookings").addEventListener("click", () => { location.hash = "#/bookings"; });
+  document.getElementById("pf-lang").addEventListener("click", () => openProfileSheet("language"));
+  document.getElementById("pf-notif").addEventListener("click", () => openProfileSheet("notifications"));
+  document.getElementById("pf-help").addEventListener("click", () => openProfileSheet("help"));
 
   // Bookings count.
   try {
@@ -945,50 +1004,185 @@ function renderVerifyView() {
   phoneStep();
 }
 
-// ── Manual location search ───────────────────────────────────────────────────
+// ── Search: client-side filter by name/address ───────────────────────────────
 
-// Lazily-created inline hint shown under the search bar on geocode failure.
-function searchHint(message) {
+function handleSearch() {
   const input = els.searchInput();
-  if (!input) return;
-  let hint = document.getElementById("search-hint");
-  if (!hint) {
-    hint = document.createElement("p");
-    hint.id = "search-hint";
-    hint.className = "px-gutter -mt-3 mb-3 text-danger font-body-md text-xs text-right";
-    // Place it right after the search/filter row (input's grandparent).
-    const row = input.closest(".flex");
-    row?.parentElement?.insertBefore(hint, row.nextSibling);
-  }
-  hint.textContent = message || "";
-  hint.classList.toggle("hidden", !message);
+  searchQuery = input?.value.trim() ?? "";
+  renderShops(visibleShops());
 }
 
-// Resolve the typed address -> geocode -> re-fetch + recenter.
-// Empty query falls back to GPS (then Jerusalem if denied).
-async function handleSearch() {
-  const input = els.searchInput();
-  const query = input?.value.trim();
-  searchHint("");
+// ── Location city picker ──────────────────────────────────────────────────────
 
-  if (!query) {
-    try {
-      const position = await getCurrentPosition();
-      await setLocation(position, { label: "מיקומך" });
-    } catch {
-      await setLocation(DEFAULT_POSITION, { label: "ירושלים" });
-    }
-    return;
+const CITY_LIST = [
+  { name: "תל אביב",       lat: 32.0853, lng: 34.7818 },
+  { name: "ירושלים",      lat: 31.7683, lng: 35.2137 },
+  { name: "חיפה",          lat: 32.7940, lng: 34.9896 },
+  { name: "באר שבע",      lat: 31.2518, lng: 34.7913 },
+  { name: "ראשון לציון", lat: 31.9730, lng: 34.7925 },
+  { name: "אשדוד",         lat: 31.8040, lng: 34.6550 },
+  { name: "נתניה",         lat: 32.3215, lng: 34.8532 },
+  { name: "אילת",          lat: 29.5577, lng: 34.9519 },
+];
+
+function openLocationSheet() {
+  let backdrop = document.getElementById("location-backdrop");
+  if (!backdrop) {
+    backdrop = document.createElement("div");
+    backdrop.id = "location-backdrop";
+    backdrop.className =
+      "fixed inset-0 z-[70] bg-black/60 flex items-end justify-center " +
+      "transition-opacity duration-200";
+    const cities = CITY_LIST.map((c) => `
+      <button data-lat="${c.lat}" data-lng="${c.lng}" data-name="${c.name}"
+              class="loc-city w-full flex items-center gap-stack-md p-stack-md rounded-xl hover:bg-surface-2 transition-colors text-right">
+        <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">location_city</span>
+        <span class="font-body-md text-body-md text-text-primary">${c.name}</span>
+      </button>`).join("");
+    backdrop.innerHTML = `
+      <div id="location-sheet"
+           class="w-full max-w-[430px] bg-surface-container border-t border-border-light
+                  rounded-t-3xl p-gutter pb-[calc(20px+env(safe-area-inset-bottom))]
+                  translate-y-full transition-transform duration-300 ease-out">
+        <div class="w-10 h-1 bg-surface-variant rounded-full mx-auto mb-stack-lg"></div>
+        <div class="flex justify-between items-center mb-stack-lg">
+          <h2 class="font-headline-md text-headline-md">בחר עיר</h2>
+          <button id="loc-close"><span class="material-symbols-outlined text-text-muted">close</span></button>
+        </div>
+        <button id="loc-gps"
+                class="w-full flex items-center gap-stack-md p-stack-md rounded-xl bg-primary/10 border border-primary/30 mb-stack-md hover:bg-primary/20 transition-colors text-right">
+          <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">my_location</span>
+          <span class="font-body-md font-medium text-primary">השתמש במיקום שלי</span>
+        </button>
+        <div class="flex flex-col gap-1">${cities}</div>
+      </div>`;
+    document.body.appendChild(backdrop);
+
+    const sheet = backdrop.querySelector("#location-sheet");
+    const close = () => {
+      sheet.classList.add("translate-y-full");
+      backdrop.classList.add("opacity-0", "pointer-events-none");
+    };
+    backdrop.querySelector("#loc-close").addEventListener("click", close);
+    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(); });
+
+    backdrop.querySelector("#loc-gps").addEventListener("click", async () => {
+      close();
+      try {
+        const pos = await getCurrentPosition();
+        await setLocation(pos, { label: "מיקומך" });
+      } catch {
+        await setLocation(DEFAULT_POSITION, { label: "ירושלים" });
+      }
+    });
+    backdrop.querySelectorAll(".loc-city").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        close();
+        const lat = parseFloat(btn.dataset.lat);
+        const lng = parseFloat(btn.dataset.lng);
+        await setLocation({ lat, lng }, { label: btn.dataset.name });
+      });
+    });
   }
 
-  try {
-    const geo = await geocodeAddress(query);
-    // Use the typed query as the short label (formatted_address is long).
-    await setLocation({ lat: geo.lat, lng: geo.lng }, { label: query });
-  } catch (err) {
-    console.warn("Geocode failed:", err.message);
-    searchHint("הכתובת לא נמצאה — נסה שוב");
+  const sheet = backdrop.querySelector("#location-sheet");
+  backdrop.classList.remove("opacity-0", "pointer-events-none");
+  requestAnimationFrame(() => sheet.classList.remove("translate-y-full"));
+}
+
+// ── Profile action sheets ─────────────────────────────────────────────────────
+
+function openProfileSheet(type) {
+  const id = `profile-sheet-${type}`;
+  let backdrop = document.getElementById(`${id}-backdrop`);
+  if (!backdrop) {
+    backdrop = document.createElement("div");
+    backdrop.id = `${id}-backdrop`;
+    backdrop.className =
+      "fixed inset-0 z-[70] bg-black/60 flex items-end justify-center " +
+      "transition-opacity duration-200";
+
+    const contents = {
+      language: `
+        <h2 class="font-headline-md text-headline-md mb-stack-lg">שפה</h2>
+        <div class="flex flex-col gap-stack-sm">
+          <button class="w-full flex items-center justify-between p-stack-md rounded-xl bg-primary/10 border border-primary/30">
+            <span class="font-body-md text-primary font-medium">עברית</span>
+            <span class="material-symbols-outlined text-primary">check_circle</span>
+          </button>
+          <button class="w-full flex items-center justify-between p-stack-md rounded-xl bg-surface-2 border border-border-light opacity-50">
+            <span class="font-body-md text-text-secondary">English</span>
+            <span class="font-label-mono text-label-mono text-text-muted text-xs">בקרוב</span>
+          </button>
+          <button class="w-full flex items-center justify-between p-stack-md rounded-xl bg-surface-2 border border-border-light opacity-50">
+            <span class="font-body-md text-text-secondary">العربية</span>
+            <span class="font-label-mono text-label-mono text-text-muted text-xs">בקרוב</span>
+          </button>
+        </div>`,
+      notifications: `
+        <h2 class="font-headline-md text-headline-md mb-stack-lg">התראות</h2>
+        <div class="flex flex-col gap-stack-sm">
+          <div class="flex items-center justify-between p-stack-md rounded-xl bg-surface-2 border border-border-light">
+            <span class="font-body-md text-text-primary">תזכורות לתורים</span>
+            <button onclick="event.currentTarget.classList.toggle('bg-primary');event.currentTarget.classList.toggle('bg-surface-3')"
+                    class="w-12 h-6 rounded-full bg-surface-3 transition-colors relative">
+              <span class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"></span>
+            </button>
+          </div>
+          <div class="flex items-center justify-between p-stack-md rounded-xl bg-surface-2 border border-border-light">
+            <span class="font-body-md text-text-primary">מבצעים מיוחדים</span>
+            <button onclick="event.currentTarget.classList.toggle('bg-primary');event.currentTarget.classList.toggle('bg-surface-3')"
+                    class="w-12 h-6 rounded-full bg-surface-3 transition-colors relative">
+              <span class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"></span>
+            </button>
+          </div>
+          <p class="font-label-mono text-label-mono text-text-muted text-xs text-center pt-2">שליחת הודעות SMS בקרוב</p>
+        </div>`,
+      help: `
+        <h2 class="font-headline-md text-headline-md mb-stack-lg">עזרה ותמיכה</h2>
+        <div class="flex flex-col gap-stack-sm">
+          <a href="https://wa.me/972500000000" target="_blank" rel="noopener"
+             class="w-full flex items-center gap-stack-md p-stack-md rounded-xl bg-surface-2 border border-border-light hover:bg-surface-3 transition-colors">
+            <span class="material-symbols-outlined text-primary">chat</span>
+            <div class="text-right">
+              <p class="font-body-md text-text-primary">WhatsApp</p>
+              <p class="font-label-mono text-label-mono text-text-muted text-xs">זמין א׳-ה׳ 9:00-18:00</p>
+            </div>
+          </a>
+          <a href="mailto:support@torli.app"
+             class="w-full flex items-center gap-stack-md p-stack-md rounded-xl bg-surface-2 border border-border-light hover:bg-surface-3 transition-colors">
+            <span class="material-symbols-outlined text-primary">mail</span>
+            <div class="text-right">
+              <p class="font-body-md text-text-primary">מייל</p>
+              <p class="font-label-mono text-label-mono text-text-muted text-xs">support@torli.app</p>
+            </div>
+          </a>
+        </div>`,
+    };
+
+    backdrop.innerHTML = `
+      <div id="${id}-sheet"
+           class="w-full max-w-[430px] bg-surface-container border-t border-border-light
+                  rounded-t-3xl p-gutter pb-[calc(20px+env(safe-area-inset-bottom))]
+                  translate-y-full transition-transform duration-300 ease-out">
+        <div class="w-10 h-1 bg-surface-variant rounded-full mx-auto mb-stack-lg"></div>
+        ${contents[type] || ""}
+        <button id="${id}-close" class="mt-stack-lg w-full py-3 rounded-xl border border-border-light text-text-secondary font-body-md">סגור</button>
+      </div>`;
+    document.body.appendChild(backdrop);
+
+    const sheet = backdrop.querySelector(`#${id}-sheet`);
+    const close = () => {
+      sheet.classList.add("translate-y-full");
+      backdrop.classList.add("opacity-0", "pointer-events-none");
+    };
+    backdrop.querySelector(`#${id}-close`).addEventListener("click", close);
+    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(); });
   }
+
+  const sheet = backdrop.querySelector(`#${id}-sheet`);
+  backdrop.classList.remove("opacity-0", "pointer-events-none");
+  requestAnimationFrame(() => sheet.classList.remove("translate-y-full"));
 }
 
 // ── Toast (non-blocking feedback) ────────────────────────────────────────────
@@ -1022,6 +1216,12 @@ function ensureFilterSheet() {
   backdrop.className =
     "fixed inset-0 z-[70] bg-black/60 opacity-0 pointer-events-none " +
     "transition-opacity duration-200 flex items-end justify-center";
+  const serviceChips = ["תספורת", "זקן", "ילדים", "צבע"].map((s) =>
+    `<button data-svc="${s}"
+             class="svc-chip px-4 py-2 rounded-full border border-border-light font-body-md text-sm
+                    text-text-secondary hover:border-primary/50 transition-colors">${s}</button>`
+  ).join("");
+
   backdrop.innerHTML = `
     <div id="filter-sheet"
          class="w-full max-w-[430px] bg-surface-container border-t border-border-light
@@ -1034,6 +1234,21 @@ function ensureFilterSheet() {
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
+
+      <!-- Open Now toggle -->
+      <div class="flex items-center justify-between mb-stack-lg">
+        <span class="font-body-md text-text-primary">פתוח עכשיו</span>
+        <button id="filter-open-now"
+                class="w-12 h-6 rounded-full transition-colors relative ${filterState.openNow ? "bg-primary" : "bg-surface-3"}">
+          <span class="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${filterState.openNow ? "left-[calc(100%-22px)]" : "left-0.5"}"></span>
+        </button>
+      </div>
+
+      <!-- Service type chips -->
+      <p class="font-body-md text-text-secondary text-sm mb-stack-sm">סוג שירות</p>
+      <div class="flex flex-wrap gap-2 mb-stack-lg">${serviceChips}</div>
+
+      <!-- Distance slider -->
       <label class="font-body-md text-text-secondary text-sm flex justify-between mb-stack-sm">
         <span>מרחק מקסימלי</span>
         <span id="filter-distance-label" class="font-label-mono text-primary"></span>
@@ -1059,22 +1274,65 @@ function ensureFilterSheet() {
   };
   slider.addEventListener("input", syncLabel);
 
+  // Open Now toggle.
+  let openNowLocal = filterState.openNow;
+  const openNowBtn = backdrop.querySelector("#filter-open-now");
+  const syncOpenNow = () => {
+    openNowBtn.classList.toggle("bg-primary", openNowLocal);
+    openNowBtn.classList.toggle("bg-surface-3", !openNowLocal);
+    const dot = openNowBtn.querySelector("span");
+    if (dot) {
+      dot.classList.toggle("left-[calc(100%-22px)]", openNowLocal);
+      dot.classList.toggle("left-0.5", !openNowLocal);
+    }
+  };
+  openNowBtn.addEventListener("click", () => { openNowLocal = !openNowLocal; syncOpenNow(); });
+
+  // Service chips toggle.
+  let selectedServices = [...filterState.serviceTypes];
+  backdrop.querySelectorAll(".svc-chip").forEach((chip) => {
+    const svc = chip.dataset.svc;
+    if (selectedServices.includes(svc)) {
+      chip.classList.add("border-primary", "text-primary", "bg-primary/10");
+    }
+    chip.addEventListener("click", () => {
+      const idx = selectedServices.indexOf(svc);
+      if (idx === -1) {
+        selectedServices.push(svc);
+        chip.classList.add("border-primary", "text-primary", "bg-primary/10");
+      } else {
+        selectedServices.splice(idx, 1);
+        chip.classList.remove("border-primary", "text-primary", "bg-primary/10");
+      }
+    });
+  });
+
   backdrop.querySelector("#filter-close").addEventListener("click", closeFilterSheet);
   backdrop.addEventListener("click", (e) => {
     if (e.target === backdrop) closeFilterSheet();
   });
   backdrop.querySelector("#filter-reset").addEventListener("click", () => {
     filterState.maxDistanceM = null;
+    filterState.openNow = false;
+    filterState.serviceTypes = [];
+    openNowLocal = false;
+    selectedServices = [];
+    syncOpenNow();
+    backdrop.querySelectorAll(".svc-chip").forEach((c) =>
+      c.classList.remove("border-primary", "text-primary", "bg-primary/10")
+    );
     slider.value = "10000";
     syncLabel();
-    renderShops();
+    renderShops(visibleShops());
     closeFilterSheet();
     toast("הסינון אופס");
   });
   backdrop.querySelector("#filter-apply").addEventListener("click", () => {
     const v = Number(slider.value);
     filterState.maxDistanceM = v >= 10000 ? null : v;
-    renderShops();
+    filterState.openNow = openNowLocal;
+    filterState.serviceTypes = [...selectedServices];
+    renderShops(visibleShops());
     closeFilterSheet();
     toast(`${visibleShops().length} תוצאות`);
   });
@@ -1350,21 +1608,11 @@ document.addEventListener("DOMContentLoaded", () => {
   els.btnListView()?.addEventListener("click", () => setView("list"));
   els.btnMapView()?.addEventListener("click", () => setView("map"));
 
-  // Manual location search: Enter in the field, or click the search icon.
-  els.searchInput()?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleSearch();
-    }
-  });
-  document
-    .querySelectorAll('.material-symbols-outlined')
-    .forEach((icon) => {
-      if (icon.textContent.trim() === "search") {
-        icon.style.cursor = "pointer";
-        icon.addEventListener("click", handleSearch);
-      }
-    });
+  // Search: live client-side filter by shop name/address.
+  els.searchInput()?.addEventListener("input", handleSearch);
+
+  // Location picker: tap the location label to open the city picker.
+  document.getElementById("location-btn")?.addEventListener("click", openLocationSheet);
 
   // Filter button (tune/filter_list icon) -> open the filter bottom-sheet.
   document.querySelectorAll(".material-symbols-outlined").forEach((icon) => {

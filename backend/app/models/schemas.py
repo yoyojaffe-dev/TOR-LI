@@ -26,6 +26,11 @@ class Barbershop(BaseModel):
     lat: float | None = None
     lng: float | None = None
     opening_hours: dict | None = None
+    photo_url: str | None = None
+    photo_urls: list[str] = []
+    rating: float | None = None
+    rating_count: int | None = None
+    place_type: str | None = None
     distance_m: float | None = Field(
         default=None, description="Distance from query point in metres (radius search only)."
     )
