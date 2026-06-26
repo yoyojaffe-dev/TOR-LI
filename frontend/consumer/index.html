@@ -208,7 +208,28 @@
 
   <!-- Map panel (hidden by default; shown when map toggle is active) -->
   <div id="map-panel" class="px-gutter mb-6 hidden">
-    <div id="map" class="w-full h-[280px] rounded-2xl overflow-hidden border border-border-light"></div>
+    <div class="relative">
+      <div id="map" class="w-full h-[480px] rounded-2xl overflow-hidden border border-border-light"></div>
+      <!-- Floating barber preview card (Stitch map motif) -->
+      <div id="map-preview"
+           class="absolute bottom-3 left-3 right-3 z-10 translate-y-[130%] opacity-0 pointer-events-none
+                  transition-all duration-300 ease-out
+                  bg-surface-1/95 backdrop-blur-md rounded-[20px] border border-border-light p-3
+                  shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex items-center gap-3">
+        <div class="w-14 h-14 rounded-full bg-surface-3 border border-border-light flex items-center justify-center text-primary shrink-0">
+          <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">storefront</span>
+        </div>
+        <div class="flex-1 text-right min-w-0">
+          <h3 id="mp-name" class="font-headline-sm text-base truncate"></h3>
+          <p id="mp-addr" class="font-body-md text-text-secondary text-xs truncate"></p>
+          <p id="mp-dist" class="font-label-mono text-label-mono text-text-muted text-[11px] mt-0.5"></p>
+        </div>
+        <button id="mp-go"
+                class="shrink-0 bg-primary text-on-primary font-label-mono text-label-mono text-xs rounded-full px-4 py-2 active:scale-95 transition-transform">
+          הצג תורים ←
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- ── LIST VIEW ────────────────────────────────────────────────── -->

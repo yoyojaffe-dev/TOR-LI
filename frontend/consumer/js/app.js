@@ -56,6 +56,7 @@ function visibleShops() {
 
 function setView(view) {
   const isList = view === "list";
+  if (isList) hideMapPreview();
   els.listPanel()?.classList.toggle("hidden", !isList);
   els.mapPanel()?.classList.toggle("hidden", isList);
   els.btnListView()?.classList.toggle("bg-surface-variant", isList);
@@ -74,7 +75,7 @@ function setView(view) {
         store.set({ map });
         const shops = visibleShops();
         if (shops.length) {
-          const markers = renderBarbershopMarkers(map, shops, selectBarbershop);
+          const markers = renderBarbershopMarkers(map, shops, showMapPreview);
           store.set({ markers });
         }
       });
@@ -130,9 +131,30 @@ function renderShops() {
   // Redraw markers if the map exists (clear old pins first to avoid pileup).
   if (store.get().map) {
     clearMarkers();
-    const markers = renderBarbershopMarkers(store.get().map, shops, selectBarbershop);
+    const markers = renderBarbershopMarkers(store.get().map, shops, showMapPreview);
     store.set({ markers });
   }
+}
+
+// Floating barber preview card shown when a map pin is tapped (Stitch motif).
+let mapPreviewShop = null;
+function showMapPreview(shop) {
+  mapPreviewShop = shop;
+  const card = document.getElementById("map-preview");
+  if (!card) return;
+  document.getElementById("mp-name").textContent = shop.name;
+  document.getElementById("mp-addr").textContent = shop.address || "";
+  document.getElementById("mp-dist").textContent =
+    shop.distance_m != null ? `${Math.round(shop.distance_m)} מ' ממך` : "";
+  card.classList.remove("translate-y-[130%]", "opacity-0", "pointer-events-none");
+  if (shop.lat != null && shop.lng != null && store.get().map) {
+    store.get().map.panTo({ lat: shop.lat, lng: shop.lng });
+  }
+}
+function hideMapPreview() {
+  document
+    .getElementById("map-preview")
+    ?.classList.add("translate-y-[130%]", "opacity-0", "pointer-events-none");
 }
 
 async function selectBarbershop(shop) {
@@ -1002,6 +1024,13 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.style.cursor = "pointer";
       btn.addEventListener("click", openFilterSheet);
     }
+  });
+
+  // Map preview "show slots" -> barber profile.
+  document.getElementById("mp-go")?.addEventListener("click", () => {
+    if (!mapPreviewShop) return;
+    store.set({ selectedBarbershop: mapPreviewShop });
+    location.hash = `#/barber/${mapPreviewShop.id}`;
   });
 
   // Hash router: nav links + deep links + back/forward all flow through here.
