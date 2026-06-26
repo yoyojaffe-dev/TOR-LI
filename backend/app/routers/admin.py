@@ -3,7 +3,7 @@
 Mounted only when ENVIRONMENT != "production".
 """
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -15,9 +15,11 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.post("/discovery/run")
 def trigger_discovery(
-    lat: float = Query(32.0853, description="Centre latitude (default: Tel Aviv)."),
-    lng: float = Query(34.7818, description="Centre longitude (default: Tel Aviv)."),
-    radius_m: int = Query(5000, ge=100, le=50000, description="Search radius in metres."),
+    lat: Annotated[float, Query(description="Centre latitude (default: Tel Aviv).")] = 32.0853,
+    lng: Annotated[float, Query(description="Centre longitude (default: Tel Aviv).")] = 34.7818,
+    radius_m: Annotated[
+        int, Query(ge=100, le=50000, description="Search radius in metres.")
+    ] = 5000,
 ) -> dict[str, Any]:
     """Trigger one Discovery Agent pass and return the count of shops upserted.
 

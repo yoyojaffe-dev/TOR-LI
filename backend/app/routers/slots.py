@@ -5,6 +5,8 @@ keeps ``available_slots`` fresh; the frontend gets live updates directly from
 Supabase Realtime (this REST route is the initial-load / fallback path).
 """
 
+from typing import Annotated
+
 from fastapi import APIRouter, HTTPException, Query
 
 from app.models.schemas import NearbySlot, Slot, SlotStatus
@@ -19,8 +21,8 @@ REALTIME_CHANNEL = "public:available_slots"
 
 @router.get("", response_model=list[Slot])
 def list_slots(
-    barbershop_id: str = Query(..., description="Barbershop to list slots for."),
-    only_free: bool = Query(True, description="Exclude locked/booked slots."),
+    barbershop_id: Annotated[str, Query(description="Barbershop to list slots for.")],
+    only_free: Annotated[bool, Query(description="Exclude locked/booked slots.")] = True,
 ) -> list[Slot]:
     """Return upcoming slots for a barbershop, soonest first."""
     query = (
@@ -39,10 +41,10 @@ def list_slots(
 
 @router.get("/nearby", response_model=list[NearbySlot])
 def list_nearby_slots(
-    lat: float = Query(..., description="User latitude (WGS84)."),
-    lng: float = Query(..., description="User longitude (WGS84)."),
-    radius: int = Query(5000, ge=1, le=50000, description="Search radius in metres."),
-    limit: int = Query(20, ge=1, le=100, description="Max slots to return."),
+    lat: Annotated[float, Query(description="User latitude (WGS84).")],
+    lng: Annotated[float, Query(description="User longitude (WGS84).")],
+    radius: Annotated[int, Query(ge=1, le=50000, description="Search radius in metres.")] = 5000,
+    limit: Annotated[int, Query(ge=1, le=100, description="Max slots to return.")] = 20,
 ) -> list[NearbySlot]:
     """Return free upcoming slots near a point, joined to shop info, nearest first."""
     try:

@@ -6,6 +6,8 @@ position using the PostGIS ``barbershops_within_radius`` RPC (ST_DWithin over a
 GiST-indexed geography column).
 """
 
+from typing import Annotated
+
 from fastapi import APIRouter, HTTPException, Query
 
 from app.models.schemas import Barbershop
@@ -16,9 +18,9 @@ router = APIRouter(prefix="/barbershops", tags=["barbershops"])
 
 @router.get("", response_model=list[Barbershop])
 def list_barbershops(
-    lat: float = Query(..., description="User latitude (WGS84)."),
-    lng: float = Query(..., description="User longitude (WGS84)."),
-    radius: int = Query(2000, ge=1, le=50000, description="Search radius in metres."),
+    lat: Annotated[float, Query(description="User latitude (WGS84).")],
+    lng: Annotated[float, Query(description="User longitude (WGS84).")],
+    radius: Annotated[int, Query(ge=1, le=50000, description="Search radius in metres.")] = 2000,
 ) -> list[Barbershop]:
     """Return barbershops within ``radius`` metres, nearest first."""
     try:

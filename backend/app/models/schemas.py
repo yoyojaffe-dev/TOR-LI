@@ -93,6 +93,27 @@ class Review(BaseModel):
     display_name: str | None = None
 
 
+class ActionResult(BaseModel):
+    """Generic success/message envelope for state-changing RPC endpoints."""
+
+    success: bool
+    message: str | None = None
+
+
+class BookingHistoryItem(BaseModel):
+    """A row from the ``bookings_for_user`` RPC (booking joined to slot + shop)."""
+
+    booking_id: str
+    status: str
+    created_at: str | None = None
+    service_name: str | None = None
+    price: float | None = None
+    slot_time: str | None = None
+    barbershop_id: str | None = None
+    shop_name: str | None = None
+    shop_address: str | None = None
+
+
 class NearbySlot(BaseModel):
     slot_id: str
     slot_time: str

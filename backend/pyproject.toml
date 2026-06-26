@@ -1,3 +1,7 @@
+[tool.fastapi]
+# Entrypoint for `fastapi dev` / `fastapi run` (run from the backend/ dir).
+entrypoint = "app.main:app"
+
 [tool.mypy]
 python_version = "3.11"
 strict = true

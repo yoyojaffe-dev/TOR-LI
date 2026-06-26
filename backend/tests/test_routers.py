@@ -198,12 +198,42 @@ def test_confirm_forwards_customer_details() -> None:
 
 
 def test_list_bookings_endpoint() -> None:
-    rows = [{"booking_id": "bk1", "shop_name": "Cuts", "service_name": "Fade", "price": 120}]
+    # Mirrors the bookings_for_user RPC shape (status is always present).
+    rows = [
+        {
+            "booking_id": "bk1",
+            "status": "confirmed",
+            "shop_name": "Cuts",
+            "service_name": "Fade",
+            "price": 120,
+            "slot_time": "2026-06-26T09:00:00+03:00",
+            "barbershop_id": "b1",
+            "shop_address": "Main St",
+        }
+    ]
     with patch("app.routers.bookings.locking.list_bookings", return_value=rows) as lb:
         res = client.get("/bookings", params={"user_token": "u1"})
     assert res.status_code == 200
     assert res.json()[0]["shop_name"] == "Cuts"
+    assert res.json()[0]["status"] == "confirmed"
     assert lb.call_args[0][0] == "u1"
+
+
+def test_list_bookings_response_is_filtered_to_history_schema() -> None:
+    # response_model strips fields not on BookingHistoryItem (e.g. user_token).
+    rows = [
+        {
+            "booking_id": "bk1",
+            "status": "confirmed",
+            "shop_name": "Cuts",
+            "service_name": "Fade",
+            "user_token": "secret-token",  # must NOT leak through response_model
+        }
+    ]
+    with patch("app.routers.bookings.locking.list_bookings", return_value=rows):
+        res = client.get("/bookings", params={"user_token": "u1"})
+    assert res.status_code == 200
+    assert "user_token" not in res.json()[0]
 
 
 def test_list_bookings_requires_user_token() -> None:

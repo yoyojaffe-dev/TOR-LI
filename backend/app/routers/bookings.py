@@ -8,12 +8,14 @@ The Playwright submission in step 2 is stubbed for now (foundation phase).
 """
 
 import uuid
-from typing import Any
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
 
 from app.agents.booking_agent import BookingAgent
 from app.models.schemas import (
+    ActionResult,
+    BookingHistoryItem,
     BookingRequest,
     BookingResponse,
     CancelRequest,
@@ -26,16 +28,16 @@ from app.supabase_client import Row
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
 
-@router.get("")
+@router.get("", response_model=list[BookingHistoryItem])
 def list_bookings(
-    user_token: str = Query(..., description="Browser token that holds the bookings."),
+    user_token: Annotated[str, Query(description="Browser token that holds the bookings.")],
 ) -> list[Row]:
     """Return the caller's bookings (slot + shop detail), newest slot first."""
     return locking.list_bookings(user_token)
 
 
-@router.post("/cancel")
-def cancel_booking(req: CancelRequest) -> dict[str, Any]:
+@router.post("/cancel", response_model=ActionResult)
+def cancel_booking(req: CancelRequest) -> Row:
     """Cancel the caller's booking and free the slot."""
     result = locking.cancel_booking(req.booking_id, req.user_token)
     if not result["success"]:
