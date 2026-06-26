@@ -2213,6 +2213,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Reflect any saved avatar in the home header.
   applyAvatar();
 
+  // Minimal debug/test hook (used by the Playwright E2E to drive the map preview,
+  // which is otherwise reachable only via a Google Maps marker click).
+  window.__torli = { showMapPreview, openNavSheet, store, visibleShops };
+
   // Hash router: nav links + deep links + back/forward all flow through here.
   window.addEventListener("hashchange", router);
 
