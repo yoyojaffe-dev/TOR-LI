@@ -278,3 +278,106 @@ def test_run_once_aggregates_stats(monkeypatch: "pytest.MonkeyPatch") -> None:
 
     stats = asyncio.run(agent.run_once())
     assert stats == {"shops_processed": 2, "slots_written": 6}
+
+
+def test_run_once_bounds_concurrency(monkeypatch: "pytest.MonkeyPatch") -> None:
+    """run_once never runs more than _MAX_CONCURRENT_SHOPS shops at once."""
+    from app.agents import scraping_agent as mod
+
+    agent = _agent()
+    targets = [{"id": str(i), "name": f"S{i}", "booking_url": f"u{i}"} for i in range(12)]
+    agent.fetch_targets = MagicMock(return_value=targets)  # type: ignore[method-assign]
+
+    active = 0
+    peak = 0
+
+    async def fake_process(browser: object, shop: dict) -> int:
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        await asyncio.sleep(0.01)  # hold the slot so overlap is observable
+        active -= 1
+        return 1
+
+    agent.process_shop = fake_process  # type: ignore[method-assign]
+
+    class _PW:
+        def __init__(self) -> None:
+            self.chromium = SimpleNamespace(launch=self._launch)
+
+        async def _launch(self, **kwargs: object) -> _FakeBrowser:
+            return _FakeBrowser(_FakePage(""))
+
+    class _PWCtx:
+        async def __aenter__(self) -> _PW:
+            return _PW()
+
+        async def __aexit__(self, *exc: object) -> None:
+            return None
+
+    monkeypatch.setattr(mod, "async_playwright", lambda: _PWCtx())
+
+    stats = asyncio.run(agent.run_once())
+    assert stats == {"shops_processed": 12, "slots_written": 12}
+    assert peak <= mod._MAX_CONCURRENT_SHOPS  # concurrency was bounded
+
+
+def test_run_once_isolates_a_failing_shop(monkeypatch: "pytest.MonkeyPatch") -> None:
+    """A task raising does not sink the pass; other shops' slots still count."""
+    from app.agents import scraping_agent as mod
+
+    agent = _agent()
+    targets = [{"id": "ok", "booking_url": "u1"}, {"id": "bad", "booking_url": "u2"}]
+    agent.fetch_targets = MagicMock(return_value=targets)  # type: ignore[method-assign]
+
+    async def fake_process(browser: object, shop: dict) -> int:
+        if shop["id"] == "bad":
+            raise RuntimeError("boom")
+        return 4
+
+    agent.process_shop = fake_process  # type: ignore[method-assign]
+
+    class _PW:
+        def __init__(self) -> None:
+            self.chromium = SimpleNamespace(launch=self._launch)
+
+        async def _launch(self, **kwargs: object) -> _FakeBrowser:
+            return _FakeBrowser(_FakePage(""))
+
+    class _PWCtx:
+        async def __aenter__(self) -> _PW:
+            return _PW()
+
+        async def __aexit__(self, *exc: object) -> None:
+            return None
+
+    monkeypatch.setattr(mod, "async_playwright", lambda: _PWCtx())
+
+    stats = asyncio.run(agent.run_once())
+    assert stats["shops_processed"] == 2
+    assert stats["slots_written"] == 4  # only the healthy shop contributed
+
+
+def test_run_once_empty_targets_short_circuits(monkeypatch: "pytest.MonkeyPatch") -> None:
+    """No targets -> no browser launched, zero stats."""
+    from app.agents import scraping_agent as mod
+
+    agent = _agent()
+    agent.fetch_targets = MagicMock(return_value=[])  # type: ignore[method-assign]
+
+    launched = False
+
+    class _PWCtx:
+        async def __aenter__(self) -> object:
+            nonlocal launched
+            launched = True
+            raise AssertionError("playwright must not start when there are no targets")
+
+        async def __aexit__(self, *exc: object) -> None:
+            return None
+
+    monkeypatch.setattr(mod, "async_playwright", lambda: _PWCtx())
+
+    stats = asyncio.run(agent.run_once())
+    assert stats == {"shops_processed": 0, "slots_written": 0}
+    assert launched is False
