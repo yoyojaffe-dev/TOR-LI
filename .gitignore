@@ -42,3 +42,7 @@ Thumbs.db
 # Playwright E2E screenshots
 frontend/consumer/e2e/artifacts/
 .pytest_cache/
+
+# Coverage artifacts
+.coverage
+htmlcov/

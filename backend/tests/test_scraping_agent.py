@@ -13,8 +13,8 @@ from app.agents.scraping_agent import (
     _is_skippable_url,
 )
 
-
 # ── URL skip filter ──────────────────────────────────────────────────────────
+
 
 @pytest.mark.parametrize(
     "url,expected",
@@ -33,6 +33,7 @@ def test_is_skippable_url(url: str, expected: bool) -> None:
 
 # ── OpenAI function-calling schema ───────────────────────────────────────────
 
+
 def test_slot_extraction_tool_schema_shape() -> None:
     fn = SLOT_EXTRACTION_TOOL["function"]
     assert fn["name"] == "extract_slots"
@@ -42,6 +43,7 @@ def test_slot_extraction_tool_schema_shape() -> None:
 
 
 # ── Agent helpers with mocked clients ────────────────────────────────────────
+
 
 def _agent() -> ScrapingAgent:
     agent = ScrapingAgent.__new__(ScrapingAgent)  # skip __init__ (no real clients)
@@ -108,7 +110,9 @@ def test_sync_slots_continues_after_per_slot_error() -> None:
 
 def test_parse_html_returns_extracted_slots() -> None:
     agent = _agent()
-    payload = {"slots": [{"service_name": "Cut", "slot_time": "2026-06-26T09:00:00+03:00", "price": 80}]}
+    payload = {
+        "slots": [{"service_name": "Cut", "slot_time": "2026-06-26T09:00:00+03:00", "price": 80}]
+    }
     tool_call = SimpleNamespace(function=SimpleNamespace(arguments=json.dumps(payload)))
     message = SimpleNamespace(tool_calls=[tool_call])
     response = SimpleNamespace(choices=[SimpleNamespace(message=message)])
@@ -132,3 +136,145 @@ def test_parse_html_empty_slots() -> None:
 
     agent.openai.chat.completions.create = fake_create
     assert asyncio.run(agent.parse_html("nothing here", "Empty Shop")) == []
+
+
+# ── Async orchestration (Playwright mocked) ──────────────────────────────────
+
+
+class _FakePage:
+    """Minimal async Playwright page stub."""
+
+    def __init__(self, body_text: str) -> None:
+        self._body = body_text
+        self.goto_args: tuple[str, ...] = ()
+
+    async def goto(self, url: str, **kwargs: object) -> None:
+        self.goto_args = (url,)
+
+    async def wait_for_timeout(self, ms: int) -> None:
+        return None
+
+    async def inner_text(self, selector: str) -> str:
+        return self._body
+
+
+class _FakeContext:
+    def __init__(self, page: _FakePage) -> None:
+        self._page = page
+        self.closed = False
+
+    async def new_page(self) -> _FakePage:
+        return self._page
+
+    async def close(self) -> None:
+        self.closed = True
+
+
+class _FakeBrowser:
+    def __init__(self, page: _FakePage) -> None:
+        self._ctx = _FakeContext(page)
+
+    async def new_context(self, **kwargs: object) -> _FakeContext:
+        return self._ctx
+
+    async def close(self) -> None:
+        return None
+
+
+def test_scrape_page_truncates_and_closes_context() -> None:
+    agent = _agent()
+    page = _FakePage("x" * 20_000)
+    browser = _FakeBrowser(page)
+    text = asyncio.run(agent.scrape_page(browser, "https://shop.example/"))  # type: ignore[arg-type]
+    # Truncated to the 15k char budget, and the context was closed afterwards.
+    assert len(text) == 15_000
+    assert browser._ctx.closed is True
+    assert page.goto_args == ("https://shop.example/",)
+
+
+def test_process_shop_success_writes_slots() -> None:
+    agent = _agent()
+    slots = [{"service_name": "Cut", "slot_time": "2026-06-26T09:00:00+03:00", "price": 80}]
+
+    async def fake_scrape(browser: object, url: str) -> str:
+        return "page text"
+
+    async def fake_parse(text: str, name: str) -> list[dict]:
+        return slots
+
+    agent.scrape_page = fake_scrape  # type: ignore[method-assign]
+    agent.parse_html = fake_parse  # type: ignore[method-assign]
+    agent._sync_slots = MagicMock(return_value=1)  # type: ignore[method-assign]
+
+    written = asyncio.run(
+        agent.process_shop(MagicMock(), {"id": "s1", "name": "Shop", "booking_url": "u"})
+    )
+    assert written == 1
+    agent._sync_slots.assert_called_once_with("s1", slots)
+
+
+def test_process_shop_no_slots_skips_sync() -> None:
+    agent = _agent()
+
+    async def fake_scrape(browser: object, url: str) -> str:
+        return "page text"
+
+    async def fake_parse(text: str, name: str) -> list[dict]:
+        return []
+
+    agent.scrape_page = fake_scrape  # type: ignore[method-assign]
+    agent.parse_html = fake_parse  # type: ignore[method-assign]
+    agent._sync_slots = MagicMock()  # type: ignore[method-assign]
+
+    written = asyncio.run(
+        agent.process_shop(MagicMock(), {"id": "s1", "name": "Shop", "booking_url": "u"})
+    )
+    assert written == 0
+    agent._sync_slots.assert_not_called()
+
+
+def test_process_shop_swallows_errors_returns_zero() -> None:
+    agent = _agent()
+
+    async def boom(browser: object, url: str) -> str:
+        raise RuntimeError("page exploded")
+
+    agent.scrape_page = boom  # type: ignore[method-assign]
+    written = asyncio.run(
+        agent.process_shop(MagicMock(), {"id": "s1", "name": "Shop", "booking_url": "u"})
+    )
+    assert written == 0  # error isolated per shop, not re-raised
+
+
+def test_run_once_aggregates_stats(monkeypatch: "pytest.MonkeyPatch") -> None:
+    agent = _agent()
+    targets = [
+        {"id": "1", "name": "A", "booking_url": "u1"},
+        {"id": "2", "name": "B", "booking_url": "u2"},
+    ]
+    agent.fetch_targets = MagicMock(return_value=targets)  # type: ignore[method-assign]
+
+    async def fake_process(browser: object, shop: dict) -> int:
+        return 3  # each shop yields 3 slots
+
+    agent.process_shop = fake_process  # type: ignore[method-assign]
+
+    # Stub the async_playwright() context manager + chromium.launch.
+    class _PW:
+        def __init__(self) -> None:
+            self.chromium = SimpleNamespace(launch=self._launch)
+
+        async def _launch(self, **kwargs: object) -> _FakeBrowser:
+            return _FakeBrowser(_FakePage(""))
+
+    class _PWCtx:
+        async def __aenter__(self) -> _PW:
+            return _PW()
+
+        async def __aexit__(self, *exc: object) -> None:
+            return None
+
+    monkeypatch.setattr("app.agents.scraping_agent.async_playwright", lambda: _PWCtx())
+
+    stats = asyncio.run(agent.run_once())
+    assert stats == {"shops_processed": 2, "slots_written": 6}

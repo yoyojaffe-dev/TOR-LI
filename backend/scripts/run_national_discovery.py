@@ -35,14 +35,14 @@ logger = logging.getLogger("national_discovery")
 
 # Core grid: major Israeli population centres. Keys are lowercase for --cities.
 CITIES = [
-    {"key": "tel_aviv",      "name": "Tel Aviv",      "lat": 32.0853, "lng": 34.7818},
-    {"key": "jerusalem",     "name": "Jerusalem",     "lat": 31.7683, "lng": 35.2137},
-    {"key": "haifa",         "name": "Haifa",         "lat": 32.7940, "lng": 34.9896},
-    {"key": "beer_sheva",    "name": "Beer Sheva",    "lat": 31.2518, "lng": 34.7913},
+    {"key": "tel_aviv", "name": "Tel Aviv", "lat": 32.0853, "lng": 34.7818},
+    {"key": "jerusalem", "name": "Jerusalem", "lat": 31.7683, "lng": 35.2137},
+    {"key": "haifa", "name": "Haifa", "lat": 32.7940, "lng": 34.9896},
+    {"key": "beer_sheva", "name": "Beer Sheva", "lat": 31.2518, "lng": 34.7913},
     {"key": "rishon_lezion", "name": "Rishon LeZion", "lat": 31.9730, "lng": 34.7925},
-    {"key": "ashdod",        "name": "Ashdod",        "lat": 31.8040, "lng": 34.6550},
-    {"key": "netanya",       "name": "Netanya",       "lat": 32.3215, "lng": 34.8532},
-    {"key": "eilat",         "name": "Eilat",         "lat": 29.5577, "lng": 34.9519},
+    {"key": "ashdod", "name": "Ashdod", "lat": 31.8040, "lng": 34.6550},
+    {"key": "netanya", "name": "Netanya", "lat": 32.3215, "lng": 34.8532},
+    {"key": "eilat", "name": "Eilat", "lat": 29.5577, "lng": 34.9519},
 ]
 
 DEFAULT_RADIUS_M = 12000
@@ -63,30 +63,54 @@ def _select_cities(filter_csv: str | None) -> list[dict]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Tor-li nationwide discovery grid.")
-    parser.add_argument("--radius", type=int, default=DEFAULT_RADIUS_M,
-                        help=f"Search radius per city in metres (default {DEFAULT_RADIUS_M})")
-    parser.add_argument("--cities", type=str, default=None,
-                        help="Comma-separated subset of city keys (e.g. haifa,eilat). Default: all")
-    parser.add_argument("--sleep", type=float, default=DEFAULT_SLEEP_S,
-                        help=f"Seconds to sleep between cities (default {DEFAULT_SLEEP_S})")
+    parser.add_argument(
+        "--radius",
+        type=int,
+        default=DEFAULT_RADIUS_M,
+        help=f"Search radius per city in metres (default {DEFAULT_RADIUS_M})",
+    )
+    parser.add_argument(
+        "--cities",
+        type=str,
+        default=None,
+        help="Comma-separated subset of city keys (e.g. haifa,eilat). Default: all",
+    )
+    parser.add_argument(
+        "--sleep",
+        type=float,
+        default=DEFAULT_SLEEP_S,
+        help=f"Seconds to sleep between cities (default {DEFAULT_SLEEP_S})",
+    )
     args = parser.parse_args()
 
     cities = _select_cities(args.cities)
     if not cities:
-        logger.error("No matching cities to run. Valid keys: %s",
-                     ", ".join(c["key"] for c in CITIES))
+        logger.error(
+            "No matching cities to run. Valid keys: %s", ", ".join(c["key"] for c in CITIES)
+        )
         sys.exit(1)
 
     agent = DiscoveryAgent()
     grand_total = 0
     per_city: dict[str, int] = {}
 
-    logger.info("Nationwide discovery: %d cities, radius=%dm, sleep=%ss",
-                len(cities), args.radius, args.sleep)
+    logger.info(
+        "Nationwide discovery: %d cities, radius=%dm, sleep=%ss",
+        len(cities),
+        args.radius,
+        args.sleep,
+    )
 
     for i, city in enumerate(cities):
-        logger.info("[%d/%d] Discovering %s (%s, %s) r=%dm",
-                    i + 1, len(cities), city["name"], city["lat"], city["lng"], args.radius)
+        logger.info(
+            "[%d/%d] Discovering %s (%s, %s) r=%dm",
+            i + 1,
+            len(cities),
+            city["name"],
+            city["lat"],
+            city["lng"],
+            args.radius,
+        )
         try:
             count = agent.discover(city["lat"], city["lng"], args.radius)
         except Exception as exc:
@@ -94,8 +118,9 @@ def main() -> None:
             count = 0
         per_city[city["name"]] = count
         grand_total += count
-        logger.info("[%d/%d] %s -> %d barbershops upserted",
-                    i + 1, len(cities), city["name"], count)
+        logger.info(
+            "[%d/%d] %s -> %d barbershops upserted", i + 1, len(cities), city["name"], count
+        )
 
         # Rate-limit gap between cities (skip after the last one).
         if i < len(cities) - 1 and args.sleep > 0:

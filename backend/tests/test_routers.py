@@ -20,8 +20,8 @@ def _supabase_returning(data):
     sb = MagicMock()
     sb.rpc.return_value.execute.return_value = SimpleNamespace(data=data)
     # Cover the .table().select()...execute() chain too (all return the same mock).
-    sb.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value = (
-        SimpleNamespace(data=data)
+    sb.table.return_value.select.return_value.eq.return_value.limit.return_value.execute.return_value = SimpleNamespace(
+        data=data
     )
     chain = sb.table.return_value.select.return_value.eq.return_value
     chain.order.return_value.eq.return_value.execute.return_value = SimpleNamespace(data=data)
@@ -30,6 +30,7 @@ def _supabase_returning(data):
 
 
 # ── /barbershops ─────────────────────────────────────────────────────────────
+
 
 def test_list_barbershops_returns_rows() -> None:
     rows = [{"id": "b1", "name": "Cuts", "distance_m": 42.0}]
@@ -74,11 +75,18 @@ def test_get_barbershop_404_when_missing() -> None:
 
 # ── /slots ───────────────────────────────────────────────────────────────────
 
+
 def test_list_slots_returns_rows() -> None:
-    rows = [{
-        "id": "s1", "barbershop_id": "b1", "service_name": "Cut",
-        "price": 80, "slot_time": "2026-06-26T09:00:00+03:00", "status": "free",
-    }]
+    rows = [
+        {
+            "id": "s1",
+            "barbershop_id": "b1",
+            "service_name": "Cut",
+            "price": 80,
+            "slot_time": "2026-06-26T09:00:00+03:00",
+            "status": "free",
+        }
+    ]
     with patch("app.routers.slots.get_supabase", return_value=_supabase_returning(rows)):
         res = client.get("/slots", params={"barbershop_id": "b1"})
     assert res.status_code == 200
@@ -98,8 +106,10 @@ def test_realtime_info_shape() -> None:
 
 # ── /bookings ────────────────────────────────────────────────────────────────
 
+
 def test_lock_success() -> None:
     from app.models.schemas import LockResponse
+
     ok = LockResponse(success=True, slot_id="s1", locked_until=None, message=None)
     with patch("app.routers.bookings.locking.acquire_lock", return_value=ok):
         res = client.post("/bookings/lock", json={"slot_id": "s1", "user_token": "u1"})
@@ -109,6 +119,7 @@ def test_lock_success() -> None:
 
 def test_lock_conflict_returns_409() -> None:
     from app.models.schemas import LockResponse
+
     taken = LockResponse(success=False, slot_id="s1", message="already locked")
     with patch("app.routers.bookings.locking.acquire_lock", return_value=taken):
         res = client.post("/bookings/lock", json={"slot_id": "s1", "user_token": "u2"})
@@ -118,27 +129,42 @@ def test_lock_conflict_returns_409() -> None:
 
 def test_confirm_success_path() -> None:
     from app.models.schemas import BookingResponse
+
     confirmed = BookingResponse(success=True, booking_id="bk1", status="booked")
-    with patch("app.routers.bookings.BookingAgent") as Agent, \
-         patch("app.routers.bookings.locking.confirm_booking", return_value=confirmed) as conf:
+    with (
+        patch("app.routers.bookings.BookingAgent") as Agent,
+        patch("app.routers.bookings.locking.confirm_booking", return_value=confirmed) as conf,
+    ):
         Agent.return_value.submit.return_value = {"success": True, "stub": True}
-        res = client.post("/bookings/confirm", json={
-            "slot_id": "s1", "user_token": "u1",
-            "customer_name": "Dana", "customer_phone": "+972500000000",
-        })
+        res = client.post(
+            "/bookings/confirm",
+            json={
+                "slot_id": "s1",
+                "user_token": "u1",
+                "customer_name": "Dana",
+                "customer_phone": "+972500000000",
+            },
+        )
     assert res.status_code == 200
     assert res.json()["status"] == "booked"
     conf.assert_called_once()
 
 
 def test_confirm_releases_lock_and_502_when_agent_fails() -> None:
-    with patch("app.routers.bookings.BookingAgent") as Agent, \
-         patch("app.routers.bookings.locking.release_lock") as release:
+    with (
+        patch("app.routers.bookings.BookingAgent") as Agent,
+        patch("app.routers.bookings.locking.release_lock") as release,
+    ):
         Agent.return_value.submit.return_value = {"success": False}
-        res = client.post("/bookings/confirm", json={
-            "slot_id": "s1", "user_token": "u1",
-            "customer_name": "Dana", "customer_phone": "+972500000000",
-        })
+        res = client.post(
+            "/bookings/confirm",
+            json={
+                "slot_id": "s1",
+                "user_token": "u1",
+                "customer_name": "Dana",
+                "customer_phone": "+972500000000",
+            },
+        )
     assert res.status_code == 502
     release.assert_called_once()  # lock released on agent failure
 
@@ -150,14 +176,22 @@ def test_confirm_validation_error_missing_fields() -> None:
 
 def test_confirm_forwards_customer_details() -> None:
     from app.models.schemas import BookingResponse
+
     confirmed = BookingResponse(success=True, booking_id="bk1", status="booked")
-    with patch("app.routers.bookings.BookingAgent") as Agent, \
-         patch("app.routers.bookings.locking.confirm_booking", return_value=confirmed) as conf:
+    with (
+        patch("app.routers.bookings.BookingAgent") as Agent,
+        patch("app.routers.bookings.locking.confirm_booking", return_value=confirmed) as conf,
+    ):
         Agent.return_value.submit.return_value = {"success": True}
-        client.post("/bookings/confirm", json={
-            "slot_id": "s1", "user_token": "u1",
-            "customer_name": "Dana", "customer_phone": "+972500000000",
-        })
+        client.post(
+            "/bookings/confirm",
+            json={
+                "slot_id": "s1",
+                "user_token": "u1",
+                "customer_name": "Dana",
+                "customer_phone": "+972500000000",
+            },
+        )
     # name/phone forwarded to the service as kwargs.
     assert conf.call_args.kwargs["customer_name"] == "Dana"
     assert conf.call_args.kwargs["customer_phone"] == "+972500000000"
@@ -177,8 +211,10 @@ def test_list_bookings_requires_user_token() -> None:
 
 
 def test_cancel_booking_ok() -> None:
-    with patch("app.routers.bookings.locking.cancel_booking",
-               return_value={"success": True, "message": "cancelled"}) as cb:
+    with patch(
+        "app.routers.bookings.locking.cancel_booking",
+        return_value={"success": True, "message": "cancelled"},
+    ) as cb:
         res = client.post("/bookings/cancel", json={"booking_id": "bk1", "user_token": "u1"})
     assert res.status_code == 200
     assert res.json()["success"] is True
@@ -186,8 +222,10 @@ def test_cancel_booking_ok() -> None:
 
 
 def test_cancel_booking_conflict() -> None:
-    with patch("app.routers.bookings.locking.cancel_booking",
-               return_value={"success": False, "message": "not found"}):
+    with patch(
+        "app.routers.bookings.locking.cancel_booking",
+        return_value={"success": False, "message": "not found"},
+    ):
         res = client.post("/bookings/cancel", json={"booking_id": "bk1", "user_token": "u1"})
     assert res.status_code == 409
 
@@ -198,10 +236,13 @@ def test_cancel_booking_validation() -> None:
 
 # ── /admin ───────────────────────────────────────────────────────────────────
 
+
 def test_admin_discovery_run() -> None:
     with patch("app.routers.admin.DiscoveryAgent") as Agent:
         Agent.return_value.discover.return_value = 7
-        res = client.post("/admin/discovery/run", params={"lat": 32.0, "lng": 34.7, "radius_m": 3000})
+        res = client.post(
+            "/admin/discovery/run", params={"lat": 32.0, "lng": 34.7, "radius_m": 3000}
+        )
     assert res.status_code == 200
     body = res.json()
     assert body["success"] is True
@@ -226,3 +267,13 @@ def test_admin_scraping_run() -> None:
     body = res.json()
     assert body["success"] is True
     assert body["slots_written"] == 12
+
+
+def test_admin_scraping_error_becomes_502() -> None:
+    async def boom():
+        raise Exception("playwright down")
+
+    with patch("app.routers.admin.ScrapingAgent") as Agent:
+        Agent.return_value.run_once = boom
+        res = client.post("/admin/scraping/run")
+    assert res.status_code == 502

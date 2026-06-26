@@ -36,7 +36,9 @@ async def _main(loop: bool, interval: int) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Tor-li Scraping Agent.")
     parser.add_argument("--loop", action="store_true", help="Run continuously")
-    parser.add_argument("--interval", type=int, default=300, help="Seconds between passes (loop mode)")
+    parser.add_argument(
+        "--interval", type=int, default=300, help="Seconds between passes (loop mode)"
+    )
     args = parser.parse_args()
 
     asyncio.run(_main(args.loop, args.interval))

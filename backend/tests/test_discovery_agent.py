@@ -53,8 +53,11 @@ def test_discover_deduplicates_place_ids_across_types() -> None:
     nearby = {"results": [{"place_id": "DUP"}]}  # no next_page_token -> single page
     agent.gmaps.places_nearby.return_value = nearby
     agent.gmaps.place.return_value = {
-        "result": {"place_id": "DUP", "name": "Dup Shop",
-                   "geometry": {"location": {"lat": 1, "lng": 2}}}
+        "result": {
+            "place_id": "DUP",
+            "name": "Dup Shop",
+            "geometry": {"location": {"lat": 1, "lng": 2}},
+        }
     }
 
     total = agent.discover(32.0, 34.0, radius_m=1000)
@@ -79,3 +82,31 @@ def test_discover_isolates_per_place_errors() -> None:
     agent.gmaps.place.side_effect = Exception("details failed")
     # Error on the single place is caught -> count stays 0, no crash.
     assert agent.discover(32.0, 34.0, radius_m=1000) == 0
+
+
+def test_upsert_patches_opening_hours_when_present() -> None:
+    agent = _agent()
+    place = {
+        "geometry": {"location": {"lat": 32.0, "lng": 34.7}},
+        "place_id": "pid-1",
+        "name": "Shop",
+        "opening_hours": {"weekday_text": ["Mon 9-5"], "periods": [], "open_now": True},
+    }
+    agent._upsert(place)
+    # The opening_hours jsonb is patched via a separate table().update() call.
+    agent.db.table.assert_called_with("barbershops")
+    update_arg = agent.db.table.return_value.update.call_args[0][0]
+    assert update_arg["opening_hours"]["open_now"] is True
+    assert update_arg["opening_hours"]["weekday_text"] == ["Mon 9-5"]
+
+
+def test_run_module_entry_delegates_to_discover() -> None:
+    from unittest.mock import patch
+
+    from app.agents import discovery_agent
+
+    with patch.object(discovery_agent, "DiscoveryAgent") as Agent:
+        Agent.return_value.discover.return_value = 5
+        out = discovery_agent.run(31.0, 35.0, 4000)
+    assert out == 5
+    Agent.return_value.discover.assert_called_once_with(31.0, 35.0, 4000)

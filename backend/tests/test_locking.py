@@ -1,6 +1,6 @@
 """Unit tests for pessimistic slot locking (Supabase RPC mocked out)."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -23,7 +23,7 @@ def test_acquire_lock_success() -> None:
     assert res.success is True
     assert res.slot_id == "slot-1"
     # Pydantic coerces the ISO string to a datetime on the LockResponse model.
-    assert res.locked_until == datetime(2026, 6, 25, 12, 0, tzinfo=timezone.utc)
+    assert res.locked_until == datetime(2026, 6, 25, 12, 0, tzinfo=UTC)
     # Correct RPC + args.
     name, args = client.rpc.call_args[0]
     assert name == "lock_slot"

@@ -7,6 +7,7 @@ Mirrors test_routers.py (TestClient + mocked locking) and test_locking.py
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -24,23 +25,39 @@ def _mock_supabase(data):
 
 # ── POST /reviews ─────────────────────────────────────────────────────────────
 
+
 def test_create_review_success() -> None:
-    with patch("app.routers.reviews.locking.submit_review",
-               return_value={"success": True, "message": "saved"}) as sr:
-        res = client.post("/reviews", json={
-            "booking_id": "bk1", "user_token": "u1", "rating": 5, "comment": "great",
-        })
+    with patch(
+        "app.routers.reviews.locking.submit_review",
+        return_value={"success": True, "message": "saved"},
+    ) as sr:
+        res = client.post(
+            "/reviews",
+            json={
+                "booking_id": "bk1",
+                "user_token": "u1",
+                "rating": 5,
+                "comment": "great",
+            },
+        )
     assert res.status_code == 200
     assert res.json()["success"] is True
     assert sr.call_args[0] == ("bk1", "u1", 5, "great")
 
 
 def test_create_review_conflict_returns_409() -> None:
-    with patch("app.routers.reviews.locking.submit_review",
-               return_value={"success": False, "message": "booking not found for this user"}):
-        res = client.post("/reviews", json={
-            "booking_id": "bk1", "user_token": "u1", "rating": 4,
-        })
+    with patch(
+        "app.routers.reviews.locking.submit_review",
+        return_value={"success": False, "message": "booking not found for this user"},
+    ):
+        res = client.post(
+            "/reviews",
+            json={
+                "booking_id": "bk1",
+                "user_token": "u1",
+                "rating": 4,
+            },
+        )
     assert res.status_code == 409
     assert res.json()["detail"] == "booking not found for this user"
 
@@ -51,45 +68,68 @@ def test_create_review_validation_missing_fields() -> None:
 
 
 def test_create_review_validation_rating_out_of_range() -> None:
-    res = client.post("/reviews", json={
-        "booking_id": "bk1", "user_token": "u1", "rating": 9,
-    })
+    res = client.post(
+        "/reviews",
+        json={
+            "booking_id": "bk1",
+            "user_token": "u1",
+            "rating": 9,
+        },
+    )
     assert res.status_code == 422
 
 
-import pytest
-
-
-@pytest.mark.parametrize("rating,expected", [
-    (0, 422),   # below min (Field ge=1)
-    (1, 200),   # lower bound, valid
-    (5, 200),   # upper bound, valid
-    (6, 422),   # above max (Field le=5)
-    (-3, 422),  # negative
-])
+@pytest.mark.parametrize(
+    "rating,expected",
+    [
+        (0, 422),  # below min (Field ge=1)
+        (1, 200),  # lower bound, valid
+        (5, 200),  # upper bound, valid
+        (6, 422),  # above max (Field le=5)
+        (-3, 422),  # negative
+    ],
+)
 def test_create_review_rating_boundaries(rating: int, expected: int) -> None:
-    with patch("app.routers.reviews.locking.submit_review",
-               return_value={"success": True, "message": "saved"}):
-        res = client.post("/reviews", json={
-            "booking_id": "bk1", "user_token": "u1", "rating": rating,
-        })
+    with patch(
+        "app.routers.reviews.locking.submit_review",
+        return_value={"success": True, "message": "saved"},
+    ):
+        res = client.post(
+            "/reviews",
+            json={
+                "booking_id": "bk1",
+                "user_token": "u1",
+                "rating": rating,
+            },
+        )
     assert res.status_code == expected
 
 
 def test_create_review_rating_must_be_integer() -> None:
     # A fractional rating is rejected (schema is int).
-    res = client.post("/reviews", json={
-        "booking_id": "bk1", "user_token": "u1", "rating": 3.5,
-    })
+    res = client.post(
+        "/reviews",
+        json={
+            "booking_id": "bk1",
+            "user_token": "u1",
+            "rating": 3.5,
+        },
+    )
     assert res.status_code == 422
 
 
 # ── GET /reviews ──────────────────────────────────────────────────────────────
 
+
 def test_list_reviews_returns_rows() -> None:
     rows = [
-        {"id": "r1", "rating": 5, "comment": "great", "created_at": "2026-06-25T12:00:00Z",
-         "display_name": "D."},
+        {
+            "id": "r1",
+            "rating": 5,
+            "comment": "great",
+            "created_at": "2026-06-25T12:00:00Z",
+            "display_name": "D.",
+        },
     ]
     with patch("app.routers.reviews.locking.list_reviews", return_value=rows) as lr:
         res = client.get("/reviews", params={"barbershop_id": "b1"})
@@ -106,12 +146,22 @@ def test_list_reviews_requires_barbershop_id() -> None:
 
 # ── GET /slots/nearby ─────────────────────────────────────────────────────────
 
+
 def test_nearby_slots_returns_rows() -> None:
-    rows = [{
-        "slot_id": "s1", "slot_time": "2026-06-26T09:00:00+03:00", "service_name": "Cut",
-        "price": 80, "barbershop_id": "b1", "shop_name": "Cuts", "shop_address": "Main St",
-        "lat_out": 32.0, "lng_out": 34.7, "distance_m": 120.0,
-    }]
+    rows = [
+        {
+            "slot_id": "s1",
+            "slot_time": "2026-06-26T09:00:00+03:00",
+            "service_name": "Cut",
+            "price": 80,
+            "barbershop_id": "b1",
+            "shop_name": "Cuts",
+            "shop_address": "Main St",
+            "lat_out": 32.0,
+            "lng_out": 34.7,
+            "distance_m": 120.0,
+        }
+    ]
     with patch("app.routers.slots.locking.nearby_slots", return_value=rows) as ns:
         res = client.get("/slots/nearby", params={"lat": 32.0, "lng": 34.7})
     assert res.status_code == 200
@@ -128,19 +178,28 @@ def test_nearby_slots_requires_lat_lng() -> None:
 
 def test_nearby_slots_rejects_out_of_range_radius() -> None:
     # radius bounds: ge=1, le=50000
-    assert client.get("/slots/nearby", params={"lat": 32, "lng": 34, "radius": 0}).status_code == 422
-    assert client.get("/slots/nearby", params={"lat": 32, "lng": 34, "radius": 99999}).status_code == 422
+    assert (
+        client.get("/slots/nearby", params={"lat": 32, "lng": 34, "radius": 0}).status_code == 422
+    )
+    assert (
+        client.get("/slots/nearby", params={"lat": 32, "lng": 34, "radius": 99999}).status_code
+        == 422
+    )
 
 
 def test_nearby_slots_rejects_out_of_range_limit() -> None:
     # limit bounds: ge=1, le=100
     assert client.get("/slots/nearby", params={"lat": 32, "lng": 34, "limit": 0}).status_code == 422
-    assert client.get("/slots/nearby", params={"lat": 32, "lng": 34, "limit": 101}).status_code == 422
+    assert (
+        client.get("/slots/nearby", params={"lat": 32, "lng": 34, "limit": 101}).status_code == 422
+    )
 
 
 def test_nearby_slots_forwards_radius_and_limit() -> None:
     with patch("app.routers.slots.locking.nearby_slots", return_value=[]) as ns:
-        res = client.get("/slots/nearby", params={"lat": 32.0, "lng": 34.7, "radius": 3000, "limit": 7})
+        res = client.get(
+            "/slots/nearby", params={"lat": 32.0, "lng": 34.7, "radius": 3000, "limit": 7}
+        )
     assert res.status_code == 200
     # positional call: (lat, lng, radius, limit)
     assert ns.call_args[0] == (32.0, 34.7, 3000, 7)
@@ -157,6 +216,7 @@ def test_nearby_slots_db_error_becomes_502() -> None:
 
 
 # ── locking service unit tests ────────────────────────────────────────────────
+
 
 def test_submit_review_success() -> None:
     sb = _mock_supabase([{"success": True, "message": "saved"}])
