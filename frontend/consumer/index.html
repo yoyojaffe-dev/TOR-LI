@@ -129,6 +129,23 @@
     .gold-ring { box-shadow: 0 0 0 1px #efb200; }
     /* Smooth slot-list appear */
     #slots-section { transition: opacity 0.2s ease; }
+
+    /* Premium image placeholder (no real photos yet) — gold-tinted depth */
+    .photo-placeholder {
+      background:
+        radial-gradient(120% 90% at 50% 0%, rgba(239,178,0,0.14), transparent 62%),
+        linear-gradient(160deg, #1f1d18 0%, #18171a 45%, #0e0e10 100%);
+    }
+
+    /* Desktop: frame the mobile app instead of floating in a void */
+    @media (min-width: 480px) {
+      html { background-color: #08080a; }
+      body {
+        border-left: 1px solid rgba(255,255,255,0.08);
+        border-right: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 0 80px rgba(0,0,0,0.6);
+      }
+    }
   </style>
 </head>
 

@@ -212,12 +212,16 @@ function renderBarbershops(barbershops) {
     .map(
       (b) => `
     <div data-id="${b.id}"
-         class="min-w-[240px] bg-surface-2 rounded-[20px] overflow-hidden border border-border-light
-                relative flex-shrink-0 cursor-pointer hover:border-surface-variant transition-colors group">
-      <!-- Photo placeholder -->
-      <div class="h-32 w-full bg-surface-3 flex items-center justify-center relative overflow-hidden">
-        <span class="material-symbols-outlined text-5xl text-surface-variant group-hover:scale-110 transition-transform duration-300">content_cut</span>
+         class="min-w-[260px] bg-surface-2 rounded-[20px] overflow-hidden border border-border-light
+                relative flex-shrink-0 cursor-pointer hover:border-primary/40 transition-colors group">
+      <!-- Photo placeholder (gold-tinted gradient until real photos) -->
+      <div class="h-32 w-full photo-placeholder flex items-center justify-center relative overflow-hidden">
+        <span class="material-symbols-outlined text-5xl text-primary/30 group-hover:scale-110 transition-transform duration-300">content_cut</span>
         <div class="absolute inset-0 card-gradient"></div>
+        <!-- Barber avatar overlay (Stitch motif) -->
+        <div class="absolute -bottom-5 right-4 z-10 w-12 h-12 rounded-full bg-surface-2 border-2 border-surface-2 gold-ring flex items-center justify-center">
+          <span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings:'FILL' 1;">storefront</span>
+        </div>
         ${
           b.distance_m != null
             ? `<div class="absolute top-3 left-3 bg-black/40 backdrop-blur-md border border-white/10
@@ -229,11 +233,12 @@ function renderBarbershops(barbershops) {
         }
       </div>
       <!-- Info -->
-      <div class="p-4">
+      <div class="p-4 pt-6">
         <h3 class="font-headline-sm text-headline-sm text-right mb-0.5 truncate">${b.name}</h3>
         <p class="font-body-md text-text-secondary text-sm text-right truncate">${b.address || ""}</p>
         <div class="mt-3 flex justify-end">
-          <span class="font-label-mono text-label-mono text-[11px] text-primary border border-primary/30 rounded-full px-2 py-0.5">
+          <span class="font-label-mono text-label-mono text-[11px] text-primary border border-primary/30 rounded-full px-3 py-1
+                       group-hover:bg-primary group-hover:text-on-primary transition-colors">
             בחר תור ←
           </span>
         </div>
@@ -384,8 +389,8 @@ async function renderBarberView(shopId) {
   view.innerHTML = `
     <!-- Hero -->
     <section class="relative w-full h-[240px]">
-      <div class="w-full h-full bg-surface-3 flex items-center justify-center">
-        <span class="material-symbols-outlined text-7xl text-surface-variant">content_cut</span>
+      <div class="w-full h-full photo-placeholder flex items-center justify-center">
+        <span class="material-symbols-outlined text-7xl text-primary/25">content_cut</span>
       </div>
       <div class="absolute inset-0" style="background:linear-gradient(to bottom,rgba(19,19,21,.2),#131315)"></div>
       <button id="bp-back" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-surface-1/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-text-primary">
