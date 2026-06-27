@@ -144,3 +144,52 @@ class NearbySlot(BaseModel):
     lat_out: float | None = None
     lng_out: float | None = None
     distance_m: float | None = None
+
+
+# ---------------------------------------------------------------------------
+# Profile-enrichment extraction models
+#
+# Validated structures the (future) enrichment runtime produces from Google
+# Places data and scraped booking pages. They mirror the external_reviews table
+# and the staff / services tables. Coverage is best-effort: any field absent from
+# the source is left None / omitted.
+# ---------------------------------------------------------------------------
+
+
+class ExternalReview(BaseModel):
+    """A scraped/aggregated review (e.g. Google), for the external_reviews table."""
+
+    author: str | None = None
+    rating: float | None = Field(default=None, ge=0, le=5)
+    text: str | None = None
+    source: str = "google"
+    reviewed_at: str | None = None
+
+
+class ExtractedStaff(BaseModel):
+    """A barber/team member extracted for the staff table."""
+
+    name: str
+    is_active: bool = True
+
+
+class ExtractedService(BaseModel):
+    """A menu item extracted for the services table.
+
+    ``staff_name`` maps to a barber by name during the enrichment runtime;
+    None means a shop-level general service (services.staff_id stays null).
+    """
+
+    name: str
+    category: str | None = None
+    price: float | None = None
+    duration_mins: int | None = None
+    staff_name: str | None = None
+
+
+class ShopEnrichment(BaseModel):
+    """The full validated profile payload one enrichment pass produces."""
+
+    staff: list[ExtractedStaff] = []
+    services: list[ExtractedService] = []
+    reviews: list[ExternalReview] = []
