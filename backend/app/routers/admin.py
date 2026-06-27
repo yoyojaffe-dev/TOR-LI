@@ -14,7 +14,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 @router.post("/discovery/run")
-def trigger_discovery(
+async def trigger_discovery(
     lat: Annotated[float, Query(description="Centre latitude (default: Tel Aviv).")] = 32.0853,
     lng: Annotated[float, Query(description="Centre longitude (default: Tel Aviv).")] = 34.7818,
     radius_m: Annotated[
@@ -27,7 +27,7 @@ def trigger_discovery(
         POST /admin/discovery/run?lat=32.0853&lng=34.7818&radius_m=5000
     """
     try:
-        count = DiscoveryAgent().discover(lat, lng, radius_m)
+        count = await DiscoveryAgent().discover(lat, lng, radius_m)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 

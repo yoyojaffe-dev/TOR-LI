@@ -268,8 +268,11 @@ def test_cancel_booking_validation() -> None:
 
 
 def test_admin_discovery_run() -> None:
+    async def fake_discover(*args: object) -> int:
+        return 7
+
     with patch("app.routers.admin.DiscoveryAgent") as Agent:
-        Agent.return_value.discover.return_value = 7
+        Agent.return_value.discover = fake_discover
         res = client.post(
             "/admin/discovery/run", params={"lat": 32.0, "lng": 34.7, "radius_m": 3000}
         )
@@ -280,8 +283,11 @@ def test_admin_discovery_run() -> None:
 
 
 def test_admin_discovery_error_becomes_502() -> None:
+    async def boom(*args: object) -> int:
+        raise Exception("maps down")
+
     with patch("app.routers.admin.DiscoveryAgent") as Agent:
-        Agent.return_value.discover.side_effect = Exception("maps down")
+        Agent.return_value.discover = boom
         res = client.post("/admin/discovery/run", params={"lat": 32.0, "lng": 34.7})
     assert res.status_code == 502
 

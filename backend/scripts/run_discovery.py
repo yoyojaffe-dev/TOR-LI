@@ -9,6 +9,7 @@ Logs each shop upserted at DEBUG level; set LOG_LEVEL=DEBUG to see detail.
 """
 
 import argparse
+import asyncio
 import logging
 import os
 import sys
@@ -40,7 +41,7 @@ def main() -> None:
     args = parser.parse_args()
 
     print(f"Discovery: lat={args.lat}, lng={args.lng}, radius={args.radius}m")
-    count = DiscoveryAgent().discover(args.lat, args.lng, args.radius)
+    count = asyncio.run(DiscoveryAgent().discover(args.lat, args.lng, args.radius))
     print(f"Done — {count} barbershops upserted.")
 
 
