@@ -31,6 +31,7 @@ import googlemaps
 from openai import AsyncOpenAI
 
 from app.agents.booking_adapters import detect_platform
+from app.agents.extraction import external_reviews_from_place, filter_reviews
 from app.config import get_settings
 from app.supabase_client import supabase_admin
 
@@ -299,8 +300,8 @@ class DiscoveryAgent:
         # adapter ("custom" => AI fallback).
         booking_platform = detect_platform(website)
 
-        # Upsert core row + PostGIS point via RPC.
-        self.db.rpc(
+        # Upsert core row + PostGIS point via RPC. The RPC returns the row id.
+        res = self.db.rpc(
             "upsert_barbershop",
             {
                 "p_name": name,
@@ -319,6 +320,12 @@ class DiscoveryAgent:
             },
         ).execute()
 
+        # Store Google reviews (real authors) into external_reviews — filtered for
+        # anonymous/empty. Best-effort: per-review failures never abort discovery.
+        barbershop_id = self._rpc_uuid(res)
+        if barbershop_id:
+            self._store_reviews(barbershop_id, place)
+
         # Patch opening_hours separately (jsonb column not in the RPC signature).
         if oh_raw := place.get("opening_hours"):
             opening_hours = {
@@ -330,6 +337,38 @@ class DiscoveryAgent:
                 self.db.table("barbershops").update({"opening_hours": opening_hours}).eq(
                     "google_place_id", place_id
                 ).execute()
+
+    @staticmethod
+    def _rpc_uuid(res: Any) -> str | None:
+        """Pull the scalar uuid returned by upsert_barbershop from an RPC result."""
+        data = getattr(res, "data", None)
+        if isinstance(data, str):
+            return data
+        if isinstance(data, list) and data:
+            first = data[0]
+            return first if isinstance(first, str) else next(iter(first.values()), None)
+        return None
+
+    def _store_reviews(self, barbershop_id: str, place: dict[str, Any]) -> None:
+        """Write filtered Google reviews for one shop via upsert_external_review."""
+        reviews = filter_reviews(external_reviews_from_place(place))
+        for r in reviews:
+            try:
+                self.db.rpc(
+                    "upsert_external_review",
+                    {
+                        "p_barbershop_id": barbershop_id,
+                        "p_author": r.author,
+                        "p_rating": r.rating,
+                        "p_text": r.text,
+                        "p_source": r.source,
+                        # Google gives a relative description ("a week ago"), not a
+                        # parseable timestamp — leave the timestamptz column null.
+                        "p_reviewed_at": None,
+                    },
+                ).execute()
+            except Exception as exc:
+                logger.warning("review upsert failed for %s: %s", barbershop_id, exc)
 
 
 # ---------------------------------------------------------------------------

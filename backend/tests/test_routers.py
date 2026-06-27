@@ -315,6 +315,29 @@ def test_admin_scraping_error_becomes_502() -> None:
     assert res.status_code == 502
 
 
+def test_admin_enrichment_run() -> None:
+    async def fake_run_once(limit):
+        return {"shops_processed": 2, "staff_written": 3, "services_written": 5, "thin": 1}
+
+    with patch("app.routers.admin.EnrichmentAgent") as Agent:
+        Agent.return_value.run_once = fake_run_once
+        res = client.post("/admin/enrichment/run", params={"limit": 10})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["success"] is True
+    assert body["services_written"] == 5
+
+
+def test_admin_enrichment_error_becomes_502() -> None:
+    async def boom(limit):
+        raise Exception("enrichment down")
+
+    with patch("app.routers.admin.EnrichmentAgent") as Agent:
+        Agent.return_value.run_once = boom
+        res = client.post("/admin/enrichment/run")
+    assert res.status_code == 502
+
+
 # ── Input validation (Pydantic V2 request hardening) ─────────────────────────
 
 

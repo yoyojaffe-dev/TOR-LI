@@ -9,6 +9,7 @@ same tables the agents write.
 | **Discovery** | `discovery_agent.py` | Find men's barbershops on Google Maps, AI-filter, upsert | Live |
 | **Scraping** | `scraping_agent.py` | Load each shop's booking page, extract open slots via OpenAI | Live |
 | **Booking** | `booking_agent.py` | Submit a reservation on the barber's site (Playwright + AI) | Live |
+| **Enrichment** | `enrichment_agent.py` | Fill profiles: staff + per-barber services from booking pages | Live |
 
 All agents use the **service-role** Supabase client (`supabase_admin`, bypasses RLS) and
 write via SECURITY DEFINER RPCs — never raw table inserts.
@@ -154,11 +155,45 @@ Booking stays on-demand.
 
 ---
 
-## Profile extraction (foundation)
+## Enrichment Agent
 
-Scaffolding for a **full barbershop profile** — staff, per-barber services, and reviews —
-beyond the basic shop row. This is the **schema + extraction layer only**; the runtime that
-actually populates these tables is a **separate follow-up phase**.
+Standalone, batchable pass (`enrichment_agent.py`) that fills out profiles — the **team of
+barbers** and the **service menu** — by loading each shop's booking page and running the profile
+extractor. Decoupled from the scraping loop; run it for new/stale records.
+
+```
+fetch stalest shops ─▶ load page ─▶ [guard: thin?] ─▶ extract (gpt-4o-mini) ─▶ [guard: pricing?] ─▶ upsert staff+services
+```
+
+- `fetch_targets` — shops with a scrapable `booking_url`, `enriched_at nulls first` (stale first).
+- **Guard 1 — min content:** pages under `MIN_CONTENT_LENGTH` (200 chars; app-walls/redirects) are
+  logged `CONTENT_TOO_THIN`, stamped `enriched_at`, and skipped — no OpenAI, no write.
+- **Guard 2 — hard-negative prompt:** the model must omit any staff/service not on the page (but it
+  *does* classify listed services into a category — inference, not invention).
+- **Guard 3 — platform-priority pricing:** price/duration kept only from trusted booking platforms
+  (`is_pricing_source`: tor4you/glamera); nulled for generic/marketing pages.
+- Upserts via `upsert_staff` / `upsert_service` (insert-if-not-exists; resolves barber name→id;
+  never clobbers owner rows). `ON CONFLICT DO NOTHING` → **first write wins** (re-enrichment does
+  not backfill existing rows — a future "refresh" mode).
+- **Reviews are NOT here** — Discovery writes them from Google Places (`upsert_external_review`),
+  filtered by `filter_reviews` (drops anonymous/empty).
+
+Run it (from `backend/`):
+```bash
+../venv/bin/python -m scripts.run_enrichment --limit 4        # billed: live pages + OpenAI + writes
+curl -X POST "http://localhost:8000/admin/enrichment/run?limit=10"   # dev-only
+```
+
+> **Best-effort coverage** (validated on live shops): app-walled widgets (smartor) and dead domains
+> are skipped/error-isolated; marketing sites yield service **names + categories** but no
+> price/duration; per-barber mapping is rare from public pages.
+
+---
+
+## Profile extraction layer
+
+The schema + extraction primitives behind the Enrichment Agent. The runtime above is now wired;
+this section documents the building blocks.
 
 **Schema** (migration `20260627100000_full_profile_extraction.sql`):
 - `external_reviews` — scraped/aggregated reviews (`barbershop_id`, `author`, `rating`, `text`,
@@ -175,12 +210,11 @@ actually populates these tables is a **separate follow-up phase**.
   (`ExtractedStaff`, `ExtractedService`, `ExternalReview` in `models/schemas.py`).
 - `external_reviews_from_place(place)` — maps Google Places `reviews[]` (already structured, no LLM).
 
+- Guards: `is_content_sufficient`, `is_pricing_source`, `filter_reviews` (all pure, unit-tested).
+
 > **Best-effort, partial coverage.** Google Places exposes none of staff / per-barber menus /
 > durations — those come only from booking pages, and many shops have no booking_url. The models
 > leave absent fields `None`; nothing assumes a complete profile.
->
-> **Next phase (not built yet):** wire Discovery to store `external_reviews`, and Scraping to run
-> `PROFILE_EXTRACTION_TOOL` and upsert staff/services.
 
 ---
 
