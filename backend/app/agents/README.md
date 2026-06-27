@@ -89,24 +89,50 @@ Concurrency lives *inside* each city's AI-filter stage.
 
 ## Booking Agent
 
-On-demand worker behind `POST /bookings/confirm`. After the slot is locked, it submits the
-reservation on the barber's own site.
+On-demand worker behind `POST /bookings/confirm`. After the slot is locked, it loads the
+barber's booking page and **routes to a platform adapter** to submit the reservation.
 
 ```
-fetch slot+shop ─▶ goto(booking_url) ─▶ AI maps form ─▶ fill fields ─▶ [submit] ─▶ verify
+fetch slot+shop ─▶ goto(booking_url) ─▶ get_adapter(url) ─▶ adapter.submit() ─▶ [submit] ─▶ verify
 ```
 
 1. `_fetch_slot_context(slot_id)` — joins the slot to its barbershop `booking_url` / `name`
    (sync, via `asyncio.to_thread`). Rejects missing/unsupported URLs (`_is_skippable_url`).
-2. Headless Chromium (mobile UA, `he-IL`) loads the page; grabs the form HTML.
-3. `gpt-4o-mini` function calling (`fill_booking_form` → `fields` + `submit_selector` +
-   `confirmation_keywords`) maps the customer's name/phone onto the page's selectors.
-4. Fills the fields. **If `BOOKING_LIVE=true`: clicks submit and verifies a confirmation
-   keyword.** Default is dry run (fill, no click). Returns the `{"success": bool, ...}`
-   contract — on failure the router releases the lock and returns HTTP 502.
+2. Headless Chromium (mobile UA, `he-IL`) loads the page.
+3. `get_adapter(url)` picks the adapter by platform; the adapter fills the form and — **if
+   `BOOKING_LIVE=true` — clicks submit and verifies a confirmation keyword**. Default is dry
+   run (fill, no click). Returns `{"success": bool, ...}` — on failure the router releases the
+   lock and returns HTTP 502.
 
 > ⚠️ **A live submit books a real appointment** (irreversible). `BOOKING_LIVE` defaults to
-> `false` (dry run). Flip it to `true` only after validating the form-mapping on real sites.
+> `false` (dry run). Flip it to `true` only against booking sites you're authorized to submit to.
+
+### Platform adapters (`booking_adapters/`)
+
+Real shops run a handful of known platforms whose DOM is stable — scripting them directly is
+faster, cheaper, and more reliable than asking the model every time. `detect_platform(url)`
+maps the booking URL to a platform; `get_adapter(url, openai)` returns the matching adapter,
+or the AI fallback for unknown sites.
+
+| Adapter | Platform | How it maps the form |
+|---|---|---|
+| `Tor4YouAdapter` | `tor4you` | static selectors (boilerplate — TODO: verify real DOM) |
+| `GlameraAdapter` | `glamera` | static selectors (boilerplate — TODO: verify real DOM) |
+| `GenericAIAdapter` | `custom` (fallback) | `gpt-4o-mini` `fill_booking_form` function calling |
+
+Booksy and any unrecognised host currently route to the AI fallback. All adapters share
+`base.fill_and_submit`, which honours `BOOKING_LIVE`. The detected platform is stored on
+`barbershops.booking_platform` at discovery time.
+
+**Validate routing without real shops** (real Chromium, local fixtures):
+
+```bash
+BOOKING_LIVE=true ../venv/bin/python -m scripts.validate_booking
+```
+
+Serves `tests/fixtures/booking/{tor4you,glamera,custom}.html` under real platform hostnames
+(via Playwright request interception) and asserts each routes to the right adapter, fills,
+submits, and detects confirmation.
 
 ---
 
