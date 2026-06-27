@@ -154,6 +154,36 @@ Booking stays on-demand.
 
 ---
 
+## Profile extraction (foundation)
+
+Scaffolding for a **full barbershop profile** — staff, per-barber services, and reviews —
+beyond the basic shop row. This is the **schema + extraction layer only**; the runtime that
+actually populates these tables is a **separate follow-up phase**.
+
+**Schema** (migration `20260627100000_full_profile_extraction.sql`):
+- `external_reviews` — scraped/aggregated reviews (`barbershop_id`, `author`, `rating`, `text`,
+  `source`, `reviewed_at`). Separate from the in-app `reviews` table (which is keyed to a
+  `booking_id` + `user_token`). Public-read RLS; agents write via service-role.
+- `services.staff_id` (FK → `staff`, nullable) + `services.category` — services map **per barber**
+  (`staff_id` null = a shop-level general service).
+- Portfolio unchanged: `barbershops.photo_urls` (barbers upload real portfolios via the dashboard).
+
+**Extraction layer** (`app/agents/extraction.py`, no I/O — unit-tested in isolation):
+- `PROFILE_EXTRACTION_TOOL` + `build_profile_messages(shop_name, page_text)` — OpenAI
+  function-calling schema + prompt to pull staff/services/reviews from booking-page text.
+- `parse_profile(tool_args) -> ShopEnrichment` — validates the tool call into Pydantic models
+  (`ExtractedStaff`, `ExtractedService`, `ExternalReview` in `models/schemas.py`).
+- `external_reviews_from_place(place)` — maps Google Places `reviews[]` (already structured, no LLM).
+
+> **Best-effort, partial coverage.** Google Places exposes none of staff / per-barber menus /
+> durations — those come only from booking pages, and many shops have no booking_url. The models
+> leave absent fields `None`; nothing assumes a complete profile.
+>
+> **Next phase (not built yet):** wire Discovery to store `external_reviews`, and Scraping to run
+> `PROFILE_EXTRACTION_TOOL` and upsert staff/services.
+
+---
+
 ## Config (`.env` at repo root)
 
 | Var | Used by |
