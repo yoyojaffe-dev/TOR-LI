@@ -55,6 +55,39 @@ def test_upsert_sends_expected_rpc_payload() -> None:
     assert args["p_booking_url"] == "https://coolcuts.example"
 
 
+def test_upsert_stores_filtered_google_reviews() -> None:
+    agent = _agent()
+    # upsert_barbershop RPC returns the new row's uuid as a scalar.
+    agent.db.rpc.return_value.execute.return_value = SimpleNamespace(data="shop-1")
+    place = {
+        "place_id": "PID",
+        "name": "Shop",
+        "geometry": {"location": {"lat": 1, "lng": 2}},
+        "reviews": [
+            {"author_name": "Avi", "rating": 5, "text": "Great fade"},  # kept
+            {"author_name": "Anonymous", "rating": 5, "text": "meh"},  # dropped (generic)
+            {"author_name": "Dana", "rating": 4, "text": "   "},  # dropped (empty)
+        ],
+    }
+    agent._upsert(place)
+
+    review_calls = [c for c in agent.db.rpc.call_args_list if c[0][0] == "upsert_external_review"]
+    assert len(review_calls) == 1
+    args = review_calls[0][0][1]
+    assert args["p_barbershop_id"] == "shop-1"
+    assert args["p_author"] == "Avi"
+    assert args["p_reviewed_at"] is None  # relative time not stored as timestamptz
+
+
+def test_upsert_no_reviews_no_review_calls() -> None:
+    agent = _agent()
+    agent.db.rpc.return_value.execute.return_value = SimpleNamespace(data="shop-1")
+    agent._upsert(
+        {"place_id": "PID", "name": "Shop", "geometry": {"location": {"lat": 1, "lng": 2}}}
+    )
+    assert not [c for c in agent.db.rpc.call_args_list if c[0][0] == "upsert_external_review"]
+
+
 def test_upsert_skips_when_geometry_missing() -> None:
     agent = _agent()
     agent._upsert({"place_id": "PID2", "name": "No Geo"})  # no geometry

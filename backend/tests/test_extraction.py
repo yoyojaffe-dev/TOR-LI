@@ -4,9 +4,13 @@ import pytest
 from pydantic import ValidationError
 
 from app.agents.extraction import (
+    MIN_CONTENT_LENGTH,
     PROFILE_EXTRACTION_TOOL,
     build_profile_messages,
     external_reviews_from_place,
+    filter_reviews,
+    is_content_sufficient,
+    is_pricing_source,
     parse_profile,
 )
 from app.models.schemas import ExternalReview, ExtractedService, ShopEnrichment
@@ -115,3 +119,40 @@ def test_external_review_rating_bounds() -> None:
     ExternalReview(rating=5)  # ok
     with pytest.raises(ValidationError):
         ExternalReview(rating=9)  # out of 0..5
+
+
+# ── Guards ───────────────────────────────────────────────────────────────────
+
+
+def test_hard_negative_in_tool_and_prompt() -> None:
+    assert "fabricated" in PROFILE_EXTRACTION_TOOL["function"]["description"].lower()
+    sys_msg = build_profile_messages("x", "y")[0]["content"].lower()
+    assert "never invent" in sys_msg
+
+
+def test_is_content_sufficient_boundary() -> None:
+    assert is_content_sufficient("x" * MIN_CONTENT_LENGTH) is True
+    assert is_content_sufficient("x" * (MIN_CONTENT_LENGTH - 1)) is False
+    assert is_content_sufficient("  " + "x" * (MIN_CONTENT_LENGTH - 1) + "  ") is False  # stripped
+
+
+def test_is_pricing_source() -> None:
+    assert is_pricing_source("https://book.tor4you.co.il/x") is True
+    assert is_pricing_source("https://app.glamera.com/x") is True
+    assert is_pricing_source("https://my-barber.example/book") is False
+    assert is_pricing_source("https://booksy.com/x") is False  # no static adapter -> not trusted
+    assert is_pricing_source(None) is False
+
+
+def test_filter_reviews_drops_low_quality() -> None:
+    reviews = [
+        ExternalReview(author="Avi", rating=5, text="Great fade"),  # keep
+        ExternalReview(author="Anonymous", rating=5, text="good"),  # drop: generic author
+        ExternalReview(author="אנונימי", rating=4, text="טוב"),  # drop: generic (Hebrew)
+        ExternalReview(author="Dana", rating=5, text="   "),  # drop: empty text
+        ExternalReview(author="Moshe", rating=4, text=None),  # drop: rating only
+        ExternalReview(author="A Google user", rating=5, text="ok"),  # drop: generic
+        ExternalReview(author=None, rating=5, text="anon"),  # drop: blank author
+    ]
+    kept = filter_reviews(reviews)
+    assert [r.author for r in kept] == ["Avi"]

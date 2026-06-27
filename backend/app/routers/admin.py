@@ -8,6 +8,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, HTTPException, Query
 
 from app.agents.discovery_agent import DiscoveryAgent
+from app.agents.enrichment_agent import EnrichmentAgent
 from app.agents.scraping_agent import ScrapingAgent
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -47,6 +48,23 @@ async def trigger_scraping() -> dict[str, Any]:
     """
     try:
         stats = await ScrapingAgent().run_once()
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return {"success": True, **stats}
+
+
+@router.post("/enrichment/run")
+async def trigger_enrichment(
+    limit: Annotated[int, Query(ge=1, le=500, description="Max shops to enrich this pass.")] = 50,
+) -> dict[str, Any]:
+    """Run one Enrichment Agent pass (staff + services) and return stats.
+
+    Example:
+        POST /admin/enrichment/run?limit=10
+    """
+    try:
+        stats = await EnrichmentAgent().run_once(limit)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
