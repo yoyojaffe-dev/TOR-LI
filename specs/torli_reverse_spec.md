@@ -16,7 +16,7 @@
 | Realtime | Supabase Realtime publication on `available_slots` | `…init.sql` (`alter publication supabase_realtime add table public.available_slots`) |
 | Consumer frontend | Vanilla JS ES modules + Tailwind CDN, hash router, RTL Hebrew | `frontend/consumer/js/app.js`, `index.html` |
 | Barber dashboard | React + htm + ESM CDN (buildless) | `frontend/dashboard/js/app.js:1-12` |
-| Agents | Discovery (Google Places), Scraping (Playwright + OpenAI), Booking (stub) | `backend/app/agents/*.py` |
+| Agents | Discovery (Google Places + AI filter), Scraping (Playwright + OpenAI), Booking (Playwright + AI, `BOOKING_LIVE`-gated) | `backend/app/agents/*.py` |
 | Tests | pytest (118, 91.9% branch cov) + Playwright E2E | `backend/tests/`, `frontend/consumer/e2e/` |
 
 **Three-agent "message board" architecture** (`backend/app/supabase_client.py:1-6`): Discovery, Scraping, and Booking agents read/write Supabase; the API serves the same tables. Two client roles: **anon** (`get_supabase`, RLS-guarded, API request path) and **service-role** (`get_supabase_admin`, bypasses RLS, agents only) — `supabase_client.py:55-73`.
@@ -89,7 +89,7 @@ supabase/migrations/ schema, RLS, RPCs (17 migrations)
 - The Scraping Agent **shall** process shops concurrently bounded by `_MAX_CONCURRENT_SHOPS=5`. `scraping_agent.py:43,run_once`.
 - `upsert_free_slot` **shall** update price only while a slot is `free`, never resetting `locked`/`booked` slots. `…upsert_free_slot.sql`.
 - The Scraping Agent **shall** skip social/auth-walled domains (facebook/instagram/twitter/t.me). `scraping_agent.py:42,74`.
-- The Booking Agent `submit` **shall** currently return a stubbed success (`stub: true`) — real Playwright submission not implemented. `booking_agent.py:25-41`.
+- The Booking Agent `submit` **shall** load the slot's barbershop booking page with Playwright, map the customer's name/phone onto the form via OpenAI function-calling, fill it, and — when `BOOKING_LIVE=true` — click submit and verify a confirmation keyword. Default `BOOKING_LIVE=false` performs a dry run (fills but does not submit). `booking_agent.py`.
 
 ### 3.7 Consumer client behavior
 - On first run (no `localStorage.torli_onboarded`), the app **shall** redirect to the splash/onboarding flow. `app.js` init gate.
@@ -126,7 +126,7 @@ supabase/migrations/ schema, RLS, RPCs (17 migrations)
 ## 6. Uncertainties & Questions (Flag)
 
 1. **⚠️ Admin router mounting mismatch:** `admin.py:1-4` docstring says "Mounted only when ENVIRONMENT != production", but `main.py:45` mounts it **unconditionally** with no env guard. Either the docstring is stale or a guard is missing — **security-relevant** (admin endpoints trigger billed Google/OpenAI work). Needs decision.
-2. **Booking Agent is a stub** — `/bookings/confirm` reports success without performing a real reservation on the barber's site. Is the booking considered "real" downstream? `booking_agent.py`.
+2. **Booking Agent real submission unvalidated live** — the Playwright + AI form path is implemented and unit/pipeline-tested with mocks, but has not been run against real barber sites. `BOOKING_LIVE` defaults to `false` (dry run) until validated. `booking_agent.py`.
 3. **`list_slots` returns past slots** — intentional (fallback) or should it filter `slot_time >= now()`? Affects barber-profile slot lists. `slots.py:20`.
 4. **`appointments` table vs `bookings`** — two booking representations coexist (consumer `bookings` by `user_token`; barber-side `appointments` by client/auth user). Relationship/migration path unclear. `…owner_scoped_writes_and_appointments.sql:108`.
 5. **Auth not wired** — RLS owner policies assume an authenticated `auth.uid()`, but the consumer app uses an anonymous `user_token` and the dashboard takes `?shop=` from the URL. The authenticated barber flow appears designed but not connected.
@@ -139,7 +139,7 @@ supabase/migrations/ schema, RLS, RPCs (17 migrations)
 
 1. **Resolve admin mounting** — gate `app.include_router(admin.router)` behind `settings.environment != "production"` (or add auth), to match the docstring and protect billed agent triggers.
 2. **Decide `list_slots` time semantics** — add `slot_time >= now()` filter (or a `future_only` flag) so barber profiles don't show stale slots.
-3. **Finish or clearly mark the Booking Agent** — current stub makes confirm a false positive; surface "pending real submission" or implement Playwright path.
+3. **Validate the Booking Agent against real sites** — the Playwright path is implemented and `BOOKING_LIVE`-gated (default dry run). Run a live smoke on real booking pages before flipping `BOOKING_LIVE=true` in any deployed env, since a live submit creates a real appointment.
 4. **Unify booking models** — document/ reconcile `bookings` (anon `user_token`) vs `appointments` (authed) before building the barber dashboard further.
 5. **Tighten CORS** to the deployed origins before production.
 6. **Rename duplicate-timestamp migration** to make ordering deterministic.

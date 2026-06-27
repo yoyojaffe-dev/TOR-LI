@@ -53,9 +53,11 @@ venv/bin/python -m pytest frontend/consumer/e2e -q
 
 ## Architecture — the non-obvious parts
 
-**Three-agent "message board".** Discovery, Scraping, and (stub) Booking agents
+**Three-agent "message board".** Discovery, Scraping, and Booking agents
 (`backend/app/agents/`) read/write Supabase; the API serves the same tables. They share
-data only through Postgres — there is no in-process coupling.
+data only through Postgres — there is no in-process coupling. The pipeline can be run
+together via `scripts/run_agents.py` (Discovery once → Scraping loop); `main.py` starts the
+Scraping loop on boot only when `AGENTS_AUTOSTART=true`.
 
 **Two Supabase client roles** (`backend/app/supabase_client.py`): `get_supabase()` (anon
 key, RLS-enforced — used by all API request handlers) vs `supabase_admin` /
@@ -102,7 +104,10 @@ Dashboard (`frontend/dashboard/`) is a separate buildless React-via-CDN app.
 
 ## Known intentional gaps (don't "fix" without checking `specs/torli_reverse_spec.md`)
 
-- Booking Agent `submit()` is a **stub** (returns success without a real reservation).
+- Booking Agent `submit()` now performs a real Playwright + AI form submission, gated by the
+  `BOOKING_LIVE` flag (**default `false` = dry run**: fills the form but skips the submit click,
+  so no real appointment is created). Set `BOOKING_LIVE=true` only after validating against real
+  sites — a live submit is irreversible.
 - `GET /slots` is not time-filtered (returns past-dated free slots by design);
   `GET /slots/nearby` is the future-only one.
 - Auth is not wired — the consumer uses an anonymous `user_token`; the owner-scoped RLS

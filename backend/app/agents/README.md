@@ -101,12 +101,12 @@ fetch slot+shop ─▶ goto(booking_url) ─▶ AI maps form ─▶ fill fields 
 2. Headless Chromium (mobile UA, `he-IL`) loads the page; grabs the form HTML.
 3. `gpt-4o-mini` function calling (`fill_booking_form` → `fields` + `submit_selector` +
    `confirmation_keywords`) maps the customer's name/phone onto the page's selectors.
-4. Fills the fields. **If `BOOKING_LIVE` (default true): clicks submit and verifies a
-   confirmation keyword.** Returns the `{"success": bool, ...}` contract — on failure the
-   router releases the lock and returns HTTP 502.
+4. Fills the fields. **If `BOOKING_LIVE=true`: clicks submit and verifies a confirmation
+   keyword.** Default is dry run (fill, no click). Returns the `{"success": bool, ...}`
+   contract — on failure the router releases the lock and returns HTTP 502.
 
-> ⚠️ **A live submit books a real appointment.** Set `BOOKING_LIVE=false` to fill the form
-> but skip the final click (dry run) — use this whenever testing against real sites.
+> ⚠️ **A live submit books a real appointment** (irreversible). `BOOKING_LIVE` defaults to
+> `false` (dry run). Flip it to `true` only after validating the form-mapping on real sites.
 
 ---
 
@@ -135,7 +135,7 @@ Booking stays on-demand.
 | `GOOGLE_MAPS_API_KEY` | Discovery (Places) |
 | `OPENAI_API_KEY` | Discovery (filter), Scraping (slots), Booking (form mapping) |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | All agents (service-role writes) |
-| `BOOKING_LIVE` | Booking — `false` = dry run (fill, no submit). Default `true`. |
+| `BOOKING_LIVE` | Booking — `true` submits for real; default `false` = dry run (fill, no submit). |
 | `AGENTS_AUTOSTART` | `main.py` — `true` starts the Scraping loop on boot. Default `false`. |
 
 ## Tests
