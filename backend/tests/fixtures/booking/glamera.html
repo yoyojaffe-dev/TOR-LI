@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Glamera - Book appointment</title></head>
+<body>
+  <h1>Barbershop — Book appointment (Glamera)</h1>
+  <form id="glamera-form" onsubmit="event.preventDefault();document.body.innerHTML='<h2 id=ok>Booking confirmed</h2>';">
+    <label>Name <input type="text" id="customer-name"></label><br>
+    <label>Phone <input type="tel" id="customer-phone"></label><br>
+    <button type="button" id="book-now" onclick="document.body.innerHTML='<h2 id=ok>Booking confirmed</h2>';">Book now</button>
+  </form>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head><meta charset="utf-8"><title>קביעת תור — מספרה</title></head>
+<body>
+  <h1>מספרת גברים — קביעת תור</h1>
+  <!-- Bespoke form: no known platform markers; exercised by the AI fallback adapter. -->
+  <form id="bk" onsubmit="event.preventDefault();document.body.innerHTML='<h2 id=ok>התור נקבע! הזמנה אושרה — booking confirmed</h2>';">
+    <label>שם מלא <input type="text" id="fullname" name="fullname"></label><br>
+    <label>מספר טלפון <input type="tel" id="phone" name="phone"></label><br>
+    <label>שירות <select id="svc"><option>תספורת גבר</option></select></label><br>
+    <button type="submit" id="confirmBtn">קבע תור</button>
+  </form>
+</body>
+</html>

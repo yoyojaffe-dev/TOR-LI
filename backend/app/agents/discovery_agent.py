@@ -30,6 +30,7 @@ from typing import Any, cast
 import googlemaps
 from openai import AsyncOpenAI
 
+from app.agents.booking_adapters import detect_platform
 from app.config import get_settings
 from app.supabase_client import supabase_admin
 
@@ -294,6 +295,10 @@ class DiscoveryAgent:
                 )
         photo_url = photo_urls[0] if photo_urls else None
 
+        # Record the booking platform so the Booking Agent can route to its
+        # adapter ("custom" => AI fallback).
+        booking_platform = detect_platform(website)
+
         # Upsert core row + PostGIS point via RPC.
         self.db.rpc(
             "upsert_barbershop",
@@ -310,6 +315,7 @@ class DiscoveryAgent:
                 "p_photo_urls": photo_urls,
                 "p_rating": place.get("rating"),
                 "p_rating_count": place.get("user_ratings_total"),
+                "p_booking_platform": booking_platform,
             },
         ).execute()
 

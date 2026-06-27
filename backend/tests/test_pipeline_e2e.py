@@ -159,9 +159,9 @@ def test_pipeline_discovery_to_booked(monkeypatch) -> None:  # type: ignore[no-u
     agent = _booking(db)
     used_url: dict[str, str] = {}
 
-    async def fake_book(browser, url, sid, name, phone, slot_time):  # type: ignore[no-untyped-def]
+    async def fake_book(browser, url, ctx, name, phone):  # type: ignore[no-untyped-def]
         used_url["url"] = url
-        return {"success": True, "slot_id": sid, "confirmed": True}
+        return {"success": True, "slot_id": ctx["id"], "confirmed": True}
 
     agent._book_on_page = fake_book  # type: ignore[method-assign]
 

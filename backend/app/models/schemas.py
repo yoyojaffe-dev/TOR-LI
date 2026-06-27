@@ -43,6 +43,7 @@ class Barbershop(BaseModel):
     rating: float | None = None
     rating_count: int | None = None
     place_type: str | None = None
+    booking_platform: str | None = None
     distance_m: float | None = Field(
         default=None, description="Distance from query point in metres (radius search only)."
     )
