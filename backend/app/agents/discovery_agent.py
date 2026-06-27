@@ -50,7 +50,9 @@ _DETAIL_FIELDS = [
     "geometry",
     "photo",
     "reviews",
-    "types",
+    # NB: the Place Details request field is the singular "type"; the response
+    # still returns the "types" array (read by the men's-barbershop classifier).
+    "type",
 ]
 
 # Max candidates classified+upserted concurrently in one pass. Bounds in-flight
