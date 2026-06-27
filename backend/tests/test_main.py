@@ -1,9 +1,10 @@
 """Tests for app-level middleware + router mounting."""
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
+import app.main as main
 from app.main import app
 
 
@@ -36,3 +37,22 @@ def test_admin_router_mounted_in_development() -> None:
     client = TestClient(app)
     schema = client.get("/openapi.json").json()
     assert "/admin/discovery/run" in schema["paths"]
+
+
+def test_lifespan_skips_scraping_loop_by_default() -> None:
+    """With AGENTS_AUTOSTART off (default), the Scraping loop is not launched."""
+    with patch.object(main, "ScrapingAgent") as Agent:
+        Agent.return_value.run = AsyncMock()
+        with TestClient(app):  # triggers lifespan startup + shutdown
+            pass
+        Agent.return_value.run.assert_not_called()
+
+
+def test_lifespan_starts_scraping_loop_when_autostart(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """With AGENTS_AUTOSTART on, the lifespan launches the Scraping loop."""
+    monkeypatch.setattr(main.settings, "agents_autostart", True)
+    with patch.object(main, "ScrapingAgent") as Agent:
+        Agent.return_value.run = AsyncMock()
+        with TestClient(app):  # startup schedules the task; shutdown cancels it
+            pass
+        Agent.return_value.run.assert_called_once()

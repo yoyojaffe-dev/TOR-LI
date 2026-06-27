@@ -6,7 +6,7 @@ without a `with` block so the lifespan (APScheduler) does not start.
 """
 
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -135,7 +135,7 @@ def test_confirm_success_path() -> None:
         patch("app.routers.bookings.BookingAgent") as Agent,
         patch("app.routers.bookings.locking.confirm_booking", return_value=confirmed) as conf,
     ):
-        Agent.return_value.submit.return_value = {"success": True, "stub": True}
+        Agent.return_value.submit = AsyncMock(return_value={"success": True})
         res = client.post(
             "/bookings/confirm",
             json={
@@ -155,7 +155,7 @@ def test_confirm_releases_lock_and_502_when_agent_fails() -> None:
         patch("app.routers.bookings.BookingAgent") as Agent,
         patch("app.routers.bookings.locking.release_lock") as release,
     ):
-        Agent.return_value.submit.return_value = {"success": False}
+        Agent.return_value.submit = AsyncMock(return_value={"success": False})
         res = client.post(
             "/bookings/confirm",
             json={
@@ -182,7 +182,7 @@ def test_confirm_forwards_customer_details() -> None:
         patch("app.routers.bookings.BookingAgent") as Agent,
         patch("app.routers.bookings.locking.confirm_booking", return_value=confirmed) as conf,
     ):
-        Agent.return_value.submit.return_value = {"success": True}
+        Agent.return_value.submit = AsyncMock(return_value={"success": True})
         client.post(
             "/bookings/confirm",
             json={
@@ -352,7 +352,7 @@ def test_confirm_strips_whitespace_on_customer_name() -> None:
         patch("app.routers.bookings.BookingAgent") as Agent,
         patch("app.routers.bookings.locking.confirm_booking", return_value=confirmed) as conf,
     ):
-        Agent.return_value.submit.return_value = {"success": True}
+        Agent.return_value.submit = AsyncMock(return_value={"success": True})
         client.post(
             "/bookings/confirm",
             json={

@@ -3,10 +3,9 @@
 A booking links a customer to a barbershop + slot at a time. The flow is:
 1. POST /bookings/lock   -> pessimistic lock held while the user authorizes payment
 2. POST /bookings/confirm -> Booking Agent submits on the barber's site, slot -> booked
-
-The Playwright submission in step 2 is stubbed for now (foundation phase).
 """
 
+import asyncio
 import uuid
 from typing import Annotated
 
@@ -66,11 +65,13 @@ def confirm_booking(req: BookingRequest) -> BookingResponse:
     booking_id = str(uuid.uuid4())
 
     # On-demand Booking Agent submits the reservation on the barber's site.
-    # SKELETON: returns a stubbed success until the Playwright phase lands.
-    agent_result = BookingAgent().submit(
-        slot_id=req.slot_id,
-        customer_name=req.customer_name,
-        customer_phone=req.customer_phone,
+    # This is a sync route (threadpool, no running loop) so asyncio.run is safe.
+    agent_result = asyncio.run(
+        BookingAgent().submit(
+            slot_id=req.slot_id,
+            customer_name=req.customer_name,
+            customer_phone=req.customer_phone,
+        )
     )
     if not agent_result.get("success"):
         locking.release_lock(req.slot_id, req.user_token)

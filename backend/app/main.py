@@ -5,6 +5,8 @@ workers are started from the lifespan hook in a later phase (left commented so
 the foundation boots without running the not-yet-implemented agents).
 """
 
+import asyncio
+import contextlib
 import logging
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -14,6 +16,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.agents.scraping_agent import ScrapingAgent
 from app.config import get_settings
 from app.routers import admin, barbershops, bookings, reviews, slots
 
@@ -28,12 +31,23 @@ logger = logging.getLogger("torli.api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Startup/shutdown hooks for background agents."""
-    # TODO (Playwright phase): start Discovery APScheduler cron + Scraping loop here.
-    #   scheduler = AsyncIOScheduler(); scheduler.add_job(discovery_agent.run, "cron", ...)
-    #   asyncio.create_task(scraping_agent.run())
+    """Startup/shutdown hooks for background agents.
+
+    The Scraping loop runs as a background task only when AGENTS_AUTOSTART=true
+    (off by default — the agents bill Google/OpenAI continuously). Discovery is
+    triggered on demand via scripts / the admin route, not on a schedule here.
+    """
+    scraping_task: asyncio.Task[None] | None = None
+    if settings.agents_autostart:
+        logger.info("AGENTS_AUTOSTART=true — launching Scraping Agent loop")
+        scraping_task = asyncio.create_task(ScrapingAgent().run())
+
     yield
-    # TODO (Playwright phase): graceful shutdown of scheduler / workers.
+
+    if scraping_task is not None:
+        scraping_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await scraping_task
 
 
 app = FastAPI(title="Tor-li API", version="0.1.0", lifespan=lifespan)
