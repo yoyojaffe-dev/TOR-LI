@@ -21,24 +21,61 @@ export function loadGoogleMaps() {
   return mapsPromise;
 }
 
+// Dark map style matching the app's dark theme + gold accent.
+const DARK_STYLE = [
+  { elementType: "geometry",            stylers: [{ color: "#1a1a2e" }] },
+  { elementType: "labels.text.fill",    stylers: [{ color: "#8e8ea0" }] },
+  { elementType: "labels.text.stroke",  stylers: [{ color: "#1a1a2e" }] },
+  { featureType: "road", elementType: "geometry",           stylers: [{ color: "#2d2d44" }] },
+  { featureType: "road", elementType: "geometry.stroke",    stylers: [{ color: "#1a1a2e" }] },
+  { featureType: "road.arterial",  elementType: "labels.text.fill", stylers: [{ color: "#8e8ea0" }] },
+  { featureType: "road.highway",   elementType: "geometry",         stylers: [{ color: "#3d3d5c" }] },
+  { featureType: "water",          elementType: "geometry",         stylers: [{ color: "#0d1b2a" }] },
+  { featureType: "water",          elementType: "labels.text.fill", stylers: [{ color: "#3d5a80" }] },
+  { featureType: "poi",            stylers: [{ visibility: "off" }] },
+  { featureType: "transit",        stylers: [{ visibility: "off" }] },
+  { featureType: "administrative", elementType: "geometry", stylers: [{ color: "#2d2d44" }] },
+  { featureType: "administrative.country", elementType: "labels.text.fill", stylers: [{ color: "#9e9e9e" }] },
+];
+
 // Render the map into `el`, centered on the user, with a radius circle.
-// The "you" marker + radius circle are stashed on the map so recenterMap can
-// move them when the location changes (manual search / GPS update).
+// zoom: 15 (street-level). fitBounds removed — it zoomed out too far with many shops.
 export async function renderMap(el, { lat, lng }, radiusM = config.DEFAULT_RADIUS_M) {
   const maps = await loadGoogleMaps();
-  const map = new maps.Map(el, { center: { lat, lng }, zoom: 14 });
+  const map = new maps.Map(el, {
+    center: { lat, lng },
+    zoom: 15,
+    styles: DARK_STYLE,
+    disableDefaultUI: true,
+    zoomControl: true,
+    zoomControlOptions: { position: maps.ControlPosition.LEFT_BOTTOM },
+  });
 
-  const userMarker = new maps.Marker({ position: { lat, lng }, map, title: "You" });
+  // User location: blue dot (distinct from gold barbershop pins).
+  const userMarker = new maps.Marker({
+    position: { lat, lng },
+    map,
+    title: "You",
+    zIndex: 999,
+    icon: {
+      path: maps.SymbolPath.CIRCLE,
+      scale: 8,
+      fillColor: "#4285F4",
+      fillOpacity: 1,
+      strokeColor: "#ffffff",
+      strokeWeight: 3,
+    },
+  });
   const circle = new maps.Circle({
     map,
     center: { lat, lng },
     radius: radiusM,
-    fillColor: "#4285F4",
-    fillOpacity: 0.1,
-    strokeColor: "#4285F4",
-    strokeOpacity: 0.4,
+    fillColor: "#EFB200",
+    fillOpacity: 0.05,
+    strokeColor: "#EFB200",
+    strokeOpacity: 0.3,
+    strokeWeight: 1,
   });
-  map.fitBounds(circle.getBounds());
 
   // Stash for later recentering.
   map.__torli = { userMarker, circle, radiusM };
@@ -54,8 +91,48 @@ export function recenterMap(map, { lat, lng }) {
   if (refs) {
     refs.userMarker.setPosition(center);
     refs.circle.setCenter(center);
-    map.fitBounds(refs.circle.getBounds());
   }
+}
+
+// Travel ETAs from origin -> dest for the 4 modes. Each mode is independent so
+// one failing (e.g. TRANSIT with no routes) doesn't break the others.
+// Returns { driving, walking, bicycling, transit } each {distanceKm, durationText} | null.
+export async function travelEtas(origin, dest) {
+  const maps = await loadGoogleMaps();
+  const svc = new maps.DistanceMatrixService();
+  const modes = {
+    driving:   maps.TravelMode.DRIVING,
+    walking:   maps.TravelMode.WALKING,
+    bicycling: maps.TravelMode.BICYCLING,
+    transit:   maps.TravelMode.TRANSIT,
+  };
+
+  const one = (travelMode) =>
+    new Promise((resolve) => {
+      const req = {
+        origins: [origin],
+        destinations: [dest],
+        travelMode,
+        unitSystem: maps.UnitSystem.METRIC,
+      };
+      if (travelMode === maps.TravelMode.TRANSIT) {
+        req.transitOptions = { departureTime: new Date() };
+      }
+      svc.getDistanceMatrix(req, (res, status) => {
+        if (status !== "OK") return resolve(null);
+        const el = res?.rows?.[0]?.elements?.[0];
+        if (!el || el.status !== "OK") return resolve(null);
+        resolve({
+          distanceKm: el.distance ? (el.distance.value / 1000).toFixed(1) : null,
+          durationText: el.duration ? el.duration.text : null,
+        });
+      });
+    });
+
+  const [driving, walking, bicycling, transit] = await Promise.all([
+    one(modes.driving), one(modes.walking), one(modes.bicycling), one(modes.transit),
+  ]);
+  return { driving, walking, bicycling, transit };
 }
 
 // Drop markers for a list of barbershops; returns the marker array.
@@ -67,6 +144,14 @@ export function renderBarbershopMarkers(map, barbershops, onSelect) {
         position: { lat: b.lat, lng: b.lng },
         map,
         title: b.name,
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          scale: 7,
+          fillColor: "#EFB200",
+          fillOpacity: 0.9,
+          strokeColor: "#1a1a2e",
+          strokeWeight: 1.5,
+        },
       });
       if (onSelect) marker.addListener("click", () => onSelect(b));
       return marker;

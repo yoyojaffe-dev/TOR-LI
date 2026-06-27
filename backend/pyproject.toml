@@ -1,0 +1,46 @@
+[tool.fastapi]
+# Entrypoint for `fastapi dev` / `fastapi run` (run from the backend/ dir).
+entrypoint = "app.main:app"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+plugins = ["pydantic.mypy"]
+files = ["app"]
+
+# Third-party SDKs without complete type info at our call boundary.
+[[tool.mypy.overrides]]
+module = ["googlemaps.*", "supabase.*", "playwright.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Integration tests (test_*_integration.py) self-skip when the backend is down.
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+# App-code coverage target (measured by the unit suite).
+fail_under = 90
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = [
+    "E501",   # line length handled by black
+    "UP042",  # keep `str, Enum` base (StrEnum migration would change str() output)
+]

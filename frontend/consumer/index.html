@@ -129,10 +129,30 @@
     .gold-ring { box-shadow: 0 0 0 1px #efb200; }
     /* Smooth slot-list appear */
     #slots-section { transition: opacity 0.2s ease; }
+
+    /* Premium image placeholder (no real photos yet) — gold-tinted depth */
+    .photo-placeholder {
+      background:
+        radial-gradient(120% 90% at 50% 0%, rgba(239,178,0,0.14), transparent 62%),
+        linear-gradient(160deg, #1f1d18 0%, #18171a 45%, #0e0e10 100%);
+    }
+
+    /* Desktop: frame the mobile app instead of floating in a void */
+    @media (min-width: 480px) {
+      html { background-color: #08080a; }
+      body {
+        border-left: 1px solid rgba(255,255,255,0.08);
+        border-right: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 0 80px rgba(0,0,0,0.6);
+      }
+    }
   </style>
 </head>
 
 <body class="bg-background text-text-primary min-h-screen pb-28 max-w-[430px] mx-auto relative overflow-x-hidden">
+
+  <!-- ═══ VIEW: Home (list/map/search/filter) ═══ -->
+  <div id="view-home">
 
   <!-- Geo fallback banner -->
   <div id="geo-banner" hidden
@@ -142,8 +162,8 @@
 
   <!-- Header -->
   <header class="px-gutter pt-8 pb-4 flex justify-between items-center">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary">
+    <button id="location-btn" class="flex items-center gap-3 text-right hover:opacity-80 transition-opacity">
+      <div data-avatar-slot="sm" class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary overflow-hidden">
         <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">person</span>
       </div>
       <div class="flex flex-col justify-center">
@@ -151,11 +171,9 @@
         <div class="flex items-center gap-1">
           <span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings:'FILL' 1;">location_on</span>
           <span id="location-label" class="font-headline-sm text-[16px] font-bold">מאתר...</span>
+          <span class="material-symbols-outlined text-text-muted text-sm">expand_more</span>
         </div>
       </div>
-    </div>
-    <button class="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center border border-border-light text-text-primary hover:bg-surface-3 transition-colors">
-      <span class="material-symbols-outlined">notifications</span>
     </button>
   </header>
 
@@ -167,7 +185,7 @@
              class="w-full bg-surface-1 border border-border-light rounded-[16px] h-12 pr-10 pl-4 font-body-md text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 transition-colors"
              placeholder="חפש ספרים, שירותים..." type="text"/>
     </div>
-    <button class="w-12 h-12 bg-surface-2 rounded-[16px] border border-border-light flex items-center justify-center text-text-primary hover:bg-surface-3 transition-colors">
+    <button id="btn-filter" class="w-12 h-12 bg-surface-2 rounded-[16px] border border-border-light flex items-center justify-center text-text-primary hover:bg-surface-3 transition-colors">
       <span class="material-symbols-outlined">filter_list</span>
     </button>
   </div>
@@ -188,7 +206,36 @@
 
   <!-- Map panel (hidden by default; shown when map toggle is active) -->
   <div id="map-panel" class="px-gutter mb-6 hidden">
-    <div id="map" class="w-full h-[280px] rounded-2xl overflow-hidden border border-border-light"></div>
+    <div class="relative">
+      <div id="map" class="w-full h-[480px] rounded-2xl overflow-hidden border border-border-light"></div>
+      <!-- Floating barber preview card (Stitch map motif) -->
+      <div id="map-preview"
+           class="absolute bottom-3 left-3 right-3 z-10 translate-y-[130%] opacity-0 pointer-events-none
+                  transition-all duration-300 ease-out
+                  bg-surface-1/95 backdrop-blur-md rounded-[20px] border border-border-light p-3
+                  shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex flex-col gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-14 h-14 rounded-full bg-surface-3 border border-border-light flex items-center justify-center text-primary shrink-0">
+            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">storefront</span>
+          </div>
+          <div class="flex-1 text-right min-w-0">
+            <h3 id="mp-name" class="font-headline-sm text-base truncate"></h3>
+            <p id="mp-addr" class="font-body-md text-text-secondary text-xs truncate"></p>
+          </div>
+          <button id="mp-go"
+                  class="shrink-0 bg-primary text-on-primary font-label-mono text-label-mono text-xs rounded-full px-4 py-2 active:scale-95 transition-transform">
+            הצג תורים ←
+          </button>
+        </div>
+        <!-- Travel ETA row (driving / walking / bicycling / transit) -->
+        <div id="mp-eta" class="grid grid-cols-4 gap-1 border-t border-border-light pt-2" dir="ltr"></div>
+        <button id="mp-nav"
+                class="w-full h-10 rounded-lg bg-surface-2 border border-border-light flex items-center justify-center gap-2 hover:bg-surface-3 transition-colors">
+          <span class="material-symbols-outlined text-primary text-[20px]">navigation</span>
+          <span class="font-body-md text-body-md font-medium">נווט</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- ── LIST VIEW ────────────────────────────────────────────────── -->
@@ -211,6 +258,15 @@
       </div>
     </section>
 
+    <!-- Quick-book: free slots near you (tap → confirm → book) -->
+    <section id="nearby-slots-section" class="mb-section-gap px-gutter hidden">
+      <div class="flex justify-between items-end mb-stack-md">
+        <h2 class="font-headline-md text-headline-md">תורים זמינים<br/>בקרבתך</h2>
+        <span class="font-body-md text-text-muted text-sm" id="nearby-slots-count"></span>
+      </div>
+      <div id="nearby-slots-list" class="flex flex-col gap-3"></div>
+    </section>
+
     <!-- Slots for selected barbershop (hidden until a shop is selected) -->
     <section id="slots-section" class="mb-section-gap px-gutter hidden">
       <div class="flex justify-between items-end mb-stack-md">
@@ -229,37 +285,34 @@
       <div id="slot-list" class="flex flex-col gap-3"></div>
     </section>
 
-    <!-- Booking form (hidden until a slot is locked) -->
-    <section id="booking-section" class="px-gutter mb-section-gap hidden">
-      <h2 class="font-headline-md text-headline-md mb-stack-md">פרטי הזמנה</h2>
-      <form id="booking-form" class="flex flex-col gap-3">
-        <input name="name"
-               class="w-full bg-surface-1 border border-border-light rounded-xl h-12 px-4 font-body-md text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 transition-colors"
-               placeholder="שם מלא" required/>
-        <input name="phone"
-               class="w-full bg-surface-1 border border-border-light rounded-xl h-12 px-4 font-body-md text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 transition-colors"
-               placeholder="מספר טלפון" type="tel" required/>
-        <button type="submit"
-                class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-xl flex justify-center items-center transition-transform duration-200 active:scale-95">
-          אישור הזמנה
-        </button>
-      </form>
-    </section>
+    <!-- Booking confirm/pay UI is a slide-up bottom-sheet injected by app.js. -->
 
   </div><!-- /list-panel -->
 
+  </div><!-- /view-home -->
+
+  <!-- ═══ Other views (rendered by app.js / router) ═══ -->
+  <div id="view-barber" class="hidden"></div>
+  <div id="view-success" class="hidden"></div>
+  <div id="view-bookings" class="hidden"></div>
+  <div id="view-profile" class="hidden"></div>
+  <!-- Onboarding (no bottom nav) -->
+  <div id="view-splash" class="hidden"></div>
+  <div id="view-role" class="hidden"></div>
+  <div id="view-verify" class="hidden"></div>
+
   <!-- Bottom Navigation -->
-  <nav class="bg-surface-1/90 font-label-mono text-label-mono fixed bottom-0 w-full max-w-[430px] z-50 h-20 backdrop-blur-2xl flex flex-row-reverse justify-around items-center px-4 pb-safe border-t border-border-light"
+  <nav id="bottom-nav" class="bg-surface-1/90 font-label-mono text-label-mono fixed bottom-0 w-full max-w-[430px] z-50 h-20 backdrop-blur-2xl flex flex-row-reverse justify-around items-center px-4 pb-safe border-t border-border-light"
        style="box-shadow: 0 -4px 20px rgba(0,0,0,0.5);">
-    <a class="flex flex-col items-center justify-center text-primary gap-1 scale-110" href="#">
-      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;">home</span>
+    <a data-route="#/home" class="nav-link flex flex-col items-center justify-center gap-1 transition-colors" href="#/home">
+      <span class="material-symbols-outlined">home</span>
       <span class="text-[10px]">בית</span>
     </a>
-    <a class="flex flex-col items-center justify-center text-text-muted gap-1 hover:text-primary transition-colors" href="#">
+    <a data-route="#/bookings" class="nav-link flex flex-col items-center justify-center gap-1 transition-colors" href="#/bookings">
       <span class="material-symbols-outlined">calendar_month</span>
       <span class="text-[10px]">התורים שלי</span>
     </a>
-    <a class="flex flex-col items-center justify-center text-text-muted gap-1 hover:text-primary transition-colors" href="#">
+    <a data-route="#/profile" class="nav-link flex flex-col items-center justify-center gap-1 transition-colors" href="#/profile">
       <span class="material-symbols-outlined">person</span>
       <span class="text-[10px]">פרופיל</span>
     </a>

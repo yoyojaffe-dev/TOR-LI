@@ -43,10 +43,22 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # --- Booking ---
-    slot_lock_ttl_seconds: int = 90  # pessimistic lock window (1-2 min per spec)
+    # Pessimistic lock window: the slot is held for the booker (and blocked for
+    # everyone else) while they complete checkout. 5 min matches the Stitch UX.
+    slot_lock_ttl_seconds: int = 300
+    # Kill-switch for the Booking Agent's final submit click. False (default) =
+    # the agent fills the form but skips the submit click (dry run) — no real
+    # appointment is made. Set BOOKING_LIVE=true only once the form-mapping has
+    # been validated against real sites, since a live submit is irreversible.
+    booking_live: bool = False
+
+    # --- Agents ---
+    # When True, the FastAPI lifespan launches the Scraping loop as a background
+    # task on boot. Off by default — agents bill Google/OpenAI continuously.
+    agents_autostart: bool = False
 
 
 @lru_cache
 def get_settings() -> Settings:
     """Return a cached Settings instance (single read of the environment)."""
-    return Settings()  # type: ignore[call-arg]
+    return Settings()

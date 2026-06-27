@@ -3,9 +3,9 @@
 Mounted only when ENVIRONMENT != "production".
 """
 
-import asyncio
+from typing import Annotated, Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from app.agents.discovery_agent import DiscoveryAgent
 from app.agents.scraping_agent import ScrapingAgent
@@ -14,18 +14,20 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 @router.post("/discovery/run")
-def trigger_discovery(
-    lat: float = Query(32.0853, description="Centre latitude (default: Tel Aviv)."),
-    lng: float = Query(34.7818, description="Centre longitude (default: Tel Aviv)."),
-    radius_m: int = Query(5000, ge=100, le=50000, description="Search radius in metres."),
-) -> dict:
+async def trigger_discovery(
+    lat: Annotated[float, Query(description="Centre latitude (default: Tel Aviv).")] = 32.0853,
+    lng: Annotated[float, Query(description="Centre longitude (default: Tel Aviv).")] = 34.7818,
+    radius_m: Annotated[
+        int, Query(ge=100, le=50000, description="Search radius in metres.")
+    ] = 5000,
+) -> dict[str, Any]:
     """Trigger one Discovery Agent pass and return the count of shops upserted.
 
     Example:
         POST /admin/discovery/run?lat=32.0853&lng=34.7818&radius_m=5000
     """
     try:
-        count = DiscoveryAgent().discover(lat, lng, radius_m)
+        count = await DiscoveryAgent().discover(lat, lng, radius_m)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
@@ -37,7 +39,7 @@ def trigger_discovery(
 
 
 @router.post("/scraping/run")
-async def trigger_scraping() -> dict:
+async def trigger_scraping() -> dict[str, Any]:
     """Run one full Scraping Agent pass synchronously and return stats.
 
     Example:

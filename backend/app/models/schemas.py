@@ -6,8 +6,20 @@ These mirror the Supabase tables (``barbershops``, ``available_slots``,
 
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class _RequestModel(BaseModel):
+    """Base for inbound payloads: trims surrounding whitespace on all strings.
+
+    With ``str_strip_whitespace`` a whitespace-only value collapses to "" and
+    then fails the ``min_length=1`` constraints below, so blank identifiers /
+    customer details are rejected with HTTP 422 instead of reaching the DB.
+    """
+
+    model_config = ConfigDict(str_strip_whitespace=True)
 
 
 class SlotStatus(str, Enum):
@@ -25,7 +37,12 @@ class Barbershop(BaseModel):
     google_place_id: str | None = None
     lat: float | None = None
     lng: float | None = None
-    opening_hours: dict | None = None
+    opening_hours: dict[str, Any] | None = None
+    photo_url: str | None = None
+    photo_urls: list[str] = []
+    rating: float | None = None
+    rating_count: int | None = None
+    place_type: str | None = None
     distance_m: float | None = Field(
         default=None, description="Distance from query point in metres (radius search only)."
     )
@@ -41,9 +58,9 @@ class Slot(BaseModel):
     locked_until: datetime | None = None
 
 
-class LockRequest(BaseModel):
-    slot_id: str
-    user_token: str = Field(description="Opaque client identifier holding the lock.")
+class LockRequest(_RequestModel):
+    slot_id: str = Field(min_length=1)
+    user_token: str = Field(min_length=1, description="Opaque client identifier holding the lock.")
 
 
 class LockResponse(BaseModel):
@@ -53,11 +70,24 @@ class LockResponse(BaseModel):
     message: str | None = None
 
 
-class BookingRequest(BaseModel):
-    slot_id: str
-    user_token: str
-    customer_name: str
-    customer_phone: str
+class BookingRequest(_RequestModel):
+    slot_id: str = Field(min_length=1)
+    user_token: str = Field(min_length=1)
+    customer_name: str = Field(min_length=1, max_length=80)
+    customer_phone: str = Field(min_length=7, max_length=20)
+
+    @field_validator("customer_phone")
+    @classmethod
+    def _phone_has_enough_digits(cls, v: str) -> str:
+        """Require at least 7 digits so a punctuation-only phone is rejected."""
+        if sum(c.isdigit() for c in v) < 7:
+            raise ValueError("phone must contain at least 7 digits")
+        return v
+
+
+class CancelRequest(_RequestModel):
+    booking_id: str = Field(min_length=1)
+    user_token: str = Field(min_length=1)
 
 
 class BookingResponse(BaseModel):
@@ -65,3 +95,52 @@ class BookingResponse(BaseModel):
     booking_id: str | None = None
     status: str
     message: str | None = None
+
+
+class ReviewRequest(_RequestModel):
+    booking_id: str = Field(min_length=1)
+    user_token: str = Field(min_length=1)
+    rating: int = Field(ge=1, le=5)
+    comment: str | None = Field(default=None, max_length=1000)
+
+
+class Review(BaseModel):
+    id: str
+    rating: int
+    comment: str | None = None
+    created_at: str | None = None
+    display_name: str | None = None
+
+
+class ActionResult(BaseModel):
+    """Generic success/message envelope for state-changing RPC endpoints."""
+
+    success: bool
+    message: str | None = None
+
+
+class BookingHistoryItem(BaseModel):
+    """A row from the ``bookings_for_user`` RPC (booking joined to slot + shop)."""
+
+    booking_id: str
+    status: str
+    created_at: str | None = None
+    service_name: str | None = None
+    price: float | None = None
+    slot_time: str | None = None
+    barbershop_id: str | None = None
+    shop_name: str | None = None
+    shop_address: str | None = None
+
+
+class NearbySlot(BaseModel):
+    slot_id: str
+    slot_time: str
+    service_name: str
+    price: float | None = None
+    barbershop_id: str
+    shop_name: str
+    shop_address: str | None = None
+    lat_out: float | None = None
+    lng_out: float | None = None
+    distance_m: float | None = None

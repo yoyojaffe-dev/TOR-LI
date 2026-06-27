@@ -22,6 +22,7 @@ logging.basicConfig(
 )
 
 from app.agents.scraping_agent import ScrapingAgent  # noqa: E402
+from scripts._cli import add_version, positive_int, run_safely  # noqa: E402
 
 
 async def _main(loop: bool, interval: int) -> None:
@@ -35,12 +36,15 @@ async def _main(loop: bool, interval: int) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Tor-li Scraping Agent.")
+    add_version(parser)
     parser.add_argument("--loop", action="store_true", help="Run continuously")
-    parser.add_argument("--interval", type=int, default=300, help="Seconds between passes (loop mode)")
+    parser.add_argument(
+        "--interval", type=positive_int, default=300, help="Seconds between passes (loop mode)"
+    )
     args = parser.parse_args()
 
     asyncio.run(_main(args.loop, args.interval))
 
 
 if __name__ == "__main__":
-    main()
+    run_safely(main)

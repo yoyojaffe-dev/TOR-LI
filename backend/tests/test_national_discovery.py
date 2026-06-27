@@ -3,11 +3,19 @@
 from scripts.run_national_discovery import CITIES, _select_cities
 
 
-def test_grid_covers_eight_core_cities() -> None:
+def test_grid_covers_ten_core_cities() -> None:
     keys = {c["key"] for c in CITIES}
     assert keys == {
-        "tel_aviv", "jerusalem", "haifa", "beer_sheva",
-        "rishon_lezion", "ashdod", "netanya", "eilat",
+        "kiryat_shmona",
+        "tiberias",
+        "tel_aviv",
+        "jerusalem",
+        "haifa",
+        "beer_sheva",
+        "rishon_lezion",
+        "ashdod",
+        "netanya",
+        "eilat",
     }
 
 

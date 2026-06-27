@@ -15,7 +15,8 @@ Trigger manually via:
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any, cast
 
 from openai import AsyncOpenAI
 from playwright.async_api import Browser, async_playwright
@@ -36,6 +37,10 @@ _RENDER_WAIT_MS = 2_500
 
 # Default seconds between full scraping passes.
 LOOP_INTERVAL_SECONDS = 300
+
+# Max shops scraped concurrently in one pass. Bounds open browser contexts +
+# OpenAI calls so a large target list can't exhaust memory / rate limits.
+_MAX_CONCURRENT_SHOPS = 5
 
 # Domains that require auth or block headless browsers — skip them.
 _SKIP_DOMAINS = {"facebook.com", "instagram.com", "twitter.com", "t.me"}
@@ -87,7 +92,7 @@ class ScrapingAgent:
     # Supabase (sync, called via asyncio.to_thread)
     # ------------------------------------------------------------------
 
-    def fetch_targets(self) -> list[dict]:
+    def fetch_targets(self) -> list[dict[str, Any]]:
         """Return barbershops with a scrappable booking_url."""
         res = (
             self.db.table("barbershops")
@@ -96,12 +101,10 @@ class ScrapingAgent:
             .execute()
         )
         return [
-            shop
-            for shop in (res.data or [])
-            if not _is_skippable_url(shop.get("booking_url", ""))
+            shop for shop in (res.data or []) if not _is_skippable_url(shop.get("booking_url", ""))
         ]
 
-    def _sync_slots(self, barbershop_id: str, slots: list[dict]) -> int:
+    def _sync_slots(self, barbershop_id: str, slots: list[dict[str, Any]]) -> int:
         """Upsert slots via upsert_free_slot RPC. Returns count written."""
         written = 0
         for slot in slots:
@@ -147,10 +150,10 @@ class ScrapingAgent:
     # OpenAI
     # ------------------------------------------------------------------
 
-    async def parse_html(self, text: str, shop_name: str) -> list[dict]:
+    async def parse_html(self, text: str, shop_name: str) -> list[dict[str, Any]]:
         """Send visible page text to OpenAI; return extracted slot dicts."""
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        response = await self.openai.chat.completions.create(
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        response = await self.openai.chat.completions.create(  # type: ignore[call-overload]
             model="gpt-4o-mini",
             messages=[
                 {
@@ -172,13 +175,13 @@ class ScrapingAgent:
         )
         tool_call = response.choices[0].message.tool_calls[0]
         args = json.loads(tool_call.function.arguments)
-        return args.get("slots", [])
+        return cast(list[dict[str, Any]], args.get("slots", []))
 
     # ------------------------------------------------------------------
     # Orchestration
     # ------------------------------------------------------------------
 
-    async def process_shop(self, browser: Browser, shop: dict) -> int:
+    async def process_shop(self, browser: Browser, shop: dict[str, Any]) -> int:
         """Scrape one shop and sync its slots. Returns slot count written."""
         shop_id = shop["id"]
         name = shop.get("name", "Unknown")
@@ -203,21 +206,43 @@ class ScrapingAgent:
             return 0
 
     async def run_once(self) -> dict[str, int]:
-        """One full pass: fetch targets -> scrape -> parse -> sync. Returns stats."""
+        """One full pass: fetch targets -> scrape -> parse -> sync. Returns stats.
+
+        Shops are processed concurrently (bounded by ``_MAX_CONCURRENT_SHOPS``)
+        since each is independent and I/O-bound. A semaphore caps the number of
+        simultaneously-open browser contexts and in-flight OpenAI calls.
+        """
         targets = await asyncio.to_thread(self.fetch_targets)
         logger.info("Scraping pass: %d targets", len(targets))
 
         stats: dict[str, int] = {"shops_processed": 0, "slots_written": 0}
+        if not targets:
+            return stats
+
+        sem = asyncio.Semaphore(_MAX_CONCURRENT_SHOPS)
+
+        async def _guarded(shop: dict[str, Any]) -> int:
+            async with sem:
+                return await self.process_shop(browser, shop)
 
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(headless=True)
             try:
-                for shop in targets:
-                    written = await self.process_shop(browser, shop)
-                    stats["shops_processed"] += 1
-                    stats["slots_written"] += written
+                results = await asyncio.gather(
+                    *(_guarded(shop) for shop in targets),
+                    return_exceptions=True,
+                )
             finally:
                 await browser.close()
+
+        for result in results:
+            stats["shops_processed"] += 1
+            if isinstance(result, BaseException):
+                # process_shop already isolates its own errors; this is a
+                # last-resort guard so one task can't sink the whole pass.
+                logger.error("shop task failed: %s", result)
+                continue
+            stats["slots_written"] += result
 
         return stats
 
