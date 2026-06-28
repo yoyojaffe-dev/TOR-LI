@@ -2,10 +2,12 @@
 // and keeps slots live via Supabase Realtime.
 import { api, ApiError } from "./api.js";
 import { store } from "./state.js";
-import { getCurrentPosition, geocodeAddress } from "./geo.js";
-import { renderMap, renderBarbershopMarkers, recenterMap, travelEtas } from "./map.js";
+import { geocodeAddress, locateSafely } from "./geo.js";
+import { renderMap, renderBarbershopMarkers, recenterMap, travelEtas, boundsToRadius } from "./map.js";
 import { subscribeToSlots } from "./realtime.js";
 import { startBooking, confirmBooking, cancelBooking } from "./booking.js";
+import { fetchServices, fetchExternalReviews } from "./shopData.js";
+import { uploadAvatar } from "./storage.js";
 
 // --- DOM hooks ---
 const els = {
@@ -30,6 +32,7 @@ const els = {
   viewSplash:   () => document.getElementById("view-splash"),
   viewRole:     () => document.getElementById("view-role"),
   viewVerify:   () => document.getElementById("view-verify"),
+  viewRegister: () => document.getElementById("view-register"),
 };
 
 let unsubscribeSlots = null;
@@ -65,6 +68,16 @@ function clearMarkers() {
   store.set({ markers: [] });
 }
 
+// Is a shop open right now? Honors an explicit `open_now` flag when present;
+// when hours are unknown/null (most seeded + scraped shops) we DON'T exclude it
+// — better to show a shop of unknown status than to empty the whole list.
+function isOpenNow(b) {
+  const oh = b.opening_hours;
+  if (!oh || typeof oh !== "object") return true; // unknown -> keep
+  if (typeof oh.open_now === "boolean") return oh.open_now;
+  return true; // structured weekly hours not parsed here -> keep
+}
+
 // The shops currently visible after applying all active filters + search query.
 function visibleShops() {
   let shops = store.get().barbershops || [];
@@ -83,7 +96,7 @@ function visibleShops() {
     );
   }
   if (filterState.openNow) {
-    shops = shops.filter((b) => b.opening_hours?.open_now === true);
+    shops = shops.filter(isOpenNow);
   }
   if (filterState.serviceTypes.length > 0) {
     shops = shops.filter((b) =>
@@ -148,8 +161,53 @@ function setView(view) {
           const markers = renderBarbershopMarkers(map, shops, showMapPreview);
           store.set({ markers });
         }
+        // Reveal "search this area" once the user moves the map off its origin.
+        map.addListener("dragstart", showSearchArea);
+        map.addListener("zoom_changed", showSearchArea);
       });
     }
+  }
+}
+
+// ── Map: "search this area" viewport refetch ─────────────────────────────────
+
+function showSearchArea() {
+  document.getElementById("search-area")?.classList.remove("hidden");
+}
+function hideSearchArea() {
+  document.getElementById("search-area")?.classList.add("hidden");
+}
+
+// Refetch barbershops for the current map viewport (center + derived radius) and
+// re-render the list + pins. The user dot/circle stay put — only the shop source
+// moves to wherever the map is looking. Guards against concurrent taps.
+let viewFetchInFlight = false;
+async function fetchShopsForView() {
+  const map = store.get().map;
+  if (!map || viewFetchInFlight) return;
+  const center = map.getCenter();
+  if (!center) return;
+
+  const r = Math.round(boundsToRadius(map));
+  const radius = Math.min(r > 0 ? r : 2000, 50000); // backend caps radius at 50km
+
+  const btn = document.getElementById("search-area");
+  const icon = document.getElementById("search-area-icon");
+  viewFetchInFlight = true;
+  if (btn) btn.disabled = true;
+  if (icon) { icon.textContent = "progress_activity"; icon.classList.add("animate-spin"); }
+  try {
+    const shops = await api.nearbyBarbershops(center.lat(), center.lng(), radius);
+    store.set({ barbershops: shops });
+    renderShops(); // redraws list rail + ALL pins from visibleShops()
+    hideSearchArea();
+  } catch (err) {
+    console.warn("fetchShopsForView failed:", err?.message);
+    toast("טעינת האזור נכשלה — נסה שוב");
+  } finally {
+    viewFetchInFlight = false;
+    if (btn) btn.disabled = false;
+    if (icon) { icon.textContent = "search"; icon.classList.remove("animate-spin"); }
   }
 }
 
@@ -161,14 +219,19 @@ async function init() {
     location.hash = "#/splash";
   }
 
-  // Priority on load: GPS -> Jerusalem fallback. (Manual search overrides later.)
-  try {
-    const position = await getCurrentPosition();
+  // Never block the home on GPS. Render default-location data immediately so the
+  // page is usable within a frame, then upgrade to real coords in the background
+  // if geolocation resolves. locateSafely() can never hang (hard wall-clock cap).
+  await setLocation(DEFAULT_POSITION, { label: "מאתר…" });
+
+  const position = await locateSafely();
+  if (position) {
     await setLocation(position, { label: "מיקומך" });
-  } catch {
+  } else {
     const banner = els.geoBanner();
     if (banner) banner.hidden = false;
-    await setLocation(DEFAULT_POSITION, { label: "ירושלים" });
+    const el = els.locationLabel();
+    if (el) el.textContent = "ירושלים";
   }
 }
 
@@ -204,27 +267,137 @@ async function loadNearby() {
   }
 }
 
+// Max barber cards shown on the home rail before "ראה הכל" (See All).
+const HOME_SHOP_LIMIT = 5;
+
 // Render the currently-visible shops (post-filter) into the list + map.
 function renderShops() {
   const shops = visibleShops();
-  renderBarbershops(shops);
+  // Home rail is capped; the full set lives behind "See All" (#/shops).
+  renderBarbershops(shops.slice(0, HOME_SHOP_LIMIT));
 
   const count = els.shopCount();
   if (count) count.textContent = `${shops.length} ספרים`;
 
-  // Redraw markers if the map exists (clear old pins first to avoid pileup).
+  // "See All" only matters when there's more than the rail shows.
+  const seeAll = document.getElementById("see-all-shops");
+  if (seeAll) seeAll.classList.toggle("hidden", shops.length <= HOME_SHOP_LIMIT);
+
+  // Markers show ALL visible shops (not just the rail's 5).
   if (store.get().map) {
     clearMarkers();
     const markers = renderBarbershopMarkers(store.get().map, shops, showMapPreview);
     store.set({ markers });
   }
+
+  // Derived "Top Rated" section refreshes whenever the shop set does.
+  renderTopRated();
+
+  // Keep the full-list view in sync if it's the active route.
+  if (location.hash.startsWith("#/shops")) renderAllShops();
+}
+
+// Full vertical list of every visible shop (the "See All" destination).
+function renderAllShops() {
+  const list = document.getElementById("all-shops-list");
+  if (!list) return;
+  const shops = visibleShops();
+  if (!shops.length) {
+    list.innerHTML = EMPTY_SHOPS_HTML;
+    return;
+  }
+  list.innerHTML = shops.map((b) => barberCardHTML(b, "full")).join("");
+  wireShopCards(list, shops);
+  const count = document.getElementById("all-shops-count");
+  if (count) count.textContent = `${shops.length} ספרים`;
+}
+
+// Full-list page for a home carousel ("ראה הכל"). kind: nearby | deals | top.
+// Recomputes from the live (filtered) sets so filters carry over.
+function renderListView(kind) {
+  const titleEl = document.getElementById("list-title");
+  const countEl = document.getElementById("list-count");
+  const box = document.getElementById("list-items");
+  if (!box) return;
+
+  let title, items, html, wire, countText;
+  if (kind === "nearby") {
+    title = "תורים זמינים בקרבתך";
+    items = visibleSlots();
+    html = items.map(nearbySlotCardHTML).join("");
+    wire = () => box.querySelectorAll("[data-slot-id]").forEach((el) => el.addEventListener("click", () => quickBookSlot(el.dataset.slotId)));
+    countText = `${items.length} תורים`;
+  } else if (kind === "deals") {
+    title = "מבצעי דקה תשעים";
+    items = dealSlots();
+    html = items.map(dealSlotCardHTML).join("");
+    wire = () => box.querySelectorAll("[data-slot-id]").forEach((el) => el.addEventListener("click", () => quickBookSlot(el.dataset.slotId)));
+    countText = `${items.length} תורים`;
+  } else if (kind === "top") {
+    title = "מדורגים בקרבתך";
+    items = topRatedShops();
+    html = items.map((b) => barberCardHTML(b, "full")).join("");
+    wire = () => wireShopCards(box, items);
+    countText = `${items.length} ספרים`;
+  } else {
+    location.hash = "#/home";
+    return;
+  }
+
+  if (titleEl) titleEl.textContent = title;
+  if (countEl) countEl.textContent = countText;
+  box.innerHTML = items.length
+    ? html
+    : `<p class="text-text-muted font-body-md py-12 text-center">אין פריטים להצגה</p>`;
+  if (items.length) wire();
+}
+
+// ── Favorites (per-browser, localStorage `torli_favorites` = [shopId]) ────────
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem("torli_favorites") || "[]"); }
+  catch { return []; }
+}
+function isFavorite(id) { return getFavorites().includes(id); }
+function toggleFavorite(id) {
+  const favs = getFavorites();
+  const i = favs.indexOf(id);
+  if (i === -1) favs.push(id); else favs.splice(i, 1);
+  localStorage.setItem("torli_favorites", JSON.stringify(favs));
+  return i === -1; // true if now favorited
+}
+
+// "המועדפים שלי" — fetch each favorited shop by id and list it.
+async function renderFavoritesView() {
+  const box = document.getElementById("favorites-list");
+  const countEl = document.getElementById("fav-count");
+  if (!box) return;
+  const ids = getFavorites();
+  if (!ids.length) {
+    if (countEl) countEl.textContent = "";
+    box.innerHTML = `
+      <div class="flex flex-col items-center justify-center text-center gap-3 py-16">
+        <span class="material-symbols-outlined text-5xl text-surface-variant">favorite</span>
+        <p class="font-body-lg text-body-lg text-text-secondary">עוד לא שמרת מועדפים</p>
+        <p class="font-body-md text-text-muted text-sm">לחץ על הלב בעמוד של מספרה כדי לשמור אותה</p>
+      </div>`;
+    return;
+  }
+  box.innerHTML = `<div class="h-24 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>`;
+  const shops = (await Promise.all(ids.map((id) => api.getBarbershop(id).catch(() => null)))).filter(Boolean);
+  if (countEl) countEl.textContent = `${shops.length} מספרות`;
+  box.innerHTML = shops.length
+    ? shops.map((b) => barberCardHTML(b, "full")).join("")
+    : `<p class="text-text-muted font-body-md py-12 text-center">לא נמצאו מספרות</p>`;
+  if (shops.length) wireShopCards(box, shops);
 }
 
 // Render the "Available Nearby" quick-book slot cards.
 function renderNearbySlots() {
+  // Derived "Last Minute Deals" section refreshes whenever nearby slots do.
+  renderDeals();
+
   const section = document.getElementById("nearby-slots-section");
   const list = document.getElementById("nearby-slots-list");
-  const count = document.getElementById("nearby-slots-count");
   if (!section || !list) return;
 
   const slots = visibleSlots();
@@ -233,35 +406,124 @@ function renderNearbySlots() {
     return;
   }
   section.classList.remove("hidden");
-  if (count) count.textContent = `${slots.length} תורים`;
+  // "See All" appears only when the carousel hides items.
+  document.getElementById("see-all-nearby")?.classList.toggle("hidden", slots.length <= CAROUSEL_LIMIT);
 
-  list.innerHTML = slots
-    .slice(0, 12)
-    .map((s) => {
-      const d = new Date(s.slot_time);
-      const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-      const date = d.toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "short" });
-      return `
-      <div data-slot-id="${s.slot_id}"
-           class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center
-                  cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
-        <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
-          <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
-          <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
-        </div>
-        <div class="flex-1 text-right flex flex-col justify-center pr-3 min-w-0">
-          <span class="font-headline-sm text-base truncate">${s.shop_name}</span>
-          <span class="font-body-md text-text-secondary text-xs mt-0.5 truncate">${s.service_name} · ${time} · ${date}</span>
-          ${s.distance_m != null ? `<span class="font-label-mono text-label-mono text-text-muted text-[11px] mt-0.5">${Math.round(s.distance_m)} מ' ממך</span>` : ""}
-        </div>
-        <span class="material-symbols-outlined text-text-muted">chevron_left</span>
-      </div>`;
-    })
-    .join("");
-
+  list.innerHTML = slots.slice(0, CAROUSEL_LIMIT).map(nearbySlotCardHTML).join("");
   list.querySelectorAll("[data-slot-id]").forEach((el) =>
     el.addEventListener("click", () => quickBookSlot(el.dataset.slotId))
   );
+}
+
+// Max items shown in a home carousel before "ראה הכל".
+const CAROUSEL_LIMIT = 5;
+
+// Nearby-slot card (shop + service · time · date + distance). Shared by the
+// "available nearby" carousel and its full-list page.
+function nearbySlotCardHTML(s) {
+  const d = new Date(s.slot_time);
+  const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+  const date = d.toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "short" });
+  return `
+    <div data-slot-id="${s.slot_id}"
+         class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center
+                cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
+      <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
+        <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
+        <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
+      </div>
+      <div class="flex-1 text-right flex flex-col justify-center pr-3 min-w-0">
+        <span class="font-headline-sm text-base truncate">${escapeHtml(s.shop_name)}</span>
+        <span class="font-body-md text-text-secondary text-xs mt-0.5 truncate">${escapeHtml(s.service_name)} · ${time} · ${date}</span>
+        ${s.distance_m != null ? `<span class="font-label-mono text-label-mono text-text-muted text-[11px] mt-0.5">${Math.round(s.distance_m)} מ' ממך</span>` : ""}
+      </div>
+      <span class="material-symbols-outlined text-text-muted">chevron_left</span>
+    </div>`;
+}
+
+// Hebrew relative time for an upcoming slot ("בעוד 40 דק'" / "בעוד 2 שע'").
+function relativeTimeHe(date) {
+  const ms = date.getTime() - new Date().getTime();
+  if (ms <= 0) return "עכשיו";
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return `בעוד ${mins} דק'`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `בעוד ${hrs} שע'`;
+  return `בעוד ${Math.round(hrs / 24)} ימ'`;
+}
+
+// ── Section: Last Minute Deals (soonest upcoming free slots) ─────────────────
+function renderDeals() {
+  const section = document.getElementById("deals-section");
+  const list = document.getElementById("deals-list");
+  if (!section || !list) return;
+
+  const slots = dealSlots();
+  if (!slots.length) {
+    section.classList.add("hidden");
+    return;
+  }
+  section.classList.remove("hidden");
+  document.getElementById("see-all-deals")?.classList.toggle("hidden", slots.length <= CAROUSEL_LIMIT);
+
+  list.innerHTML = slots.slice(0, CAROUSEL_LIMIT).map(dealSlotCardHTML).join("");
+  list.querySelectorAll("[data-slot-id]").forEach((el) =>
+    el.addEventListener("click", () => quickBookSlot(el.dataset.slotId))
+  );
+}
+
+// Upcoming free slots, soonest first (the "deals" set — shared by carousel + page).
+function dealSlots() {
+  const now = new Date();
+  return (visibleSlots() || [])
+    .filter((s) => new Date(s.slot_time) >= now)
+    .sort((a, b) => new Date(a.slot_time) - new Date(b.slot_time));
+}
+
+// Deal card (shop + service · time + "בעוד X" relative-time chip).
+function dealSlotCardHTML(s) {
+  const d = new Date(s.slot_time);
+  const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+  return `
+    <div data-slot-id="${s.slot_id}"
+         class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center
+                cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
+      <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
+        <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
+        <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
+      </div>
+      <div class="flex-1 text-right flex flex-col justify-center pr-3 min-w-0">
+        <span class="font-headline-sm text-base truncate">${escapeHtml(s.shop_name)}</span>
+        <span class="font-body-md text-text-secondary text-xs mt-0.5 truncate">${escapeHtml(s.service_name)} · ${time}</span>
+      </div>
+      <span class="font-label-mono text-label-mono text-[11px] text-primary border border-primary/30 rounded-full px-2.5 py-1 whitespace-nowrap">
+        ${relativeTimeHe(d)}
+      </span>
+    </div>`;
+}
+
+// ── Section: Top Rated Near You (highest-rated visible shops) ────────────────
+// Highest-rated visible shops, soonest... er, best-rated first (shared by
+// carousel + the full-list page).
+function topRatedShops() {
+  return (visibleShops() || [])
+    .filter((b) => b.rating != null)
+    .sort((a, b) => b.rating - a.rating);
+}
+function renderTopRated() {
+  const section = document.getElementById("top-rated-section");
+  const list = document.getElementById("top-rated-list");
+  if (!section || !list) return;
+
+  const shops = topRatedShops();
+  if (!shops.length) {
+    section.classList.add("hidden");
+    return;
+  }
+  section.classList.remove("hidden");
+  document.getElementById("see-all-top")?.classList.toggle("hidden", shops.length <= CAROUSEL_LIMIT);
+  list.innerHTML = shops.slice(0, CAROUSEL_LIMIT).map((b) => barberCardHTML(b, "rail")).join("");
+  wireShopCards(list, shops.slice(0, CAROUSEL_LIMIT));
 }
 
 // Quick-book a nearby slot: confirm, then run the normal lock -> confirm flow.
@@ -414,26 +676,16 @@ async function bookSlot(slotId) {
 
 // ── Renderers ────────────────────────────────────────────────────────────────
 
-function renderBarbershops(barbershops) {
-  const list = els.shopList();
-  if (!list) return;
-
-  if (!barbershops.length) {
-    list.innerHTML = `
-      <div class="w-full flex flex-col items-center justify-center text-center py-12 px-gutter gap-3">
-        <span class="material-symbols-outlined text-5xl text-surface-variant">location_off</span>
-        <p class="font-headline-sm text-headline-sm text-text-primary">לא נמצאו ספרים באזור זה</p>
-        <p class="font-body-md text-text-secondary text-sm">נסה לחפש עיר אחרת או להרחיב את הסינון</p>
-      </div>`;
-    return;
-  }
-
-  list.innerHTML = barbershops
-    .map(
-      (b) => `
+// Shared barber card. `variant: "rail"` = fixed-width horizontal scroller card;
+// "full" = full-width card for the vertical "all shops" list.
+function barberCardHTML(b, variant = "rail") {
+  const wrap = variant === "full"
+    ? "w-full"
+    : "min-w-[260px] flex-shrink-0";
+  return `
     <div data-id="${b.id}"
-         class="min-w-[260px] bg-surface-2 rounded-[20px] overflow-hidden border border-border-light
-                relative flex-shrink-0 cursor-pointer hover:border-primary/40 transition-colors group">
+         class="${wrap} bg-surface-2 rounded-[20px] overflow-hidden border border-border-light
+                relative cursor-pointer hover:border-primary/40 transition-colors group">
       <!-- Card photo: real image when available, gradient fallback otherwise -->
       <div class="h-32 w-full relative overflow-hidden ${b.photo_url ? "" : "photo-placeholder"}">
         ${b.photo_url
@@ -472,17 +724,39 @@ function renderBarbershops(barbershops) {
           </span>
         </div>
       </div>
-    </div>`
-    )
-    .join("");
+    </div>`;
+}
 
-  list.querySelectorAll("[data-id]").forEach((el) => {
-    const shop = barbershops.find((b) => b.id === el.dataset.id);
+// Wire shop cards in a container to open the barber profile.
+function wireShopCards(container, shops) {
+  container.querySelectorAll("[data-id]").forEach((el) => {
+    const shop = shops.find((b) => b.id === el.dataset.id);
+    if (!shop) return;
     el.addEventListener("click", () => {
       store.set({ selectedBarbershop: shop });
       location.hash = `#/barber/${shop.id}`;
     });
   });
+}
+
+const EMPTY_SHOPS_HTML = `
+  <div class="w-full flex flex-col items-center justify-center text-center py-12 px-gutter gap-3">
+    <span class="material-symbols-outlined text-5xl text-surface-variant">location_off</span>
+    <p class="font-headline-sm text-headline-sm text-text-primary">לא נמצאו ספרים באזור זה</p>
+    <p class="font-body-md text-text-secondary text-sm">נסה לחפש עיר אחרת או להרחיב את הסינון</p>
+  </div>`;
+
+function renderBarbershops(barbershops) {
+  const list = els.shopList();
+  if (!list) return;
+
+  if (!barbershops.length) {
+    list.innerHTML = EMPTY_SHOPS_HTML;
+    return;
+  }
+
+  list.innerHTML = barbershops.map((b) => barberCardHTML(b, "rail")).join("");
+  wireShopCards(list, barbershops);
 }
 
 function renderSlots(slots) {
@@ -567,13 +841,82 @@ function wireSlotTaps(container) {
   );
 }
 
+// Escape untrusted text (scraped reviews, service names) before innerHTML.
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
+}
+
+// ── Service menu row (Supabase `services`) ───────────────────────────────────
+// Graceful degradation: price / duration_mins / barber may all be null.
+function serviceRowHTML(s) {
+  const price = s.price != null
+    ? `<span class="font-price-lg text-price-lg text-primary leading-none">₪${s.price}</span>`
+    : `<span class="font-body-md text-text-secondary text-xs text-center leading-tight">מחיר<br>לפי בקשה</span>`;
+  const meta = [];
+  if (s.duration_mins != null) {
+    meta.push(`<span class="inline-flex items-center gap-1">
+      <span class="material-symbols-outlined text-[14px]">schedule</span>${s.duration_mins} דק'</span>`);
+  }
+  if (s.barber) {
+    meta.push(`<span class="inline-flex items-center gap-1">
+      <span class="material-symbols-outlined text-[14px]">person</span>${escapeHtml(s.barber)}</span>`);
+  }
+  const metaRow = meta.length
+    ? `<span class="font-body-md text-text-secondary text-xs mt-0.5 flex items-center gap-3" dir="rtl">${meta.join("")}</span>`
+    : "";
+  const category = s.category
+    ? `<span class="text-[11px] text-text-muted">${escapeHtml(s.category)}</span>`
+    : "";
+  return `
+    <div class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center">
+      <div class="flex flex-col items-center justify-center w-20" dir="ltr">${price}</div>
+      <div class="flex-1 text-right flex flex-col justify-center pr-3">
+        <span class="font-headline-sm text-base">${escapeHtml(s.name)}</span>
+        ${metaRow}
+        ${category}
+      </div>
+    </div>`;
+}
+
+// ── External (Google) review card (Supabase `external_reviews`) ──────────────
+// Graceful degradation: author / rating / text / reviewed_at may be null.
+function externalReviewHTML(r) {
+  const author = escapeHtml(r.author || "משתמש Google");
+  const date = r.reviewed_at
+    ? new Date(r.reviewed_at).toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "numeric" })
+    : "";
+  const stars = r.rating != null
+    ? Array.from({ length: 5 }).map((_, i) =>
+        `<span class="material-symbols-outlined text-primary text-[14px]" style="font-variation-settings:'FILL' ${i < Math.round(r.rating) ? 1 : 0};">star</span>`
+      ).join("")
+    : "";
+  const source = r.source ? `<span class="text-[11px] text-text-muted">${escapeHtml(r.source)}</span>` : "";
+  return `
+    <div class="bg-surface-1 border border-border-light rounded-xl p-stack-md">
+      <div class="flex items-center justify-between mb-stack-sm">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary text-sm">
+            <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1;">person</span>
+          </div>
+          <span class="font-body-md text-body-md text-text-primary">${author}</span>
+        </div>
+        ${date ? `<span class="font-label-mono text-label-mono text-text-muted text-[11px]">${date}</span>` : ""}
+      </div>
+      ${stars ? `<div class="flex gap-0.5 mb-stack-sm" dir="ltr">${stars}</div>` : ""}
+      ${r.text ? `<p class="font-body-md text-body-md text-text-secondary text-sm text-right">${escapeHtml(r.text)}</p>` : ""}
+      ${source ? `<div class="mt-stack-sm">${source}</div>` : ""}
+    </div>`;
+}
+
 // ── Router (hash-based) ──────────────────────────────────────────────────────
 
 const VIEW_IDS = [
-  "view-home", "view-barber", "view-success", "view-bookings", "view-profile",
-  "view-splash", "view-role", "view-verify",
+  "view-home", "view-shops", "view-list", "view-favorites", "view-barber", "view-success",
+  "view-bookings", "view-profile", "view-splash", "view-role", "view-verify", "view-register",
 ];
-const ONBOARDING_VIEWS = ["view-splash", "view-role", "view-verify"];
+const ONBOARDING_VIEWS = ["view-splash", "view-role", "view-verify", "view-register"];
 
 function showView(id) {
   VIEW_IDS.forEach((v) => document.getElementById(v)?.classList.toggle("hidden", v !== id));
@@ -597,6 +940,15 @@ async function router() {
   if (barberMatch) {
     showView("view-barber");
     await renderBarberView(barberMatch[1]);
+  } else if (hash.startsWith("#/shops")) {
+    showView("view-shops");
+    renderAllShops();
+  } else if (hash.startsWith("#/list/")) {
+    showView("view-list");
+    renderListView(hash.split("/")[2]);
+  } else if (hash.startsWith("#/favorites")) {
+    showView("view-favorites");
+    renderFavoritesView();
   } else if (hash.startsWith("#/bookings")) {
     showView("view-bookings");
     renderBookingsView();
@@ -615,6 +967,9 @@ async function router() {
   } else if (hash.startsWith("#/verify")) {
     showView("view-verify");
     renderVerifyView();
+  } else if (hash.startsWith("#/register")) {
+    showView("view-register");
+    renderRegisterView();
   } else {
     showView("view-home");
   }
@@ -645,6 +1000,9 @@ async function renderBarberView(shopId) {
       </button>
       <button id="bp-share" class="absolute top-4 left-4 w-10 h-10 rounded-full bg-surface-1/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-text-primary">
         <span class="material-symbols-outlined">share</span>
+      </button>
+      <button id="bp-fav" class="absolute top-4 left-[60px] w-10 h-10 rounded-full bg-surface-1/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-text-primary">
+        <span id="bp-fav-icon" class="material-symbols-outlined">favorite</span>
       </button>
       <div class="absolute bottom-0 right-gutter translate-y-1/2">
         <div class="w-24 h-24 rounded-full border-2 border-primary overflow-hidden bg-surface-2 flex items-center justify-center shadow-[0_0_15px_rgba(239,178,0,0.15)]">
@@ -694,15 +1052,24 @@ async function renderBarberView(shopId) {
     <!-- Tabs -->
     <div class="border-b border-border-light sticky top-0 bg-background/90 backdrop-blur-xl z-30">
       <div class="flex px-gutter">
-        <button data-tab="services" class="bp-tab flex-1 py-4 text-center font-body-md text-body-md">שירותים</button>
-        <button data-tab="portfolio" class="bp-tab flex-1 py-4 text-center font-body-md text-body-md">תיק עבודות</button>
-        <button data-tab="reviews" class="bp-tab flex-1 py-4 text-center font-body-md text-body-md">חוות דעת</button>
+        <button data-tab="slots" class="bp-tab flex-1 py-4 text-center font-body-md text-sm whitespace-nowrap">תורים פנויים</button>
+        <button data-tab="services" class="bp-tab flex-1 py-4 text-center font-body-md text-sm whitespace-nowrap">שירותים</button>
+        <button data-tab="portfolio" class="bp-tab flex-1 py-4 text-center font-body-md text-sm whitespace-nowrap">תיק עבודות</button>
+        <button data-tab="reviews" class="bp-tab flex-1 py-4 text-center font-body-md text-sm whitespace-nowrap">חוות דעת</button>
       </div>
     </div>
 
-    <!-- Tab: Services (slots) — default -->
-    <section id="bp-services" class="px-gutter py-stack-lg">
+    <!-- Tab: Available Slots (live, via backend) — default -->
+    <section id="bp-slots-tab" class="px-gutter py-stack-lg">
       <div id="bp-slots" class="flex flex-col gap-3">
+        <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
+        <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
+      </div>
+    </section>
+
+    <!-- Tab: Services menu (from Supabase services table) -->
+    <section id="bp-services" class="px-gutter py-stack-lg hidden">
+      <div id="bp-service-menu" class="flex flex-col gap-3">
         <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
         <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
       </div>
@@ -737,6 +1104,10 @@ async function renderBarberView(shopId) {
         </div>
         <p class="font-body-md text-body-md text-text-secondary">מבוסס על ${shop.rating_count ?? 0} חוות דעת בגוגל</p>
       </div>` : ""}
+      <!-- Scraped Google reviews (external_reviews) load here -->
+      <div id="bp-external-reviews" class="flex flex-col gap-stack-sm mb-stack-lg">
+        <div class="h-20 bg-surface-2 rounded-xl border border-border-light animate-pulse"></div>
+      </div>
       <!-- User-submitted reviews load here -->
       <div id="bp-user-reviews" class="flex flex-col gap-stack-sm"></div>
     </section>`;
@@ -744,6 +1115,19 @@ async function renderBarberView(shopId) {
   document.getElementById("bp-back").addEventListener("click", () => { location.hash = "#/home"; });
   document.getElementById("bp-share").addEventListener("click", () => openShareSheet(shop));
   document.getElementById("bp-nav").addEventListener("click", () => openNavSheet(shop));
+
+  // Favorite (heart) toggle.
+  const favIcon = document.getElementById("bp-fav-icon");
+  const paintFav = (on) => {
+    favIcon.style.fontVariationSettings = on ? "'FILL' 1" : "'FILL' 0";
+    favIcon.classList.toggle("text-primary", on);
+  };
+  paintFav(isFavorite(shop.id));
+  document.getElementById("bp-fav").addEventListener("click", () => {
+    const on = toggleFavorite(shop.id);
+    paintFav(on);
+    toast(on ? "נשמר למועדפים" : "הוסר מהמועדפים");
+  });
 
   // Load real user reviews into the reviews tab.
   (async () => {
@@ -786,7 +1170,7 @@ async function renderBarberView(shopId) {
   })();
 
   // Tabs.
-  const tabPanels = { services: "bp-services", portfolio: "bp-portfolio", reviews: "bp-reviews" };
+  const tabPanels = { slots: "bp-slots-tab", services: "bp-services", portfolio: "bp-portfolio", reviews: "bp-reviews" };
   const setTab = (name) => {
     Object.entries(tabPanels).forEach(([t, id]) =>
       document.getElementById(id)?.classList.toggle("hidden", t !== name)
@@ -803,7 +1187,35 @@ async function renderBarberView(shopId) {
   view.querySelectorAll(".bp-tab").forEach((b) =>
     b.addEventListener("click", () => setTab(b.dataset.tab))
   );
-  setTab("services");
+  setTab("slots");
+
+  // Load services menu (real) into the Services tab.
+  (async () => {
+    const box = document.getElementById("bp-service-menu");
+    if (!box) return;
+    try {
+      const services = await fetchServices(shop.id);
+      box.innerHTML = services.length
+        ? services.map(serviceRowHTML).join("")
+        : `<p class="text-text-muted font-body-md py-6 text-center">תפריט השירותים עדיין לא זמין</p>`;
+    } catch (err) {
+      console.warn("fetchServices failed:", err?.message);
+      box.innerHTML = `<p class="text-text-muted font-body-md py-6 text-center">תפריט השירותים עדיין לא זמין</p>`;
+    }
+  })();
+
+  // Load scraped Google reviews (external_reviews) into the Reviews tab.
+  (async () => {
+    const box = document.getElementById("bp-external-reviews");
+    if (!box) return;
+    try {
+      const reviews = await fetchExternalReviews(shop.id);
+      box.innerHTML = reviews.length ? reviews.map(externalReviewHTML).join("") : "";
+    } catch (err) {
+      console.warn("fetchExternalReviews failed:", err?.message);
+      box.innerHTML = "";
+    }
+  })();
 
   // Load slots (real) + live updates into the Services tab.
   const fill = (slots) => {
@@ -1072,7 +1484,7 @@ async function renderProfileView() {
     <!-- Settings -->
     <section class="px-gutter flex flex-col gap-stack-sm">
       ${row("favorite", "המועדפים שלי", 'id="pf-bookings"')}
-      ${row("history", "תורים קודמים", 'id="pf-past-bookings"')}
+      ${row("history", "היסטוריית ההזמנות שלי", 'id="pf-past-bookings"')}
       ${row("credit_card", "אמצעי תשלום", 'id="pf-pay"')}
       ${row("language", "שפה · עברית", 'id="pf-lang"')}
       ${row("notifications", "התראות", 'id="pf-notif"')}
@@ -1099,7 +1511,7 @@ async function renderProfileView() {
   applyAvatar();
 
   // Row actions.
-  document.getElementById("pf-bookings").addEventListener("click", () => toast("המועדפים בקרוב"));
+  document.getElementById("pf-bookings").addEventListener("click", () => { location.hash = "#/favorites"; });
   document.getElementById("pf-past-bookings").addEventListener("click", () => { location.hash = "#/bookings"; });
   document.getElementById("pf-pay").addEventListener("click", openPaymentsSheet);
   document.getElementById("pf-lang").addEventListener("click", () => openProfileSheet("language"));
@@ -1233,13 +1645,60 @@ function renderVerifyView() {
     document.getElementById("vf-confirm").addEventListener("click", () => {
       const code = otps.map((o) => o.value).join("");
       if (code.length < 4) { toast("הזן קוד בן 4 ספרות"); return; }
-      localStorage.setItem("torli_onboarded", "1");
-      toast("ברוך הבא! 🎉");
-      location.hash = "#/home";
+      // Phone verified — collect name (+ optional photo) before entering the app.
+      location.hash = "#/register";
     });
   };
 
   phoneStep();
+}
+
+// ── View: Registration (name + optional photo) ───────────────────────────────
+// Final onboarding step. Writes torli_customer_name (+ avatar) — the same keys
+// the profile and booking-confirm sheet read — then marks onboarding complete.
+function renderRegisterView() {
+  const view = els.viewRegister();
+  const phone = localStorage.getItem("torli_customer_phone") || "";
+  const namePrefill = localStorage.getItem("torli_customer_name") || "";
+
+  view.innerHTML = `
+    <main class="min-h-screen flex flex-col px-gutter py-section-gap">
+      <h1 class="font-headline-lg-mobile text-headline-lg-mobile mb-stack-sm">נעים להכיר</h1>
+      <p class="font-body-md text-body-md text-text-secondary mb-section-gap">עוד פרט אחד ואנחנו מתחילים.</p>
+
+      <!-- Optional profile photo -->
+      <button id="rg-avatar" data-avatar-slot="lg"
+              class="self-center w-24 h-24 rounded-full border-2 border-primary overflow-hidden bg-surface-2 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(239,178,0,0.15)] mb-stack-sm">
+        <span class="material-symbols-outlined text-3xl" style="font-variation-settings:'FILL' 1;">person</span>
+      </button>
+      <p class="text-center font-label-mono text-label-mono text-text-muted text-xs mb-section-gap">הוספת תמונה (אופציונלי)</p>
+
+      <!-- Full name -->
+      <label class="font-body-md text-text-secondary text-sm mb-stack-sm">שם מלא</label>
+      <input id="rg-name" type="text" value="${namePrefill}" placeholder="שם מלא"
+             class="w-full bg-surface-2 border border-border-light rounded-[20px] h-14 px-4 text-right font-body-md text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all mb-stack-lg"/>
+
+      <!-- Phone (verified, read-only) -->
+      <label class="font-body-md text-text-secondary text-sm mb-stack-sm">מספר טלפון</label>
+      <input id="rg-phone" type="tel" value="${phone}" readonly dir="ltr"
+             class="w-full bg-surface-1 border border-border-light rounded-[20px] h-14 px-4 text-left font-label-mono text-label-mono text-text-secondary focus:outline-none"/>
+
+      <div class="flex-grow"></div>
+      <button id="rg-continue" class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-xl active:scale-[0.98] transition-transform">המשך</button>
+    </main>`;
+
+  // Tapping the avatar opens the shared photo sheet (uploads to Storage).
+  document.getElementById("rg-avatar").addEventListener("click", openPhotoSheet);
+  applyAvatar(); // reflect an already-chosen photo in the avatar slot
+
+  document.getElementById("rg-continue").addEventListener("click", () => {
+    const name = document.getElementById("rg-name").value.trim();
+    if (!name) { toast("הזן שם מלא"); return; }
+    localStorage.setItem("torli_customer_name", name);
+    localStorage.setItem("torli_onboarded", "1");
+    toast("ברוך הבא! 🎉");
+    location.hash = "#/home";
+  });
 }
 
 // ── Search: client-side filter by name/address ───────────────────────────────
@@ -1247,7 +1706,7 @@ function renderVerifyView() {
 function handleSearch() {
   const input = els.searchInput();
   searchQuery = input?.value.trim() ?? "";
-  renderShops(visibleShops());
+  renderShops();
 }
 
 // ── Location city picker ──────────────────────────────────────────────────────
@@ -1271,12 +1730,6 @@ function openLocationSheet() {
     backdrop.className =
       "fixed inset-0 z-[70] bg-black/60 flex items-end justify-center " +
       "transition-opacity duration-200";
-    const cities = CITY_LIST.map((c) => `
-      <button data-lat="${c.lat}" data-lng="${c.lng}" data-name="${c.name}"
-              class="loc-city w-full flex items-center gap-stack-md p-stack-md rounded-xl hover:bg-surface-2 transition-colors text-right">
-        <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">location_city</span>
-        <span class="font-body-md text-body-md text-text-primary">${c.name}</span>
-      </button>`).join("");
     backdrop.innerHTML = `
       <div id="location-sheet"
            class="w-full max-w-[430px] bg-surface-container border-t border-border-light
@@ -1292,7 +1745,13 @@ function openLocationSheet() {
           <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">my_location</span>
           <span class="font-body-md font-medium text-primary">השתמש במיקום שלי</span>
         </button>
-        <div class="flex flex-col gap-1">${cities}</div>
+        <div class="relative mb-stack-md">
+          <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary">search</span>
+          <input id="loc-search" type="text" autocomplete="off"
+                 class="w-full bg-surface-1 border border-border-light rounded-xl h-12 pr-10 pl-4 font-body-md text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 transition-colors"
+                 placeholder="חפש עיר או כתובת..." />
+        </div>
+        <div id="loc-results" class="flex flex-col gap-1 max-h-[40vh] overflow-y-auto"></div>
       </div>`;
     document.body.appendChild(backdrop);
 
@@ -1304,26 +1763,84 @@ function openLocationSheet() {
     backdrop.querySelector("#loc-close").addEventListener("click", close);
     backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(); });
 
-    backdrop.querySelector("#loc-gps").addEventListener("click", async () => {
+    backdrop.querySelector("#loc-gps").addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      const label = btn.querySelector("span.font-body-md");
+      const original = label ? label.textContent : "";
+      btn.disabled = true;
+      if (label) label.textContent = "מאתר…";
+      const pos = await locateSafely();
+      btn.disabled = false;
+      if (label) label.textContent = original;
       close();
-      try {
-        const pos = await getCurrentPosition();
+      if (pos) {
         await setLocation(pos, { label: "מיקומך" });
-      } catch {
+      } else {
+        toast("לא הצלחנו לאתר אותך — מציג ירושלים");
         await setLocation(DEFAULT_POSITION, { label: "ירושלים" });
       }
     });
-    backdrop.querySelectorAll(".loc-city").forEach((btn) => {
-      btn.addEventListener("click", async () => {
+    // Dynamic city search: live-filter the known list, geocode free text on miss.
+    const input = backdrop.querySelector("#loc-search");
+    const results = backdrop.querySelector("#loc-results");
+
+    const cityRowHTML = (c) => `
+      <button data-lat="${c.lat}" data-lng="${c.lng}" data-name="${escapeHtml(c.name)}"
+              class="loc-city w-full flex items-center gap-stack-md p-stack-md rounded-xl hover:bg-surface-2 transition-colors text-right">
+        <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">location_city</span>
+        <span class="font-body-md text-body-md text-text-primary">${escapeHtml(c.name)}</span>
+      </button>`;
+
+    const renderResults = (query) => {
+      const q = (query || "").trim();
+      const matches = q ? CITY_LIST.filter((c) => c.name.includes(q)) : CITY_LIST;
+      if (matches.length) {
+        results.innerHTML = matches.map(cityRowHTML).join("");
+      } else {
+        results.innerHTML = `
+          <button class="loc-geocode w-full flex items-center gap-stack-md p-stack-md rounded-xl hover:bg-surface-2 transition-colors text-right">
+            <span class="material-symbols-outlined text-primary">travel_explore</span>
+            <span class="font-body-md text-body-md text-text-primary">חפש "${escapeHtml(q)}" במפה</span>
+          </button>`;
+      }
+    };
+
+    input.addEventListener("input", () => renderResults(input.value));
+
+    results.addEventListener("click", async (ev) => {
+      const cityBtn = ev.target.closest(".loc-city");
+      if (cityBtn) {
         close();
-        const lat = parseFloat(btn.dataset.lat);
-        const lng = parseFloat(btn.dataset.lng);
-        await setLocation({ lat, lng }, { label: btn.dataset.name });
-      });
+        await setLocation(
+          { lat: parseFloat(cityBtn.dataset.lat), lng: parseFloat(cityBtn.dataset.lng) },
+          { label: cityBtn.dataset.name }
+        );
+        return;
+      }
+      const geoBtn = ev.target.closest(".loc-geocode");
+      if (geoBtn) {
+        const q = input.value.trim();
+        if (!q) return;
+        geoBtn.disabled = true;
+        try {
+          const r = await geocodeAddress(q);
+          close();
+          await setLocation({ lat: r.lat, lng: r.lng }, { label: r.label || q });
+        } catch {
+          geoBtn.disabled = false;
+          toast("לא נמצאה כתובת כזו");
+        }
+      }
     });
   }
 
   const sheet = backdrop.querySelector("#location-sheet");
+  // Reset the search to the full city list each time the sheet opens.
+  const searchInput = backdrop.querySelector("#loc-search");
+  if (searchInput) {
+    searchInput.value = "";
+    searchInput.dispatchEvent(new Event("input"));
+  }
   backdrop.classList.remove("opacity-0", "pointer-events-none");
   requestAnimationFrame(() => sheet.classList.remove("translate-y-full"));
 }
@@ -1861,21 +2378,35 @@ function openPhotoSheet() {
     else input.removeAttribute("capture");
     input.click();
   };
-  input.addEventListener("change", () => {
-    const file = input.files?.[0];
-    if (!file) return;
+  // Save a local data-URL copy as a fallback when Storage upload fails.
+  const saveLocal = (file) => {
     const reader = new FileReader();
     reader.onload = () => {
       try {
         localStorage.setItem("torli_avatar", reader.result);
         applyAvatar();
-        toast("התמונה עודכנה");
+        toast("התמונה נשמרה");
       } catch {
         toast("התמונה גדולה מדי");
       }
-      close();
     };
     reader.readAsDataURL(file);
+  };
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    close();
+    toast("מעלה תמונה…");
+    try {
+      // Upload to the Supabase `avatars` bucket; store the public URL.
+      const url = await uploadAvatar(file, store.get().userToken);
+      localStorage.setItem("torli_avatar", url);
+      applyAvatar();
+      toast("התמונה עודכנה");
+    } catch (err) {
+      console.warn("avatar upload failed, saving locally:", err?.message);
+      saveLocal(file);
+    }
   });
   backdrop.querySelector("#ph-camera").addEventListener("click", () => pick(true));
   backdrop.querySelector("#ph-gallery").addEventListener("click", () => pick(false));
@@ -1907,18 +2438,29 @@ const PAYMENT_OPTIONS = [
   { value: "visa", icon: "credit_card", label: "Visa" },
 ];
 
+// Saved cards added via the add-card form (masked — last4 + brand only).
+function getSavedCards() {
+  try { return JSON.parse(localStorage.getItem("torli_pay_cards") || "[]"); }
+  catch { return []; }
+}
+
 function openPaymentsSheet() {
   const current = localStorage.getItem("torli_pay_method") || "apple_pay";
-  const rows = PAYMENT_OPTIONS.map((p) => `
-    <button data-val="${p.value}" class="pay-opt w-full flex items-center gap-stack-md p-stack-md rounded-xl border transition-colors text-right ${p.value === current ? "border-primary bg-primary/10" : "border-border-light bg-surface-1 hover:bg-surface-2"}">
-      <span class="material-symbols-outlined ${p.value === current ? "text-primary" : "text-text-secondary"}">${p.icon}</span>
-      <span class="flex-1 text-right font-body-md text-body-md text-text-primary">${p.label}</span>
-      <span class="material-symbols-outlined text-primary ${p.value === current ? "" : "opacity-0"}">check_circle</span>
-    </button>`).join("");
+  const optRow = (val, icon, label, sub) => `
+    <button data-val="${val}" class="pay-opt w-full flex items-center gap-stack-md p-stack-md rounded-xl border transition-colors text-right ${val === current ? "border-primary bg-primary/10" : "border-border-light bg-surface-1 hover:bg-surface-2"}">
+      <span class="material-symbols-outlined ${val === current ? "text-primary" : "text-text-secondary"}">${icon}</span>
+      <span class="flex-1 text-right font-body-md text-body-md text-text-primary">${escapeHtml(label)}${sub ? `<span class="block font-label-mono text-label-mono text-text-muted text-[11px]">${escapeHtml(sub)}</span>` : ""}</span>
+      <span class="material-symbols-outlined text-primary ${val === current ? "" : "opacity-0"}">check_circle</span>
+    </button>`;
+  const rows = [
+    ...PAYMENT_OPTIONS.map((p) => optRow(p.value, p.icon, p.label)),
+    ...getSavedCards().map((c) => optRow(`card:${c.last4}`, "credit_card", c.brand, `•••• ${c.last4}`)),
+  ].join("");
+
   const { backdrop, close } = genericSheet(`
     <h2 class="font-headline-md text-headline-md mb-stack-lg">אמצעי תשלום</h2>
     <div class="flex flex-col gap-stack-sm mb-stack-lg">${rows}</div>
-    <button class="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border-light text-text-secondary font-body-md">
+    <button id="pay-add" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border-light text-text-secondary font-body-md hover:bg-surface-2 transition-colors">
       <span class="material-symbols-outlined">add</span>הוסף אמצעי תשלום
     </button>`);
   backdrop.querySelectorAll(".pay-opt").forEach((btn) =>
@@ -1928,6 +2470,78 @@ function openPaymentsSheet() {
       close();
     })
   );
+  backdrop.querySelector("#pay-add").addEventListener("click", () => { close(); openAddCardSheet(); });
+}
+
+// Add-card form with field validation + a mock verification step.
+function openAddCardSheet() {
+  const { backdrop, close } = genericSheet(`
+    <h2 class="font-headline-md text-headline-md mb-stack-lg">הוספת כרטיס אשראי</h2>
+    <label class="font-body-md text-text-secondary text-sm">מספר כרטיס</label>
+    <input id="cc-number" inputmode="numeric" dir="ltr" placeholder="0000 0000 0000 0000" maxlength="23"
+           class="w-full bg-surface-1 border border-border-light rounded-xl h-12 px-4 mt-stack-sm mb-stack-md text-left font-label-mono text-label-mono text-text-primary tracking-widest focus:outline-none focus:border-primary"/>
+    <div class="flex gap-3 mb-stack-md">
+      <div class="flex-1">
+        <label class="font-body-md text-text-secondary text-sm">תוקף</label>
+        <input id="cc-exp" inputmode="numeric" dir="ltr" placeholder="MM/YY" maxlength="5"
+               class="w-full bg-surface-1 border border-border-light rounded-xl h-12 px-4 mt-stack-sm text-center font-label-mono text-label-mono text-text-primary focus:outline-none focus:border-primary"/>
+      </div>
+      <div class="flex-1">
+        <label class="font-body-md text-text-secondary text-sm">CVV</label>
+        <input id="cc-cvv" inputmode="numeric" dir="ltr" placeholder="123" maxlength="4"
+               class="w-full bg-surface-1 border border-border-light rounded-xl h-12 px-4 mt-stack-sm text-center font-label-mono text-label-mono text-text-primary focus:outline-none focus:border-primary"/>
+      </div>
+    </div>
+    <p id="cc-error" class="font-body-md text-error text-sm mb-stack-md hidden"></p>
+    <button id="cc-submit" class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+      <span id="cc-submit-label">אמת ושמור</span>
+    </button>`);
+
+  const num = backdrop.querySelector("#cc-number");
+  const exp = backdrop.querySelector("#cc-exp");
+  const cvv = backdrop.querySelector("#cc-cvv");
+  const err = backdrop.querySelector("#cc-error");
+  const submit = backdrop.querySelector("#cc-submit");
+  const label = backdrop.querySelector("#cc-submit-label");
+
+  // Live formatting: group card number in 4s, auto-slash the expiry.
+  num.addEventListener("input", () => {
+    const digits = num.value.replace(/\D/g, "").slice(0, 19);
+    num.value = digits.replace(/(.{4})/g, "$1 ").trim();
+  });
+  exp.addEventListener("input", () => {
+    let d = exp.value.replace(/\D/g, "").slice(0, 4);
+    if (d.length >= 3) d = d.slice(0, 2) + "/" + d.slice(2);
+    exp.value = d;
+  });
+  cvv.addEventListener("input", () => { cvv.value = cvv.value.replace(/\D/g, "").slice(0, 4); });
+
+  const brandOf = (digits) =>
+    digits[0] === "4" ? "Visa" : "35".includes(digits[0]) ? "Mastercard" : digits[0] === "3" ? "Amex" : "כרטיס אשראי";
+
+  submit.addEventListener("click", () => {
+    const digits = num.value.replace(/\D/g, "");
+    const [mm, yy] = exp.value.split("/");
+    const showErr = (m) => { err.textContent = m; err.classList.remove("hidden"); };
+    err.classList.add("hidden");
+
+    if (digits.length < 13 || digits.length > 19) return showErr("מספר כרטיס לא תקין");
+    if (!mm || !yy || Number(mm) < 1 || Number(mm) > 12) return showErr("תאריך תוקף לא תקין");
+    if (cvv.value.length < 3) return showErr("CVV לא תקין");
+
+    // Mock verification step.
+    submit.disabled = true;
+    label.textContent = "מאמת…";
+    setTimeout(() => {
+      const cards = getSavedCards();
+      const last4 = digits.slice(-4);
+      cards.push({ last4, brand: brandOf(digits), exp: exp.value });
+      localStorage.setItem("torli_pay_cards", JSON.stringify(cards));
+      localStorage.setItem("torli_pay_method", `card:${last4}`);
+      toast("האשראי אומת ונשמר ✓");
+      close();
+    }, 1200);
+  });
 }
 
 // ── Confirm & Pay bottom-sheet (Stitch frame "אישור ותשלום") ─────────────────
@@ -2187,6 +2801,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Location picker: tap the location label to open the city picker.
   document.getElementById("location-btn")?.addEventListener("click", openLocationSheet);
+
+  // "See All" -> full shop list; back arrow -> home.
+  document.getElementById("see-all-shops")?.addEventListener("click", () => { location.hash = "#/shops"; });
+  document.getElementById("shops-back")?.addEventListener("click", () => { location.hash = "#/home"; });
+
+  // Carousel "See All" -> full-list pages; their back arrows -> home.
+  document.getElementById("see-all-nearby")?.addEventListener("click", () => { location.hash = "#/list/nearby"; });
+  document.getElementById("see-all-deals")?.addEventListener("click", () => { location.hash = "#/list/deals"; });
+  document.getElementById("see-all-top")?.addEventListener("click", () => { location.hash = "#/list/top"; });
+  document.getElementById("list-back")?.addEventListener("click", () => { location.hash = "#/home"; });
+  document.getElementById("fav-back")?.addEventListener("click", () => { location.hash = "#/home"; });
+
+  // "Search this area" -> refetch barbershops for the current map viewport.
+  document.getElementById("search-area")?.addEventListener("click", fetchShopsForView);
 
   // Filter button (tune/filter_list icon) -> open the filter bottom-sheet.
   document.querySelectorAll(".material-symbols-outlined").forEach((icon) => {

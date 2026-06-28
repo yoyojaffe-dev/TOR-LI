@@ -208,6 +208,15 @@
   <div id="map-panel" class="px-gutter mb-6 hidden">
     <div class="relative">
       <div id="map" class="w-full h-[480px] rounded-2xl overflow-hidden border border-border-light"></div>
+      <!-- "Search this area" — appears after the user pans/zooms; refetches by viewport -->
+      <button id="search-area"
+              class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-20
+                     bg-surface-1/95 backdrop-blur-md border border-primary/40 rounded-full
+                     px-4 py-2 flex items-center gap-2 shadow-[0_8px_30px_rgba(0,0,0,0.5)]
+                     active:scale-95 transition-transform disabled:opacity-60">
+        <span id="search-area-icon" class="material-symbols-outlined text-primary text-[18px]">search</span>
+        <span class="font-body-md text-body-md font-medium text-text-primary">חפש באזור זה</span>
+      </button>
       <!-- Floating barber preview card (Stitch map motif) -->
       <div id="map-preview"
            class="absolute bottom-3 left-3 right-3 z-10 translate-y-[130%] opacity-0 pointer-events-none
@@ -245,7 +254,13 @@
     <section class="mb-section-gap">
       <div class="px-gutter flex justify-between items-end mb-stack-md">
         <h2 class="font-headline-md text-headline-md">זמינים<br/>בקרבתך</h2>
-        <span class="font-body-md text-text-muted text-sm" id="shop-count"></span>
+        <div class="flex items-center gap-3">
+          <span class="font-body-md text-text-muted text-sm" id="shop-count"></span>
+          <button id="see-all-shops"
+                  class="hidden font-label-mono text-label-mono text-sm text-primary hover:underline">
+            ראה הכל ←
+          </button>
+        </div>
       </div>
 
       <!-- Horizontal scroll of barber cards; app.js renders into this -->
@@ -262,9 +277,27 @@
     <section id="nearby-slots-section" class="mb-section-gap px-gutter hidden">
       <div class="flex justify-between items-end mb-stack-md">
         <h2 class="font-headline-md text-headline-md">תורים זמינים<br/>בקרבתך</h2>
-        <span class="font-body-md text-text-muted text-sm" id="nearby-slots-count"></span>
+        <button id="see-all-nearby" class="hidden font-label-mono text-label-mono text-sm text-primary hover:underline">ראה הכל ←</button>
       </div>
       <div id="nearby-slots-list" class="flex flex-col gap-3"></div>
+    </section>
+
+    <!-- Last Minute Deals: soonest free slots (tap → confirm → book) -->
+    <section id="deals-section" class="mb-section-gap px-gutter hidden">
+      <div class="flex justify-between items-end mb-stack-md">
+        <h2 class="font-headline-md text-headline-md">מבצעי<br/>דקה תשעים</h2>
+        <button id="see-all-deals" class="hidden font-label-mono text-label-mono text-sm text-primary hover:underline">ראה הכל ←</button>
+      </div>
+      <div id="deals-list" class="flex flex-col gap-3"></div>
+    </section>
+
+    <!-- Top Rated Near You: highest-rated nearby shops -->
+    <section id="top-rated-section" class="mb-section-gap hidden">
+      <div class="px-gutter flex justify-between items-end mb-stack-md">
+        <h2 class="font-headline-md text-headline-md">מדורגים<br/>בקרבתך</h2>
+        <button id="see-all-top" class="hidden font-label-mono text-label-mono text-sm text-primary hover:underline">ראה הכל ←</button>
+      </div>
+      <div id="top-rated-list" class="flex overflow-x-auto hide-scrollbar gap-4 px-gutter pb-4"></div>
     </section>
 
     <!-- Slots for selected barbershop (hidden until a shop is selected) -->
@@ -292,6 +325,49 @@
   </div><!-- /view-home -->
 
   <!-- ═══ Other views (rendered by app.js / router) ═══ -->
+
+  <!-- Full shop list ("See All" destination) -->
+  <div id="view-shops" class="hidden">
+    <header class="px-gutter pt-8 pb-4 flex items-center gap-3 sticky top-0 bg-background/90 backdrop-blur-xl z-30">
+      <button id="shops-back" class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-primary">
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+      <div class="flex flex-col">
+        <h1 class="font-headline-md text-headline-md">כל הספרים</h1>
+        <span class="font-body-md text-text-muted text-sm" id="all-shops-count"></span>
+      </div>
+    </header>
+    <div id="all-shops-list" class="flex flex-col gap-4 px-gutter pb-28"></div>
+  </div>
+
+  <!-- Generic full-list ("See All" for slot/top-rated carousels) -->
+  <div id="view-list" class="hidden">
+    <header class="px-gutter pt-8 pb-4 flex items-center gap-3 sticky top-0 bg-background/90 backdrop-blur-xl z-30">
+      <button id="list-back" class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-primary">
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+      <div class="flex flex-col">
+        <h1 class="font-headline-md text-headline-md" id="list-title"></h1>
+        <span class="font-body-md text-text-muted text-sm" id="list-count"></span>
+      </div>
+    </header>
+    <div id="list-items" class="flex flex-col gap-3 px-gutter pb-28"></div>
+  </div>
+
+  <!-- Favorites ("המועדפים שלי") -->
+  <div id="view-favorites" class="hidden">
+    <header class="px-gutter pt-8 pb-4 flex items-center gap-3 sticky top-0 bg-background/90 backdrop-blur-xl z-30">
+      <button id="fav-back" class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-primary">
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+      <div class="flex flex-col">
+        <h1 class="font-headline-md text-headline-md">המועדפים שלי</h1>
+        <span class="font-body-md text-text-muted text-sm" id="fav-count"></span>
+      </div>
+    </header>
+    <div id="favorites-list" class="flex flex-col gap-4 px-gutter pb-28"></div>
+  </div>
+
   <div id="view-barber" class="hidden"></div>
   <div id="view-success" class="hidden"></div>
   <div id="view-bookings" class="hidden"></div>
@@ -300,6 +376,7 @@
   <div id="view-splash" class="hidden"></div>
   <div id="view-role" class="hidden"></div>
   <div id="view-verify" class="hidden"></div>
+  <div id="view-register" class="hidden"></div>
 
   <!-- Bottom Navigation -->
   <nav id="bottom-nav" class="bg-surface-1/90 font-label-mono text-label-mono fixed bottom-0 w-full max-w-[430px] z-50 h-20 backdrop-blur-2xl flex flex-row-reverse justify-around items-center px-4 pb-safe border-t border-border-light"

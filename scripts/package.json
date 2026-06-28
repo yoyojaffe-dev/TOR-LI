@@ -1,0 +1,12 @@
+{
+  "name": "torli-seed-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One-off Node scripts for seeding the Tor-li Supabase database.",
+  "scripts": {
+    "seed": "node seed_barbershops.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

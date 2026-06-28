@@ -11,8 +11,10 @@ site. Hebrew/RTL frontend.
 - **Frontend:** buildless vanilla JS ES modules + Tailwind (CDN).
 - **Live Supabase project:** `ekugfzrmitvoiamevtfa`.
 
-> **Status:** Foundation phase complete — the four-agent data pipeline and full barbershop-profile
-> schema are live on `main`. Frontend phase next.
+> **Status:** Foundation phase complete on `main` (four-agent pipeline + full profile schema,
+> live). **Consumer Frontend phases 1–5.1** built on `develop-phase-4` — barbershop profiles, a
+> viewport-driven map, registration/onboarding, an end-to-end booking flow, favorites, payments,
+> and home polish. Barber Admin side is next.
 
 ---
 
@@ -39,6 +41,57 @@ Discovery ──▶ barbershops ──▶ Scraping ──▶ available_slots ─
 
 ---
 
+## Consumer Frontend (Phases 1–5.1)
+
+A **buildless** single-page app in `frontend/consumer/` — vanilla JS ES modules + Tailwind (CDN),
+no bundler, no `package.json`. Hash-router SPA, Hebrew/RTL, dark theme with gold accent. The UI
+targets the **Stitch** design mockups in `frontend/stitch/` (the shared design system: `#131315`
+background, `#efb200`/`#ffd174` gold, `surface-*` tiers, `rounded-[20px]` cards, floating-label
+inputs, glassmorphic bottom sheets).
+
+### Architecture — anonymous-user model
+There is **no auth** (by design). Each browser gets a stable `torli_user_token`
+(`crypto.randomUUID()`, in `localStorage`) that scopes everything user-owned. The app reads data
+two ways:
+- **FastAPI backend** (`js/api.js`) — barbershops, slots, lock→confirm booking, in-app reviews.
+- **Direct Supabase anon client** (`js/supabaseClient.js`) — public-read tables (`services`,
+  `staff`, `external_reviews`) and Storage uploads. RLS enforces anon read-only.
+
+**Client state lives in `localStorage`** (per browser): `torli_user_token`, `torli_onboarded`,
+`torli_customer_name`/`_phone`, `torli_avatar` (Supabase Storage URL), `torli_favorites` (shop-id
+array), `torli_pay_method` / `torli_pay_cards` (masked). A tiny observable store (`js/state.js`)
+holds in-memory session state (position, fetched shops/slots, map, active lock).
+
+### Key features
+| Feature | What it does | Where |
+|---|---|---|
+| **Barbershop profile** | Hero + 4 tabs: שירותים (menu), תורים פנויים (live slots), תיק עבודות (portfolio), חוות דעת (Google + in-app reviews). Graceful-degrades on null price/duration/barber. | `renderBarberView`, `js/shopData.js` |
+| **Location / onboarding** | Non-hanging geolocation (`locateSafely` races a hard timeout → Jerusalem fallback, never freezes). Dynamic city search with geocode fallback. | `js/geo.js`, `renderVerifyView` |
+| **Map** | Google Maps dark style; gold pins; **viewport-driven fetch** — pan/zoom → "חפש באזור זה" reloads shops for the visible bounds (center+radius via the radius API). Pin → preview → profile. | `js/map.js`, `fetchShopsForView` |
+| **Home** | Capped-to-5 carousels (תורים זמינים בקרבתך / מבצעי דקה תשעים / מדורגים בקרבתך) each with a "ראה הכל" full-list page (`#/list/<kind>`); 5-shop rail + `#/shops`. | `renderNearbySlots`/`renderDeals`/`renderTopRated`/`renderListView` |
+| **Filters** | Service / budget / date / rating / distance / open-now; Apply cascades to **map pins + list + carousels** from one `visibleShops()`/`visibleSlots()` pipeline. | `openFilterSheet`, `visibleShops` |
+| **Registration** | After phone-OTP, a registration step captures Name + optional **profile photo → Supabase Storage** (public `avatars` bucket, keyed by `user_token`; base64 fallback). Auto-populates profile + booking. | `renderRegisterView`, `js/storage.js` |
+| **Booking flow** | Tap slot → pessimistic **lock** (300s countdown) → confirm sheet **pre-filled** with registered name/phone → `POST /bookings/confirm` → slot booked in DB → success. History via `/bookings`. | `bookSlot`/`booking.js`/`openConfirmSheet` |
+| **Favorites** | Heart on the profile toggles a `localStorage` favorites set; "המועדפים שלי" (`#/favorites`) lists saved shops. | `toggleFavorite`, `renderFavoritesView` |
+| **Payments** | Add-card form (number/expiry/CVV, live formatting + validation) with a mock "מאמת…" verification step; saves a masked card. | `openAddCardSheet` |
+
+### Mock data (`scripts/` at repo root)
+Node scripts (`@supabase/supabase-js`, service role from root `.env`) that seed realistic data for
+testing — kept idempotent and tagged `google_place_id = 'seed:%'` for easy cleanup:
+- `seed_barbershops.js` — 57 shops across 13 cities (Kiryat Shmona → Eilat) with PostGIS locations.
+- `seed_relations.js` — per shop: 2–4 staff, a service menu, and future free slots for every barber.
+
+### Run the consumer app
+```bash
+# from repo root — backend (data) + static frontend
+cd backend && ../venv/bin/uvicorn app.main:app --port 8000 &
+cd frontend/consumer && python3 -m http.server 3001    # open http://localhost:3001
+```
+First load runs onboarding (splash → role → verify → register). To replay: `localStorage.clear()`
+in the console, then reload.
+
+---
+
 ## Repository structure
 
 ```
@@ -55,8 +108,12 @@ Discovery ──▶ barbershops ──▶ Scraping ──▶ available_slots ─
 │   ├── tests/          # pytest suite (mocked — no network)
 │   └── pyproject.toml  # mypy/ruff/black/coverage config
 ├── supabase/
-│   └── migrations/     # SQL schema + SECURITY DEFINER RPCs (applied to the live project)
-├── frontend/           # buildless consumer app + barber dashboard (Frontend phase)
+│   └── migrations/     # SQL schema + SECURITY DEFINER RPCs + avatars Storage bucket
+├── frontend/
+│   ├── consumer/       # buildless SPA (js/app.js orchestrator, api/geo/map/state/storage/shopData)
+│   ├── dashboard/      # barber dashboard (React-via-CDN; next phase)
+│   └── stitch/         # design-reference mockups the UI targets
+├── scripts/            # Node seed scripts (mock barbershops + relations)
 └── specs/              # reverse-engineered spec
 ```
 
