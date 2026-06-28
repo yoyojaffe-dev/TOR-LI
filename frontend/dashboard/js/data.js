@@ -6,16 +6,25 @@ async function uid() {
   return data.user?.id;
 }
 
+// Unwrap a Supabase response, logging + rethrowing on error so failures are
+// visible in the console (and surfaced by the dashboard's loaders) instead of
+// hanging silently.
+function unwrap(label, res) {
+  if (res.error) {
+    console.error(`[data] ${label} failed:`, res.error.message || res.error, res.error);
+    throw new Error(`${label}: ${res.error.message || res.error}`);
+  }
+  return res.data;
+}
+
 // The barbershop owned by the current barber (null during onboarding).
 export async function getMyShop() {
   const me = await uid();
   if (!me) return null;
-  const { data, error } = await supabase
-    .from("barbershops")
-    .select("*")
-    .eq("owner_id", me)
-    .limit(1);
-  if (error) throw error;
+  const data = unwrap(
+    "getMyShop",
+    await supabase.from("barbershops").select("*").eq("owner_id", me).limit(1)
+  );
   return data?.[0] || null;
 }
 
@@ -52,26 +61,31 @@ export async function updateShop(shopId, patch) {
 // Appointments = consumer bookings for this owner's shop (RLS already scopes to
 // the owner). Joined with the slot for service/time/price.
 export async function listAppointments() {
-  const { data, error } = await supabase
-    .from("bookings")
-    .select(
-      "id,customer_name,customer_phone,status,created_at," +
-        "slot:available_slots(id,service_name,slot_time,price,staff_id,barbershop_id,status)"
-    )
-    .order("created_at", { ascending: false });
-  if (error) throw error;
+  const data = unwrap(
+    "listAppointments",
+    await supabase
+      .from("bookings")
+      .select(
+        "id,customer_name,customer_phone,status,created_at," +
+          "slot:available_slots(id,service_name,slot_time,price,staff_id,barbershop_id,status)"
+      )
+      .order("created_at", { ascending: false })
+  );
   return (data || []).filter((b) => b.slot); // drop any orphaned rows
 }
 
 // ── Slots ────────────────────────────────────────────────────────────────────
 export async function listSlots(shopId) {
-  const { data, error } = await supabase
-    .from("available_slots")
-    .select("id,service_name,slot_time,price,status,staff_id")
-    .eq("barbershop_id", shopId)
-    .order("slot_time", { ascending: true });
-  if (error) throw error;
-  return data || [];
+  return (
+    unwrap(
+      "listSlots",
+      await supabase
+        .from("available_slots")
+        .select("id,service_name,slot_time,price,status,staff_id")
+        .eq("barbershop_id", shopId)
+        .order("slot_time", { ascending: true })
+    ) || []
+  );
 }
 export async function createSlot(shopId, { service_name, price, slot_time, staff_id }) {
   const { data, error } = await supabase
@@ -89,13 +103,16 @@ export async function deleteSlot(id) {
 
 // ── Services ─────────────────────────────────────────────────────────────────
 export async function listServices(shopId) {
-  const { data, error } = await supabase
-    .from("services")
-    .select("id,name,category,price,duration_mins,staff_id")
-    .eq("shop_id", shopId)
-    .order("price", { ascending: true });
-  if (error) throw error;
-  return data || [];
+  return (
+    unwrap(
+      "listServices",
+      await supabase
+        .from("services")
+        .select("id,name,category,price,duration_mins,staff_id")
+        .eq("shop_id", shopId)
+        .order("price", { ascending: true })
+    ) || []
+  );
 }
 export async function createService(shopId, s) {
   const { data, error } = await supabase
@@ -117,13 +134,16 @@ export async function deleteService(id) {
 
 // ── Staff ────────────────────────────────────────────────────────────────────
 export async function listStaff(shopId) {
-  const { data, error } = await supabase
-    .from("staff")
-    .select("id,name,is_active")
-    .eq("shop_id", shopId)
-    .order("name", { ascending: true });
-  if (error) throw error;
-  return data || [];
+  return (
+    unwrap(
+      "listStaff",
+      await supabase
+        .from("staff")
+        .select("id,name,is_active")
+        .eq("shop_id", shopId)
+        .order("name", { ascending: true })
+    ) || []
+  );
 }
 export async function createStaff(shopId, name) {
   const { data, error } = await supabase

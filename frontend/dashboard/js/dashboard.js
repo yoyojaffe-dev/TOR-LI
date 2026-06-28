@@ -20,21 +20,37 @@ export function Dashboard({ shop, onSignOut }) {
   const [services, setServices] = useState([]);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(null);
 
+  // Load everything; on ANY failure stop the spinner and surface the reason
+  // (never leave the dashboard stuck loading).
   const reload = async () => {
-    const [a, sl, sv, st] = await Promise.all([
-      data.listAppointments(),
-      data.listSlots(shop.id),
-      data.listServices(shop.id),
-      data.listStaff(shop.id),
-    ]);
-    setAppts(a); setSlots(sl); setServices(sv); setStaff(st); setLoading(false);
+    try {
+      const [a, sl, sv, st] = await Promise.all([
+        data.listAppointments(),
+        data.listSlots(shop.id),
+        data.listServices(shop.id),
+        data.listStaff(shop.id),
+      ]);
+      setAppts(a); setSlots(sl); setServices(sv); setStaff(st);
+      setErr(null);
+    } catch (e) {
+      console.error("[dashboard] load failed:", e.message || e, e);
+      setErr(e.message || "טעינת הנתונים נכשלה");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     reload();
-    const unsub = data.subscribeShop(shop.id, reload);
-    return unsub;
+    let unsub = () => {};
+    try {
+      unsub = data.subscribeShop(shop.id, reload);
+    } catch (e) {
+      console.error("[dashboard] realtime subscribe failed:", e.message || e);
+    }
+    return () => unsub();
   }, [shop.id]);
 
   const common = { shop, appts, slots, services, staff, reload };
@@ -47,6 +63,13 @@ export function Dashboard({ shop, onSignOut }) {
       />
       ${loading
         ? html`<div class="flex justify-center pt-24"><${Spinner} className="text-primary text-3xl" /></div>`
+        : err
+        ? html`<div class="px-5 pt-24 flex flex-col items-center text-center gap-4">
+            <${Icon} name="error" className="text-danger text-4xl" />
+            <p class="text-text-secondary">טעינת הנתונים נכשלה</p>
+            <p class="text-text-muted text-xs mono">${err}</p>
+            <${Btn} variant="gold" onClick=${() => { setLoading(true); reload(); }} className="px-6">נסה שוב</${Btn}>
+          </div>`
         : html`<div class="px-5 pt-6">
             ${tab === "calendar" && html`<${CalendarTab} ...${common} />`}
             ${tab === "stats" && html`<${StatsTab} appts=${appts} />`}

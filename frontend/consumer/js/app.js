@@ -666,10 +666,12 @@ async function bookSlot(slotId) {
     });
     openConfirmSheet(shop, slot);
   } catch (err) {
+    // Surface the failure instead of failing silently (was console.error only).
     if (err instanceof ApiError && err.status === 409) {
       toast("מצטערים, התור הזה כבר נתפס");
     } else {
-      console.error(err);
+      console.error("bookSlot failed:", err);
+      toast("ההזמנה נכשלה — בדוק חיבור לשרת ונסה שוב");
     }
   }
 }
