@@ -68,6 +68,16 @@ function clearMarkers() {
   store.set({ markers: [] });
 }
 
+// Is a shop open right now? Honors an explicit `open_now` flag when present;
+// when hours are unknown/null (most seeded + scraped shops) we DON'T exclude it
+// — better to show a shop of unknown status than to empty the whole list.
+function isOpenNow(b) {
+  const oh = b.opening_hours;
+  if (!oh || typeof oh !== "object") return true; // unknown -> keep
+  if (typeof oh.open_now === "boolean") return oh.open_now;
+  return true; // structured weekly hours not parsed here -> keep
+}
+
 // The shops currently visible after applying all active filters + search query.
 function visibleShops() {
   let shops = store.get().barbershops || [];
@@ -86,7 +96,7 @@ function visibleShops() {
     );
   }
   if (filterState.openNow) {
-    shops = shops.filter((b) => b.opening_hours?.open_now === true);
+    shops = shops.filter(isOpenNow);
   }
   if (filterState.serviceTypes.length > 0) {
     shops = shops.filter((b) =>
@@ -302,6 +312,85 @@ function renderAllShops() {
   if (count) count.textContent = `${shops.length} ספרים`;
 }
 
+// Full-list page for a home carousel ("ראה הכל"). kind: nearby | deals | top.
+// Recomputes from the live (filtered) sets so filters carry over.
+function renderListView(kind) {
+  const titleEl = document.getElementById("list-title");
+  const countEl = document.getElementById("list-count");
+  const box = document.getElementById("list-items");
+  if (!box) return;
+
+  let title, items, html, wire, countText;
+  if (kind === "nearby") {
+    title = "תורים זמינים בקרבתך";
+    items = visibleSlots();
+    html = items.map(nearbySlotCardHTML).join("");
+    wire = () => box.querySelectorAll("[data-slot-id]").forEach((el) => el.addEventListener("click", () => quickBookSlot(el.dataset.slotId)));
+    countText = `${items.length} תורים`;
+  } else if (kind === "deals") {
+    title = "מבצעי דקה תשעים";
+    items = dealSlots();
+    html = items.map(dealSlotCardHTML).join("");
+    wire = () => box.querySelectorAll("[data-slot-id]").forEach((el) => el.addEventListener("click", () => quickBookSlot(el.dataset.slotId)));
+    countText = `${items.length} תורים`;
+  } else if (kind === "top") {
+    title = "מדורגים בקרבתך";
+    items = topRatedShops();
+    html = items.map((b) => barberCardHTML(b, "full")).join("");
+    wire = () => wireShopCards(box, items);
+    countText = `${items.length} ספרים`;
+  } else {
+    location.hash = "#/home";
+    return;
+  }
+
+  if (titleEl) titleEl.textContent = title;
+  if (countEl) countEl.textContent = countText;
+  box.innerHTML = items.length
+    ? html
+    : `<p class="text-text-muted font-body-md py-12 text-center">אין פריטים להצגה</p>`;
+  if (items.length) wire();
+}
+
+// ── Favorites (per-browser, localStorage `torli_favorites` = [shopId]) ────────
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem("torli_favorites") || "[]"); }
+  catch { return []; }
+}
+function isFavorite(id) { return getFavorites().includes(id); }
+function toggleFavorite(id) {
+  const favs = getFavorites();
+  const i = favs.indexOf(id);
+  if (i === -1) favs.push(id); else favs.splice(i, 1);
+  localStorage.setItem("torli_favorites", JSON.stringify(favs));
+  return i === -1; // true if now favorited
+}
+
+// "המועדפים שלי" — fetch each favorited shop by id and list it.
+async function renderFavoritesView() {
+  const box = document.getElementById("favorites-list");
+  const countEl = document.getElementById("fav-count");
+  if (!box) return;
+  const ids = getFavorites();
+  if (!ids.length) {
+    if (countEl) countEl.textContent = "";
+    box.innerHTML = `
+      <div class="flex flex-col items-center justify-center text-center gap-3 py-16">
+        <span class="material-symbols-outlined text-5xl text-surface-variant">favorite</span>
+        <p class="font-body-lg text-body-lg text-text-secondary">עוד לא שמרת מועדפים</p>
+        <p class="font-body-md text-text-muted text-sm">לחץ על הלב בעמוד של מספרה כדי לשמור אותה</p>
+      </div>`;
+    return;
+  }
+  box.innerHTML = `<div class="h-24 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>`;
+  const shops = (await Promise.all(ids.map((id) => api.getBarbershop(id).catch(() => null)))).filter(Boolean);
+  if (countEl) countEl.textContent = `${shops.length} מספרות`;
+  box.innerHTML = shops.length
+    ? shops.map((b) => barberCardHTML(b, "full")).join("")
+    : `<p class="text-text-muted font-body-md py-12 text-center">לא נמצאו מספרות</p>`;
+  if (shops.length) wireShopCards(box, shops);
+}
+
 // Render the "Available Nearby" quick-book slot cards.
 function renderNearbySlots() {
   // Derived "Last Minute Deals" section refreshes whenever nearby slots do.
@@ -309,7 +398,6 @@ function renderNearbySlots() {
 
   const section = document.getElementById("nearby-slots-section");
   const list = document.getElementById("nearby-slots-list");
-  const count = document.getElementById("nearby-slots-count");
   if (!section || !list) return;
 
   const slots = visibleSlots();
@@ -318,35 +406,39 @@ function renderNearbySlots() {
     return;
   }
   section.classList.remove("hidden");
-  if (count) count.textContent = `${slots.length} תורים`;
+  // "See All" appears only when the carousel hides items.
+  document.getElementById("see-all-nearby")?.classList.toggle("hidden", slots.length <= CAROUSEL_LIMIT);
 
-  list.innerHTML = slots
-    .slice(0, 12)
-    .map((s) => {
-      const d = new Date(s.slot_time);
-      const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-      const date = d.toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "short" });
-      return `
-      <div data-slot-id="${s.slot_id}"
-           class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center
-                  cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
-        <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
-          <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
-          <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
-        </div>
-        <div class="flex-1 text-right flex flex-col justify-center pr-3 min-w-0">
-          <span class="font-headline-sm text-base truncate">${s.shop_name}</span>
-          <span class="font-body-md text-text-secondary text-xs mt-0.5 truncate">${s.service_name} · ${time} · ${date}</span>
-          ${s.distance_m != null ? `<span class="font-label-mono text-label-mono text-text-muted text-[11px] mt-0.5">${Math.round(s.distance_m)} מ' ממך</span>` : ""}
-        </div>
-        <span class="material-symbols-outlined text-text-muted">chevron_left</span>
-      </div>`;
-    })
-    .join("");
-
+  list.innerHTML = slots.slice(0, CAROUSEL_LIMIT).map(nearbySlotCardHTML).join("");
   list.querySelectorAll("[data-slot-id]").forEach((el) =>
     el.addEventListener("click", () => quickBookSlot(el.dataset.slotId))
   );
+}
+
+// Max items shown in a home carousel before "ראה הכל".
+const CAROUSEL_LIMIT = 5;
+
+// Nearby-slot card (shop + service · time · date + distance). Shared by the
+// "available nearby" carousel and its full-list page.
+function nearbySlotCardHTML(s) {
+  const d = new Date(s.slot_time);
+  const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+  const date = d.toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "short" });
+  return `
+    <div data-slot-id="${s.slot_id}"
+         class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center
+                cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
+      <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
+        <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
+        <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
+      </div>
+      <div class="flex-1 text-right flex flex-col justify-center pr-3 min-w-0">
+        <span class="font-headline-sm text-base truncate">${escapeHtml(s.shop_name)}</span>
+        <span class="font-body-md text-text-secondary text-xs mt-0.5 truncate">${escapeHtml(s.service_name)} · ${time} · ${date}</span>
+        ${s.distance_m != null ? `<span class="font-label-mono text-label-mono text-text-muted text-[11px] mt-0.5">${Math.round(s.distance_m)} מ' ממך</span>` : ""}
+      </div>
+      <span class="material-symbols-outlined text-text-muted">chevron_left</span>
+    </div>`;
 }
 
 // Hebrew relative time for an upcoming slot ("בעוד 40 דק'" / "בעוד 2 שע'").
@@ -364,70 +456,74 @@ function relativeTimeHe(date) {
 function renderDeals() {
   const section = document.getElementById("deals-section");
   const list = document.getElementById("deals-list");
-  const count = document.getElementById("deals-count");
   if (!section || !list) return;
 
-  const now = new Date();
-  const slots = (visibleSlots() || [])
-    .filter((s) => new Date(s.slot_time) >= now) // upcoming only
-    .sort((a, b) => new Date(a.slot_time) - new Date(b.slot_time))
-    .slice(0, 8);
-
+  const slots = dealSlots();
   if (!slots.length) {
     section.classList.add("hidden");
     return;
   }
   section.classList.remove("hidden");
-  if (count) count.textContent = `${slots.length} תורים`;
+  document.getElementById("see-all-deals")?.classList.toggle("hidden", slots.length <= CAROUSEL_LIMIT);
 
-  list.innerHTML = slots
-    .map((s) => {
-      const d = new Date(s.slot_time);
-      const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-      return `
-      <div data-slot-id="${s.slot_id}"
-           class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center
-                  cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
-        <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
-          <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
-          <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
-        </div>
-        <div class="flex-1 text-right flex flex-col justify-center pr-3 min-w-0">
-          <span class="font-headline-sm text-base truncate">${escapeHtml(s.shop_name)}</span>
-          <span class="font-body-md text-text-secondary text-xs mt-0.5 truncate">${escapeHtml(s.service_name)} · ${time}</span>
-        </div>
-        <span class="font-label-mono text-label-mono text-[11px] text-primary border border-primary/30 rounded-full px-2.5 py-1 whitespace-nowrap">
-          ${relativeTimeHe(d)}
-        </span>
-      </div>`;
-    })
-    .join("");
-
+  list.innerHTML = slots.slice(0, CAROUSEL_LIMIT).map(dealSlotCardHTML).join("");
   list.querySelectorAll("[data-slot-id]").forEach((el) =>
     el.addEventListener("click", () => quickBookSlot(el.dataset.slotId))
   );
 }
 
+// Upcoming free slots, soonest first (the "deals" set — shared by carousel + page).
+function dealSlots() {
+  const now = new Date();
+  return (visibleSlots() || [])
+    .filter((s) => new Date(s.slot_time) >= now)
+    .sort((a, b) => new Date(a.slot_time) - new Date(b.slot_time));
+}
+
+// Deal card (shop + service · time + "בעוד X" relative-time chip).
+function dealSlotCardHTML(s) {
+  const d = new Date(s.slot_time);
+  const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+  return `
+    <div data-slot-id="${s.slot_id}"
+         class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center
+                cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
+      <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
+        <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
+        <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
+      </div>
+      <div class="flex-1 text-right flex flex-col justify-center pr-3 min-w-0">
+        <span class="font-headline-sm text-base truncate">${escapeHtml(s.shop_name)}</span>
+        <span class="font-body-md text-text-secondary text-xs mt-0.5 truncate">${escapeHtml(s.service_name)} · ${time}</span>
+      </div>
+      <span class="font-label-mono text-label-mono text-[11px] text-primary border border-primary/30 rounded-full px-2.5 py-1 whitespace-nowrap">
+        ${relativeTimeHe(d)}
+      </span>
+    </div>`;
+}
+
 // ── Section: Top Rated Near You (highest-rated visible shops) ────────────────
+// Highest-rated visible shops, soonest... er, best-rated first (shared by
+// carousel + the full-list page).
+function topRatedShops() {
+  return (visibleShops() || [])
+    .filter((b) => b.rating != null)
+    .sort((a, b) => b.rating - a.rating);
+}
 function renderTopRated() {
   const section = document.getElementById("top-rated-section");
   const list = document.getElementById("top-rated-list");
-  const count = document.getElementById("top-rated-count");
   if (!section || !list) return;
 
-  const shops = (visibleShops() || [])
-    .filter((b) => b.rating != null)
-    .sort((a, b) => b.rating - a.rating)
-    .slice(0, 5);
-
+  const shops = topRatedShops();
   if (!shops.length) {
     section.classList.add("hidden");
     return;
   }
   section.classList.remove("hidden");
-  if (count) count.textContent = `${shops.length} ספרים`;
-  list.innerHTML = shops.map((b) => barberCardHTML(b, "rail")).join("");
-  wireShopCards(list, shops);
+  document.getElementById("see-all-top")?.classList.toggle("hidden", shops.length <= CAROUSEL_LIMIT);
+  list.innerHTML = shops.slice(0, CAROUSEL_LIMIT).map((b) => barberCardHTML(b, "rail")).join("");
+  wireShopCards(list, shops.slice(0, CAROUSEL_LIMIT));
 }
 
 // Quick-book a nearby slot: confirm, then run the normal lock -> confirm flow.
@@ -817,8 +913,8 @@ function externalReviewHTML(r) {
 // ── Router (hash-based) ──────────────────────────────────────────────────────
 
 const VIEW_IDS = [
-  "view-home", "view-shops", "view-barber", "view-success", "view-bookings", "view-profile",
-  "view-splash", "view-role", "view-verify", "view-register",
+  "view-home", "view-shops", "view-list", "view-favorites", "view-barber", "view-success",
+  "view-bookings", "view-profile", "view-splash", "view-role", "view-verify", "view-register",
 ];
 const ONBOARDING_VIEWS = ["view-splash", "view-role", "view-verify", "view-register"];
 
@@ -847,6 +943,12 @@ async function router() {
   } else if (hash.startsWith("#/shops")) {
     showView("view-shops");
     renderAllShops();
+  } else if (hash.startsWith("#/list/")) {
+    showView("view-list");
+    renderListView(hash.split("/")[2]);
+  } else if (hash.startsWith("#/favorites")) {
+    showView("view-favorites");
+    renderFavoritesView();
   } else if (hash.startsWith("#/bookings")) {
     showView("view-bookings");
     renderBookingsView();
@@ -898,6 +1000,9 @@ async function renderBarberView(shopId) {
       </button>
       <button id="bp-share" class="absolute top-4 left-4 w-10 h-10 rounded-full bg-surface-1/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-text-primary">
         <span class="material-symbols-outlined">share</span>
+      </button>
+      <button id="bp-fav" class="absolute top-4 left-[60px] w-10 h-10 rounded-full bg-surface-1/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-text-primary">
+        <span id="bp-fav-icon" class="material-symbols-outlined">favorite</span>
       </button>
       <div class="absolute bottom-0 right-gutter translate-y-1/2">
         <div class="w-24 h-24 rounded-full border-2 border-primary overflow-hidden bg-surface-2 flex items-center justify-center shadow-[0_0_15px_rgba(239,178,0,0.15)]">
@@ -1010,6 +1115,19 @@ async function renderBarberView(shopId) {
   document.getElementById("bp-back").addEventListener("click", () => { location.hash = "#/home"; });
   document.getElementById("bp-share").addEventListener("click", () => openShareSheet(shop));
   document.getElementById("bp-nav").addEventListener("click", () => openNavSheet(shop));
+
+  // Favorite (heart) toggle.
+  const favIcon = document.getElementById("bp-fav-icon");
+  const paintFav = (on) => {
+    favIcon.style.fontVariationSettings = on ? "'FILL' 1" : "'FILL' 0";
+    favIcon.classList.toggle("text-primary", on);
+  };
+  paintFav(isFavorite(shop.id));
+  document.getElementById("bp-fav").addEventListener("click", () => {
+    const on = toggleFavorite(shop.id);
+    paintFav(on);
+    toast(on ? "נשמר למועדפים" : "הוסר מהמועדפים");
+  });
 
   // Load real user reviews into the reviews tab.
   (async () => {
@@ -1393,7 +1511,7 @@ async function renderProfileView() {
   applyAvatar();
 
   // Row actions.
-  document.getElementById("pf-bookings").addEventListener("click", () => toast("המועדפים בקרוב"));
+  document.getElementById("pf-bookings").addEventListener("click", () => { location.hash = "#/favorites"; });
   document.getElementById("pf-past-bookings").addEventListener("click", () => { location.hash = "#/bookings"; });
   document.getElementById("pf-pay").addEventListener("click", openPaymentsSheet);
   document.getElementById("pf-lang").addEventListener("click", () => openProfileSheet("language"));
@@ -2320,18 +2438,29 @@ const PAYMENT_OPTIONS = [
   { value: "visa", icon: "credit_card", label: "Visa" },
 ];
 
+// Saved cards added via the add-card form (masked — last4 + brand only).
+function getSavedCards() {
+  try { return JSON.parse(localStorage.getItem("torli_pay_cards") || "[]"); }
+  catch { return []; }
+}
+
 function openPaymentsSheet() {
   const current = localStorage.getItem("torli_pay_method") || "apple_pay";
-  const rows = PAYMENT_OPTIONS.map((p) => `
-    <button data-val="${p.value}" class="pay-opt w-full flex items-center gap-stack-md p-stack-md rounded-xl border transition-colors text-right ${p.value === current ? "border-primary bg-primary/10" : "border-border-light bg-surface-1 hover:bg-surface-2"}">
-      <span class="material-symbols-outlined ${p.value === current ? "text-primary" : "text-text-secondary"}">${p.icon}</span>
-      <span class="flex-1 text-right font-body-md text-body-md text-text-primary">${p.label}</span>
-      <span class="material-symbols-outlined text-primary ${p.value === current ? "" : "opacity-0"}">check_circle</span>
-    </button>`).join("");
+  const optRow = (val, icon, label, sub) => `
+    <button data-val="${val}" class="pay-opt w-full flex items-center gap-stack-md p-stack-md rounded-xl border transition-colors text-right ${val === current ? "border-primary bg-primary/10" : "border-border-light bg-surface-1 hover:bg-surface-2"}">
+      <span class="material-symbols-outlined ${val === current ? "text-primary" : "text-text-secondary"}">${icon}</span>
+      <span class="flex-1 text-right font-body-md text-body-md text-text-primary">${escapeHtml(label)}${sub ? `<span class="block font-label-mono text-label-mono text-text-muted text-[11px]">${escapeHtml(sub)}</span>` : ""}</span>
+      <span class="material-symbols-outlined text-primary ${val === current ? "" : "opacity-0"}">check_circle</span>
+    </button>`;
+  const rows = [
+    ...PAYMENT_OPTIONS.map((p) => optRow(p.value, p.icon, p.label)),
+    ...getSavedCards().map((c) => optRow(`card:${c.last4}`, "credit_card", c.brand, `•••• ${c.last4}`)),
+  ].join("");
+
   const { backdrop, close } = genericSheet(`
     <h2 class="font-headline-md text-headline-md mb-stack-lg">אמצעי תשלום</h2>
     <div class="flex flex-col gap-stack-sm mb-stack-lg">${rows}</div>
-    <button class="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border-light text-text-secondary font-body-md">
+    <button id="pay-add" class="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border-light text-text-secondary font-body-md hover:bg-surface-2 transition-colors">
       <span class="material-symbols-outlined">add</span>הוסף אמצעי תשלום
     </button>`);
   backdrop.querySelectorAll(".pay-opt").forEach((btn) =>
@@ -2341,6 +2470,78 @@ function openPaymentsSheet() {
       close();
     })
   );
+  backdrop.querySelector("#pay-add").addEventListener("click", () => { close(); openAddCardSheet(); });
+}
+
+// Add-card form with field validation + a mock verification step.
+function openAddCardSheet() {
+  const { backdrop, close } = genericSheet(`
+    <h2 class="font-headline-md text-headline-md mb-stack-lg">הוספת כרטיס אשראי</h2>
+    <label class="font-body-md text-text-secondary text-sm">מספר כרטיס</label>
+    <input id="cc-number" inputmode="numeric" dir="ltr" placeholder="0000 0000 0000 0000" maxlength="23"
+           class="w-full bg-surface-1 border border-border-light rounded-xl h-12 px-4 mt-stack-sm mb-stack-md text-left font-label-mono text-label-mono text-text-primary tracking-widest focus:outline-none focus:border-primary"/>
+    <div class="flex gap-3 mb-stack-md">
+      <div class="flex-1">
+        <label class="font-body-md text-text-secondary text-sm">תוקף</label>
+        <input id="cc-exp" inputmode="numeric" dir="ltr" placeholder="MM/YY" maxlength="5"
+               class="w-full bg-surface-1 border border-border-light rounded-xl h-12 px-4 mt-stack-sm text-center font-label-mono text-label-mono text-text-primary focus:outline-none focus:border-primary"/>
+      </div>
+      <div class="flex-1">
+        <label class="font-body-md text-text-secondary text-sm">CVV</label>
+        <input id="cc-cvv" inputmode="numeric" dir="ltr" placeholder="123" maxlength="4"
+               class="w-full bg-surface-1 border border-border-light rounded-xl h-12 px-4 mt-stack-sm text-center font-label-mono text-label-mono text-text-primary focus:outline-none focus:border-primary"/>
+      </div>
+    </div>
+    <p id="cc-error" class="font-body-md text-error text-sm mb-stack-md hidden"></p>
+    <button id="cc-submit" class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+      <span id="cc-submit-label">אמת ושמור</span>
+    </button>`);
+
+  const num = backdrop.querySelector("#cc-number");
+  const exp = backdrop.querySelector("#cc-exp");
+  const cvv = backdrop.querySelector("#cc-cvv");
+  const err = backdrop.querySelector("#cc-error");
+  const submit = backdrop.querySelector("#cc-submit");
+  const label = backdrop.querySelector("#cc-submit-label");
+
+  // Live formatting: group card number in 4s, auto-slash the expiry.
+  num.addEventListener("input", () => {
+    const digits = num.value.replace(/\D/g, "").slice(0, 19);
+    num.value = digits.replace(/(.{4})/g, "$1 ").trim();
+  });
+  exp.addEventListener("input", () => {
+    let d = exp.value.replace(/\D/g, "").slice(0, 4);
+    if (d.length >= 3) d = d.slice(0, 2) + "/" + d.slice(2);
+    exp.value = d;
+  });
+  cvv.addEventListener("input", () => { cvv.value = cvv.value.replace(/\D/g, "").slice(0, 4); });
+
+  const brandOf = (digits) =>
+    digits[0] === "4" ? "Visa" : "35".includes(digits[0]) ? "Mastercard" : digits[0] === "3" ? "Amex" : "כרטיס אשראי";
+
+  submit.addEventListener("click", () => {
+    const digits = num.value.replace(/\D/g, "");
+    const [mm, yy] = exp.value.split("/");
+    const showErr = (m) => { err.textContent = m; err.classList.remove("hidden"); };
+    err.classList.add("hidden");
+
+    if (digits.length < 13 || digits.length > 19) return showErr("מספר כרטיס לא תקין");
+    if (!mm || !yy || Number(mm) < 1 || Number(mm) > 12) return showErr("תאריך תוקף לא תקין");
+    if (cvv.value.length < 3) return showErr("CVV לא תקין");
+
+    // Mock verification step.
+    submit.disabled = true;
+    label.textContent = "מאמת…";
+    setTimeout(() => {
+      const cards = getSavedCards();
+      const last4 = digits.slice(-4);
+      cards.push({ last4, brand: brandOf(digits), exp: exp.value });
+      localStorage.setItem("torli_pay_cards", JSON.stringify(cards));
+      localStorage.setItem("torli_pay_method", `card:${last4}`);
+      toast("האשראי אומת ונשמר ✓");
+      close();
+    }, 1200);
+  });
 }
 
 // ── Confirm & Pay bottom-sheet (Stitch frame "אישור ותשלום") ─────────────────
@@ -2604,6 +2805,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // "See All" -> full shop list; back arrow -> home.
   document.getElementById("see-all-shops")?.addEventListener("click", () => { location.hash = "#/shops"; });
   document.getElementById("shops-back")?.addEventListener("click", () => { location.hash = "#/home"; });
+
+  // Carousel "See All" -> full-list pages; their back arrows -> home.
+  document.getElementById("see-all-nearby")?.addEventListener("click", () => { location.hash = "#/list/nearby"; });
+  document.getElementById("see-all-deals")?.addEventListener("click", () => { location.hash = "#/list/deals"; });
+  document.getElementById("see-all-top")?.addEventListener("click", () => { location.hash = "#/list/top"; });
+  document.getElementById("list-back")?.addEventListener("click", () => { location.hash = "#/home"; });
+  document.getElementById("fav-back")?.addEventListener("click", () => { location.hash = "#/home"; });
 
   // "Search this area" -> refetch barbershops for the current map viewport.
   document.getElementById("search-area")?.addEventListener("click", fetchShopsForView);
