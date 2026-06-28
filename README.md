@@ -156,6 +156,35 @@ Re-seed the demo barber + ownership with `node scripts/seed_barber.js`.
 
 ---
 
+## Testing & QA
+
+**Backend unit tests:** **208 passing**, ~94% branch coverage, mypy `--strict` + ruff clean. All
+external services mocked (no network). `cd backend && ../venv/bin/python -m pytest tests/ -q`.
+
+**End-to-end QA pass:** a 20-scenario manual/automated suite ([`docs/qa_test_plan.md`](docs/qa_test_plan.md))
+was executed against the live stack — **all passing**:
+
+| Group | Scenarios verified |
+|---|---|
+| **Happy path (consumer)** | Unified landing routing; onboarding + registration (name/phone/avatar→Storage); geolocation fallback (no freeze) + viewport map; full booking (lock→confirm→DB); **live realtime reflection in the dashboard** (toast + bell badge). |
+| **Resilience & security** | No double-booking (2nd lock → 409, one booking only); guest cannot read `bookings` (RLS "permission denied"); cross-shop owner isolation (owner sees only their shop); network-failure mid-booking shows an error toast (no silent fail / no hang); dashboard never hangs on load failure (error + retry). |
+| **Dashboard stress** | Service/staff active↔inactive toggles with immediate global consumer + operational filtering; confirmation modals on all destructive actions (cancel = no-op); re-authentication gate blocks a password change with a wrong current password; notifications bell dropdown of unseen appointments. |
+| **Data integrity** | Statistics recompute per-staff and per-period; loyalty aggregates by phone (visits / spend / last visit); **availability overrides** hide blocked slots from consumers (`free_slots`) and `lock_slot` rejects a blocked slot ("time blocked by the shop"). |
+
+### Production-readiness
+The consumer + barber dashboard MVP is **feature-complete and verified**. Security rests on
+Postgres RLS (owner-scoped policies + `SECURITY DEFINER` booking RPCs); the service-role key is
+never exposed to the browser. Intentional, documented constraints before a real launch:
+
+- **Consumer is anonymous** by design (`torli_user_token` + localStorage); no consumer accounts.
+- **Payments are mock** (card form + simulated verification) — no real charge/PSP integration.
+- **Booking submission** to external sites is gated by `BOOKING_LIVE` (default `false` = dry run);
+  in-DB partner shops book directly. Set `BOOKING_LIVE=true` only after validating real sites.
+- The dev-only `POST /admin/barber-signup` (pre-confirmed accounts) and the admin ops router are
+  mounted **only when `ENVIRONMENT != production`**.
+
+---
+
 ## Repository structure
 
 ```

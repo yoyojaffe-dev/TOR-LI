@@ -109,6 +109,16 @@ export const Modal = ({ open, onClose, title, children }) =>
         </div>
       </div>`;
 
+// Build a wa.me deep link from an Israeli phone number + prefilled text.
+// Returns null when no usable number is present.
+export function waLink(phone, text = "") {
+  let d = String(phone || "").replace(/\D/g, "");
+  if (!d) return null;
+  if (d.startsWith("0")) d = "972" + d.slice(1); // 05X… -> +9725X…
+  else if (d.length === 9) d = "972" + d; // 9 digits, no leading 0
+  return `https://wa.me/${d}?text=${encodeURIComponent(text)}`;
+}
+
 // Lightweight transient toast.
 export function toast(msg) {
   const el = document.createElement("div");

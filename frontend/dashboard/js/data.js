@@ -163,6 +163,30 @@ export async function deleteStaff(id) {
   if (error) throw error;
 }
 
+// ── Availability overrides ("blocked" dates/hours) ──────────────────────────
+export async function listOverrides(shopId) {
+  return (
+    unwrap(
+      "listOverrides",
+      await supabase
+        .from("availability_overrides")
+        .select("id,date,all_day,start_time,end_time,staff_id,note")
+        .eq("barbershop_id", shopId)
+        .order("date", { ascending: true })
+    ) || []
+  );
+}
+export async function createOverride(shopId, o) {
+  const { error } = await supabase
+    .from("availability_overrides")
+    .insert({ barbershop_id: shopId, ...o });
+  if (error) { console.error("[data] createOverride:", error.message); throw new Error(error.message); }
+}
+export async function deleteOverride(id) {
+  const { error } = await supabase.from("availability_overrides").delete().eq("id", id);
+  if (error) { console.error("[data] deleteOverride:", error.message); throw new Error(error.message); }
+}
+
 // Realtime: re-run `cb` on any booking/slot change for this shop.
 export function subscribeShop(shopId, cb) {
   const ch = supabase

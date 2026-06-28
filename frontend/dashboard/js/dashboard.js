@@ -1,13 +1,14 @@
 // Barber dashboard — 5 tabs (Stitch _14/_23/_3/_18/_41) over live owner data.
 import {
-  html, useState, useEffect, useMemo, Icon, Btn, Field, AppBar, BottomNav, FAB, Modal,
-  Spinner, toast, fmtTime, ymd,
+  html, useState, useEffect, useMemo, useRef, Icon, Btn, Field, AppBar, BottomNav, FAB, Modal,
+  Spinner, toast, waLink, fmtTime, ymd,
 } from "./ui.js";
 import * as data from "./data.js";
 import * as auth from "./auth.js";
 
 const TABS = [
   { key: "calendar", label: "לוח", icon: "calendar_month" },
+  { key: "loyalty", label: "לקוחות", icon: "loyalty" },
   { key: "stats", label: "סטטיסטיקות", icon: "equalizer" },
   { key: "staff", label: "עובדים", icon: "group" },
   { key: "services", label: "שירותים", icon: "content_cut" },
@@ -20,20 +21,37 @@ export function Dashboard({ shop, onSignOut }) {
   const [slots, setSlots] = useState([]);
   const [services, setServices] = useState([]);
   const [staff, setStaff] = useState([]);
+  const [overrides, setOverrides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+  const [unseenList, setUnseenList] = useState([]); // new bookings since last seen
+  const [notifOpen, setNotifOpen] = useState(false); // bell dropdown
+
+  const seenIds = useRef(new Set());
+  const firstLoad = useRef(true);
 
   // Load everything; on ANY failure stop the spinner and surface the reason
-  // (never leave the dashboard stuck loading).
+  // (never leave the dashboard stuck loading). Also detects NEW bookings since
+  // the last load to drive the alert toast + header badge.
   const reload = async () => {
     try {
-      const [a, sl, sv, st] = await Promise.all([
+      const [a, sl, sv, st, ov] = await Promise.all([
         data.listAppointments(),
         data.listSlots(shop.id),
         data.listServices(shop.id),
         data.listStaff(shop.id),
+        data.listOverrides(shop.id),
       ]);
-      setAppts(a); setSlots(sl); setServices(sv); setStaff(st);
+      // Alert on bookings that are new since a previous load (not the first one).
+      const fresh = a.filter((b) => !seenIds.current.has(b.id));
+      if (!firstLoad.current && fresh.length) {
+        fresh.forEach((b) => toast(`📅 תור חדש: ${b.customer_name}`));
+        setUnseenList((prev) => [...fresh, ...prev]); // newest first
+      }
+      a.forEach((b) => seenIds.current.add(b.id));
+      firstLoad.current = false;
+
+      setAppts(a); setSlots(sl); setServices(sv); setStaff(st); setOverrides(ov);
       setErr(null);
     } catch (e) {
       console.error("[dashboard] load failed:", e.message || e, e);
@@ -58,14 +76,28 @@ export function Dashboard({ shop, onSignOut }) {
   const [confirmState, setConfirmState] = useState(null);
   const confirm = (opts) => setConfirmState(opts);
 
-  const common = { shop, appts, slots, services, staff, reload, confirm };
+  const selectTab = (k) => { setTab(k); };
+  const clearUnseen = () => { setUnseenList([]); setNotifOpen(false); };
+  // Tapping a notification jumps to that booking's day in the Calendar.
+  const gotoBooking = (b) => {
+    setNotifOpen(false);
+    setUnseenList([]);
+    setTab("calendar");
+  };
+  const unseen = unseenList.length;
+
+  const common = { shop, appts, slots, services, staff, overrides, reload, confirm };
   return html`
     <div class="min-h-screen pt-16 pb-24 max-w-[480px] mx-auto">
       <${AppBar}
         title=${shop.name}
-        right=${html`<div class="w-9 h-9 rounded-full bg-surface-2 border border-primary flex items-center justify-center text-primary">
-          <${Icon} name="storefront" fill=${true} className="text-[18px]" /></div>`}
+        right=${html`<button onClick=${() => setNotifOpen((o) => !o)} class="relative w-9 h-9 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-secondary">
+          <${Icon} name="notifications" fill=${unseen > 0} className=${unseen > 0 ? "text-primary" : ""} />
+          ${unseen > 0 && html`<span class="absolute -top-1 -left-1 min-w-[18px] h-[18px] px-1 rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center">${unseen}</span>`}
+        </button>`}
       />
+      <${NotificationsPanel} open=${notifOpen} items=${unseenList}
+        onClose=${() => setNotifOpen(false)} onClear=${clearUnseen} onGoto=${gotoBooking} />
       ${loading
         ? html`<div class="flex justify-center pt-24"><${Spinner} className="text-primary text-3xl" /></div>`
         : err
@@ -77,15 +109,44 @@ export function Dashboard({ shop, onSignOut }) {
           </div>`
         : html`<div class="px-5 pt-6">
             ${tab === "calendar" && html`<${CalendarTab} ...${common} />`}
+            ${tab === "loyalty" && html`<${LoyaltyTab} appts=${appts} shop=${shop} />`}
             ${tab === "stats" && html`<${StatsTab} appts=${appts} staff=${staff} />`}
             ${tab === "staff" && html`<${StaffTab} ...${common} />`}
             ${tab === "services" && html`<${ServicesTab} ...${common} />`}
             ${tab === "settings" && html`<${SettingsTab} shop=${shop} onSignOut=${onSignOut} confirm=${confirm} reload=${reload} />`}
           </div>`}
-      <${BottomNav} tabs=${TABS} active=${tab} onSelect=${setTab} />
+      <${BottomNav} tabs=${TABS} active=${tab} onSelect=${selectTab} />
       <${ConfirmModal} state=${confirmState} onClose=${() => setConfirmState(null)} />
     </div>
   `;
+}
+
+// Bell dropdown: the unseen new-booking alerts. Tap an item to jump to it.
+function NotificationsPanel({ open, items, onClose, onClear, onGoto }) {
+  if (!open) return null;
+  return html`<div class="fixed inset-0 z-50" onClick=${onClose}>
+    <div class="absolute top-[60px] left-3 right-3 max-w-[460px] mx-auto bg-surface-container border border-border-light rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-3"
+         onClick=${(e) => e.stopPropagation()}>
+      <div class="flex justify-between items-center mb-2 px-1">
+        <h3 class="font-bold">התראות</h3>
+        ${items.length > 0 && html`<button onClick=${onClear} class="text-primary text-xs">סמן הכל כנקרא</button>`}
+      </div>
+      ${items.length === 0
+        ? html`<p class="text-text-muted text-sm text-center py-6">אין התראות חדשות</p>`
+        : html`<div class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
+            ${items.map((b) => html`<button key=${b.id} onClick=${() => onGoto(b)}
+              class="w-full text-right bg-surface-1 border border-border-light rounded-xl p-3 flex items-center gap-3 hover:bg-surface-2 transition-colors">
+              <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <${Icon} name="event_available" className="text-[20px]" /></div>
+              <div class="flex-1 text-right min-w-0">
+                <p class="font-bold text-sm truncate">תור חדש · ${b.customer_name}</p>
+                <p class="text-text-muted text-xs truncate">${b.slot?.service_name || ""}${b.slot?.slot_time ? " · " + fmtTime(b.slot.slot_time) : ""}</p>
+              </div>
+              <${Icon} name="chevron_left" className="text-text-muted shrink-0" />
+            </button>`)}
+          </div>`}
+    </div>
+  </div>`;
 }
 
 // Confirmation dialog. state: { title, body, danger, confirmLabel, onYes }.
@@ -108,12 +169,28 @@ function ConfirmModal({ state, onClose }) {
 }
 
 // ── Calendar / appointments (Stitch _14) ─────────────────────────────────────
-function CalendarTab({ shop, appts, slots, services, staff, reload, confirm }) {
+function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, confirm }) {
   const [day, setDay] = useState(ymd(new Date()));
   const [staffFilter, setStaffFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
   const activeStaff = staff.filter((m) => m.is_active);
   const activeServices = services.filter((s) => s.is_active);
+
+  const dayOverrides = (overrides || []).filter((o) => o.date === day);
+  // Is a slot time inside one of the day's overrides? (local HH:MM compare)
+  const timeBlocked = (iso, staffId) => {
+    const hhmm = new Date(iso).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit", hour12: false });
+    return dayOverrides.some(
+      (o) =>
+        (o.staff_id == null || o.staff_id === staffId) &&
+        (o.all_day || (hhmm >= (o.start_time || "").slice(0, 5) && hhmm < (o.end_time || "").slice(0, 5)))
+    );
+  };
+  const delOverride = (o) => confirm({
+    title: "הסרת חסימה", body: "להסיר את חסימת הזמינות?", danger: true,
+    onYes: async () => { await data.deleteOverride(o.id); reload(); },
+  });
 
   const week = useMemo(() => {
     const out = [];
@@ -132,10 +209,10 @@ function CalendarTab({ shop, appts, slots, services, staff, reload, confirm }) {
       .filter((a) => ymd(new Date(a.slot.slot_time)) === day && matchStaff(a.slot.staff_id))
       .map((a) => ({ kind: "booked", time: a.slot.slot_time, id: a.id,
         title: `${a.slot.service_name} · ${a.customer_name}`, sub: a.customer_phone,
-        price: a.slot.price, status: a.status }));
+        name: a.customer_name, phone: a.customer_phone, price: a.slot.price, status: a.status }));
     const free = slots
       .filter((s) => s.status === "free" && ymd(new Date(s.slot_time)) === day && matchStaff(s.staff_id))
-      .map((s) => ({ kind: "free", time: s.slot_time, id: s.id, title: s.service_name, price: s.price }));
+      .map((s) => ({ kind: "free", time: s.slot_time, id: s.id, title: s.service_name, price: s.price, staff_id: s.staff_id }));
     return [...booked, ...free].sort((x, y) => new Date(x.time) - new Date(y.time));
   }, [appts, slots, day, staffFilter]);
 
@@ -202,15 +279,25 @@ function CalendarTab({ shop, appts, slots, services, staff, reload, confirm }) {
     <!-- timeline -->
     <section class="flex flex-col gap-3 relative">
       ${items.length === 0 && html`<p class="text-center text-text-muted py-10">אין תורים ביום זה</p>`}
-      ${items.map((it) => html`<div key=${it.kind + it.id} class="flex items-start gap-3">
+      ${items.map((it) => {
+        const blocked = it.kind === "free" && timeBlocked(it.time, it.staff_id);
+        const wa = it.kind === "booked" && it.phone
+          ? waLink(it.phone, `שלום ${it.name}, בנוגע לתורך ב-${shop.name}`)
+          : null;
+        return html`<div key=${it.kind + it.id} class="flex items-start gap-3 ${blocked ? "opacity-50" : ""}">
         <div class="w-[46px] pt-4 text-left flex-shrink-0 mono text-sm text-text-muted">${fmtTime(it.time)}</div>
         <div class="w-2 h-2 rounded-full mt-5 ${it.kind === "booked" ? "bg-info" : "bg-primary/40"}"></div>
         <div class="flex-1 bg-surface-2 border ${it.kind === "booked" ? "border-info/30" : "border-border-light"} rounded-xl p-4">
-          <div class="flex justify-between items-start">
+          <div class="flex justify-between items-start gap-2">
             <h3 class="font-bold">${it.title}</h3>
-            ${it.kind === "booked"
-              ? html`<span class="px-2 py-0.5 rounded bg-info/10 text-info text-xs">מוזמן</span>`
-              : html`<button onClick=${() => delSlot(it.id)} class="text-text-muted hover:text-danger"><${Icon} name="delete" className="text-[18px]" /></button>`}
+            <div class="flex items-center gap-2 shrink-0">
+              ${wa && html`<a href=${wa} target="_blank" rel="noopener" class="text-success" title="WhatsApp"><${Icon} name="chat" className="text-[20px]" /></a>`}
+              ${it.kind === "booked"
+                ? html`<span class="px-2 py-0.5 rounded bg-info/10 text-info text-xs">מוזמן</span>`
+                : blocked
+                ? html`<span class="px-2 py-0.5 rounded bg-surface-3 text-text-muted text-xs">חסום</span>`
+                : html`<button onClick=${() => delSlot(it.id)} class="text-text-muted hover:text-danger"><${Icon} name="delete" className="text-[18px]" /></button>`}
+            </div>
           </div>
           <div class="flex items-center gap-2 text-text-muted mono text-sm mt-1" dir="rtl">
             ${it.sub && html`<span dir="ltr">${it.sub}</span>`}
@@ -218,15 +305,40 @@ function CalendarTab({ shop, appts, slots, services, staff, reload, confirm }) {
             <span class="text-primary">${it.price != null ? "₪" + it.price : "—"}</span>
           </div>
         </div>
-      </div>`)}
+      </div>`;
+      })}
+    </section>
+
+    <!-- Availability overrides (blocked dates/hours) -->
+    <section class="mt-8">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-text-secondary">חסימת זמינות</h3>
+        <button onClick=${() => setBlockOpen(true)} class="text-primary text-sm flex items-center gap-1">
+          <${Icon} name="event_busy" className="text-[18px]" /> חסום תאריך/שעות
+        </button>
+      </div>
+      ${dayOverrides.length === 0
+        ? html`<p class="text-text-muted text-sm">אין חסימות ביום זה.</p>`
+        : html`<div class="flex flex-col gap-2">${dayOverrides.map((o) => html`<div key=${o.id}
+            class="flex items-center justify-between bg-surface-1 border border-border-light rounded-xl px-3 py-2">
+            <div class="flex items-center gap-2 text-sm">
+              <${Icon} name="block" className="text-danger text-[18px]" />
+              <span>${o.all_day ? "כל היום" : `${(o.start_time || "").slice(0, 5)}–${(o.end_time || "").slice(0, 5)}`}</span>
+              ${o.note && html`<span class="text-text-muted">· ${o.note}</span>`}
+            </div>
+            <button onClick=${() => delOverride(o)} class="text-text-muted hover:text-danger"><${Icon} name="delete" className="text-[18px]" /></button>
+          </div>`)}</div>`}
     </section>
 
     <${AddSlotModal} open=${addOpen} onClose=${() => setAddOpen(false)} shop=${shop}
-      services=${activeServices} staff=${activeStaff} day=${day} onSaved=${() => { setAddOpen(false); reload(); }} />
+      services=${activeServices} staff=${activeStaff} day=${day} timeBlocked=${timeBlocked}
+      onSaved=${() => { setAddOpen(false); reload(); }} />
+    <${AddBlockModal} open=${blockOpen} onClose=${() => setBlockOpen(false)} shop=${shop}
+      staff=${activeStaff} day=${day} onSaved=${() => { setBlockOpen(false); reload(); }} />
   `;
 }
 
-function AddSlotModal({ open, onClose, shop, services, staff, day, onSaved }) {
+function AddSlotModal({ open, onClose, shop, services, staff, day, timeBlocked, onSaved }) {
   const [svc, setSvc] = useState("");
   const [time, setTime] = useState("10:00");
   const [staffId, setStaffId] = useState("");
@@ -236,9 +348,12 @@ function AddSlotModal({ open, onClose, shop, services, staff, day, onSaved }) {
   const save = async () => {
     const service = services.find((s) => s.id === svc) || services[0];
     if (!service) { setErr("הוסף שירות קודם בלשונית שירותים"); return; }
+    const slot_time = new Date(`${day}T${time}:00`).toISOString();
+    if (timeBlocked && timeBlocked(slot_time, staffId || null)) {
+      setErr("הזמן הזה חסום ביומן — הסר את החסימה או בחר שעה אחרת"); return;
+    }
     setBusy(true); setErr("");
     try {
-      const slot_time = new Date(`${day}T${time}:00`).toISOString();
       await data.createSlot(shop.id, {
         service_name: service.name, price: service.price, slot_time,
         staff_id: staffId || null,
@@ -266,6 +381,104 @@ function AddSlotModal({ open, onClose, shop, services, staff, day, onSaved }) {
       <${Btn} variant="gold" onClick=${save} loading=${busy} className="w-full">הוסף תור (${day})</${Btn}>
     </div>
   </${Modal}>`;
+}
+
+// Block a date / time window so customers can't book it.
+function AddBlockModal({ open, onClose, shop, staff, day, onSaved }) {
+  const [allDay, setAllDay] = useState(true);
+  const [start, setStart] = useState("12:00");
+  const [end, setEnd] = useState("14:00");
+  const [staffId, setStaffId] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const save = async () => {
+    if (!allDay && start >= end) { setErr("שעת הסיום חייבת להיות אחרי ההתחלה"); return; }
+    setBusy(true); setErr("");
+    try {
+      await data.createOverride(shop.id, {
+        date: day, all_day: allDay,
+        start_time: allDay ? null : start, end_time: allDay ? null : end,
+        staff_id: staffId || null, note: note || null,
+      });
+      onSaved();
+    } catch (e) { setErr(e.message || "שמירה נכשלה"); setBusy(false); }
+  };
+  return html`<${Modal} open=${open} onClose=${onClose} title=${`חסימת זמינות · ${day}`}>
+    <div class="flex flex-col gap-4">
+      ${err && html`<p class="text-danger text-sm">${err}</p>`}
+      <button onClick=${() => setAllDay(!allDay)} class="flex items-center justify-between bg-surface-1 border border-border-light rounded-xl px-4 py-3">
+        <span>חסימת יום שלם</span>
+        <span class="w-12 h-7 rounded-full p-1 transition-colors ${allDay ? "bg-primary" : "bg-surface-variant"}">
+          <span class="block w-5 h-5 rounded-full bg-white transition-transform ${allDay ? "translate-x-0" : "translate-x-5"}"></span>
+        </span>
+      </button>
+      ${!allDay && html`<div class="flex gap-3">
+        <${Field} label="מ-" type="time" value=${start} onInput=${(e) => setStart(e.target.value)} dir="ltr" class="flex-1" />
+        <${Field} label="עד" type="time" value=${end} onInput=${(e) => setEnd(e.target.value)} dir="ltr" class="flex-1" />
+      </div>`}
+      <label class="flex flex-col gap-2"><span class="text-sm text-text-secondary">ספר (אופציונלי — ברירת מחדל: כל המספרה)</span>
+        <select value=${staffId} onChange=${(e) => setStaffId(e.target.value)}
+          class="bg-surface-2 border border-border-light rounded-xl px-4 py-3 focus:outline-none focus:border-primary">
+          <option value="">כל המספרה</option>
+          ${staff.map((m) => html`<option key=${m.id} value=${m.id}>${m.name}</option>`)}
+        </select></label>
+      <${Field} label="הערה (אופציונלי)" value=${note} onInput=${(e) => setNote(e.target.value)} placeholder="חופשה / אירוע" />
+      <${Btn} variant="gold" onClick=${save} loading=${busy} className="w-full">חסום</${Btn}>
+    </div>
+  </${Modal}>`;
+}
+
+// ── Client Loyalty ───────────────────────────────────────────────────────────
+function LoyaltyTab({ appts, shop }) {
+  const [sort, setSort] = useState("visits"); // visits | recent | spend
+  const clients = useMemo(() => {
+    const map = {};
+    appts.forEach((a) => {
+      const phone = (a.customer_phone || "").trim() || "ללא טלפון";
+      const c = map[phone] || (map[phone] = { phone, name: a.customer_name, visits: 0, spend: 0, last: 0 });
+      c.visits += 1;
+      c.spend += Number(a.slot?.price) || 0;
+      const t = new Date(a.slot?.slot_time || a.created_at).getTime();
+      if (t > c.last) { c.last = t; c.name = a.customer_name; }
+    });
+    const arr = Object.values(map);
+    arr.sort((x, y) =>
+      sort === "spend" ? y.spend - x.spend : sort === "recent" ? y.last - x.last : y.visits - x.visits
+    );
+    return arr;
+  }, [appts, sort]);
+
+  const sorts = [["visits", "ביקורים"], ["recent", "אחרון"], ["spend", "הוצאה"]];
+  return html`
+    <h2 class="text-headline-md text-2xl font-extrabold mb-4">לקוחות</h2>
+    <div class="flex flex-row-reverse bg-surface-3 rounded-xl p-1 border border-border-light mb-5">
+      ${sorts.map(([k, l]) => html`<button key=${k} onClick=${() => setSort(k)}
+        class="flex-1 py-1.5 rounded-lg text-sm ${sort === k ? "bg-surface-1 text-primary font-bold" : "text-text-muted"}">${l}</button>`)}
+    </div>
+    ${clients.length === 0
+      ? html`<p class="text-text-muted text-center py-10">אין עדיין לקוחות</p>`
+      : html`<div class="flex flex-col gap-3">${clients.map((c) => {
+          const wa = waLink(c.phone, `שלום ${c.name}`);
+          return html`<div key=${c.phone} class="bg-surface-2 rounded-xl p-4 border border-border-light">
+          <div class="flex justify-between items-center mb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-9 h-9 rounded-full bg-surface-3 flex items-center justify-center text-primary"><${Icon} name="person" fill=${true} /></div>
+              <div><h3 class="font-bold">${c.name || "לקוח"}</h3>
+                <p class="text-text-muted mono text-xs" dir="ltr">${c.phone}</p></div>
+            </div>
+            ${wa && html`<button onClick=${() => window.open(wa, "_blank", "noopener")} title="WhatsApp"
+              class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success active:scale-95 transition-transform">
+              <${Icon} name="chat" /></button>`}
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div><span class="block mono font-bold">${c.visits}</span><span class="text-[11px] text-text-muted">ביקורים</span></div>
+            <div><span class="block mono font-bold text-primary">₪${c.spend}</span><span class="text-[11px] text-text-muted">סה"כ</span></div>
+            <div><span class="block mono text-sm">${c.last ? new Date(c.last).toLocaleDateString("he-IL", { day: "numeric", month: "short" }) : "—"}</span><span class="text-[11px] text-text-muted">אחרון</span></div>
+          </div>
+        </div>`;
+        })}</div>`}
+  `;
 }
 
 // ── Services (Stitch _18) ────────────────────────────────────────────────────

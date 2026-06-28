@@ -87,7 +87,8 @@ def test_list_slots_returns_rows() -> None:
             "status": "free",
         }
     ]
-    with patch("app.routers.slots.get_supabase", return_value=_supabase_returning(rows)):
+    # only_free (default) goes through the free_slots RPC (override-aware).
+    with patch("app.routers.slots.locking.free_slots", return_value=rows):
         res = client.get("/slots", params={"barbershop_id": "b1"})
     assert res.status_code == 200
     assert res.json()[0]["service_name"] == "Cut"
