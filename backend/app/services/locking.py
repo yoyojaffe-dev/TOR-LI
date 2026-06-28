@@ -128,6 +128,12 @@ def list_reviews(barbershop_id: str) -> list[Row]:
     return all_rows(res.data)
 
 
+def free_slots(barbershop_id: str) -> list[Row]:
+    """Free, upcoming, non-blocked slots for a shop (respects availability overrides)."""
+    res = get_supabase().rpc("free_slots", {"p_barbershop_id": barbershop_id}).execute()
+    return all_rows(res.data)
+
+
 def nearby_slots(lat: float, lng: float, radius_m: int = 5000, lim: int = 20) -> list[Row]:
     """Return free upcoming slots near a point, joined to shop info."""
     res = (

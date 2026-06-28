@@ -9,7 +9,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.models.schemas import NearbySlot, Slot, SlotStatus
+from app.models.schemas import NearbySlot, Slot
 from app.services import locking
 from app.supabase_client import all_rows, get_supabase
 
@@ -24,18 +24,23 @@ def list_slots(
     barbershop_id: Annotated[str, Query(description="Barbershop to list slots for.")],
     only_free: Annotated[bool, Query(description="Exclude locked/booked slots.")] = True,
 ) -> list[Slot]:
-    """Return upcoming slots for a barbershop, soonest first."""
-    query = (
+    """Return upcoming slots for a barbershop, soonest first.
+
+    With ``only_free`` (the consumer default) this returns free, upcoming slots
+    that are NOT inside an availability override — via the ``free_slots`` RPC, so
+    blocked times never reach a customer. Otherwise it returns the raw slot rows.
+    """
+    if only_free:
+        return [Slot(**row) for row in locking.free_slots(barbershop_id)]
+
+    res = (
         get_supabase()
         .table("available_slots")
         .select("*")
         .eq("barbershop_id", barbershop_id)
         .order("slot_time")
+        .execute()
     )
-    if only_free:
-        query = query.eq("status", SlotStatus.free.value)
-
-    res = query.execute()
     return [Slot(**row) for row in all_rows(res.data)]
 
 
