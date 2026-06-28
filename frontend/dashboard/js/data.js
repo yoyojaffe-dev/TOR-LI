@@ -108,7 +108,7 @@ export async function listServices(shopId) {
       "listServices",
       await supabase
         .from("services")
-        .select("id,name,category,price,duration_mins,staff_id")
+        .select("id,name,category,price,duration_mins,staff_id,is_active")
         .eq("shop_id", shopId)
         .order("price", { ascending: true })
     ) || []

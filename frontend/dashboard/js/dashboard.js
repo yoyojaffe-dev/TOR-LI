@@ -53,7 +53,11 @@ export function Dashboard({ shop, onSignOut }) {
     return () => unsub();
   }, [shop.id]);
 
-  const common = { shop, appts, slots, services, staff, reload };
+  // Shared confirmation modal for sensitive actions.
+  const [confirmState, setConfirmState] = useState(null);
+  const confirm = (opts) => setConfirmState(opts);
+
+  const common = { shop, appts, slots, services, staff, reload, confirm };
   return html`
     <div class="min-h-screen pt-16 pb-24 max-w-[480px] mx-auto">
       <${AppBar}
@@ -72,21 +76,43 @@ export function Dashboard({ shop, onSignOut }) {
           </div>`
         : html`<div class="px-5 pt-6">
             ${tab === "calendar" && html`<${CalendarTab} ...${common} />`}
-            ${tab === "stats" && html`<${StatsTab} appts=${appts} />`}
+            ${tab === "stats" && html`<${StatsTab} appts=${appts} staff=${staff} />`}
             ${tab === "staff" && html`<${StaffTab} ...${common} />`}
             ${tab === "services" && html`<${ServicesTab} ...${common} />`}
-            ${tab === "settings" && html`<${SettingsTab} shop=${shop} onSignOut=${onSignOut} />`}
+            ${tab === "settings" && html`<${SettingsTab} shop=${shop} onSignOut=${onSignOut} confirm=${confirm} reload=${reload} />`}
           </div>`}
       <${BottomNav} tabs=${TABS} active=${tab} onSelect=${setTab} />
+      <${ConfirmModal} state=${confirmState} onClose=${() => setConfirmState(null)} />
     </div>
   `;
 }
 
+// Confirmation dialog. state: { title, body, danger, confirmLabel, onYes }.
+function ConfirmModal({ state, onClose }) {
+  const [busy, setBusy] = useState(false);
+  if (!state) return null;
+  const yes = async () => {
+    setBusy(true);
+    try { await state.onYes?.(); } finally { setBusy(false); onClose(); }
+  };
+  return html`<${Modal} open=${true} onClose=${busy ? () => {} : onClose} title=${state.title || "אישור פעולה"}>
+    <p class="text-text-secondary mb-6">${state.body}</p>
+    <div class="flex gap-3">
+      <${Btn} variant="ghost" onClick=${onClose} className="flex-1">ביטול</${Btn}>
+      <${Btn} variant=${state.danger ? "danger" : "gold"} onClick=${yes} loading=${busy} className="flex-1">
+        ${state.confirmLabel || "אישור"}
+      </${Btn}>
+    </div>
+  </${Modal}>`;
+}
+
 // ── Calendar / appointments (Stitch _14) ─────────────────────────────────────
-function CalendarTab({ shop, appts, slots, services, staff, reload }) {
+function CalendarTab({ shop, appts, slots, services, staff, reload, confirm }) {
   const [day, setDay] = useState(ymd(new Date()));
   const [staffFilter, setStaffFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
+  const activeStaff = staff.filter((m) => m.is_active);
+  const activeServices = services.filter((s) => s.is_active);
 
   const week = useMemo(() => {
     const out = [];
@@ -115,7 +141,10 @@ function CalendarTab({ shop, appts, slots, services, staff, reload }) {
   const dayBooked = items.filter((i) => i.kind === "booked");
   const revenue = dayBooked.reduce((s, i) => s + (Number(i.price) || 0), 0);
 
-  const delSlot = async (id) => { await data.deleteSlot(id); reload(); };
+  const delSlot = (id) => confirm({
+    title: "מחיקת תור פנוי", body: "למחוק את התור הפנוי הזה?", danger: true,
+    onYes: async () => { await data.deleteSlot(id); reload(); },
+  });
 
   return html`
     <!-- staff filter -->
@@ -128,7 +157,7 @@ function CalendarTab({ shop, appts, slots, services, staff, reload }) {
             <${Icon} name="group" fill=${true} /></div>
           <span class="text-xs ${staffFilter === "all" ? "text-primary" : "text-text-muted"}">הכל</span>
         </button>
-        ${staff.map((m) => html`<button key=${m.id} onClick=${() => setStaffFilter(m.id)}
+        ${activeStaff.map((m) => html`<button key=${m.id} onClick=${() => setStaffFilter(m.id)}
           class="flex flex-col items-center gap-1.5 ${staffFilter === m.id ? "" : "opacity-60"}">
           <div class="w-14 h-14 rounded-full flex items-center justify-center border ${staffFilter === m.id
             ? "border-primary text-primary" : "border-border-light text-text-muted"} bg-surface-2">
@@ -192,7 +221,7 @@ function CalendarTab({ shop, appts, slots, services, staff, reload }) {
     </section>
 
     <${AddSlotModal} open=${addOpen} onClose=${() => setAddOpen(false)} shop=${shop}
-      services=${services} staff=${staff} day=${day} onSaved=${() => { setAddOpen(false); reload(); }} />
+      services=${activeServices} staff=${activeStaff} day=${day} onSaved=${() => { setAddOpen(false); reload(); }} />
   `;
 }
 
@@ -239,23 +268,32 @@ function AddSlotModal({ open, onClose, shop, services, staff, day, onSaved }) {
 }
 
 // ── Services (Stitch _18) ────────────────────────────────────────────────────
-function ServicesTab({ shop, services, reload }) {
+function ServicesTab({ shop, services, reload, confirm }) {
   const [edit, setEdit] = useState(null); // service object or {} for new
-  const del = async (id) => { await data.deleteService(id); reload(); };
+  const del = (s) => confirm({
+    title: "מחיקת שירות", body: `למחוק את "${s.name}"? לא ניתן לבטל.`, danger: true,
+    onYes: async () => { await data.deleteService(s.id); reload(); },
+  });
+  const toggle = async (s) => { await data.updateService(s.id, { is_active: !s.is_active }); reload(); };
   return html`
     <h2 class="text-headline-md text-2xl font-extrabold mb-4">שירותים</h2>
     <div class="flex flex-col gap-3">
       ${services.length === 0 && html`<p class="text-text-muted text-center py-8">אין שירותים עדיין</p>`}
-      ${services.map((s) => html`<div key=${s.id} class="bg-surface-2 rounded-xl p-4 border border-border-light flex flex-col gap-3">
+      ${services.map((s) => html`<div key=${s.id} class="bg-surface-2 rounded-xl p-4 border border-border-light flex flex-col gap-3 ${s.is_active ? "" : "opacity-60"}">
         <div class="flex justify-between items-start">
           <div class="flex items-start gap-3">
             <span class="text-2xl">✂️</span>
-            <div><h3 class="font-bold">${s.name}</h3>
+            <div><h3 class="font-bold flex items-center gap-2">${s.name}
+              ${!s.is_active && html`<span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-3 text-text-muted">לא פעיל</span>`}</h3>
               <p class="text-text-muted mono text-xs mt-0.5">${s.category || ""}</p></div>
           </div>
-          <div class="flex gap-2">
+          <div class="flex items-center gap-2">
+            <button onClick=${() => toggle(s)} title="פעיל/לא פעיל"
+              class="w-11 h-6 rounded-full p-1 transition-colors ${s.is_active ? "bg-primary" : "bg-surface-variant"}">
+              <span class="block w-4 h-4 rounded-full bg-white transition-transform ${s.is_active ? "translate-x-0" : "translate-x-5"}"></span>
+            </button>
             <button onClick=${() => setEdit(s)} class="w-9 h-9 rounded-lg bg-surface-3 flex items-center justify-center text-primary/80"><${Icon} name="edit" className="text-[18px]" /></button>
-            <button onClick=${() => del(s.id)} class="w-9 h-9 rounded-lg bg-surface-3 flex items-center justify-center text-danger/80"><${Icon} name="delete" className="text-[18px]" /></button>
+            <button onClick=${() => del(s)} class="w-9 h-9 rounded-lg bg-surface-3 flex items-center justify-center text-danger/80"><${Icon} name="delete" className="text-[18px]" /></button>
           </div>
         </div>
         <div class="h-px bg-border-light"></div>
@@ -300,11 +338,14 @@ function ServiceModal({ shop, service, onClose, onSaved }) {
 }
 
 // ── Employees (Stitch _3) ────────────────────────────────────────────────────
-function StaffTab({ shop, staff, reload }) {
+function StaffTab({ shop, staff, reload, confirm }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const toggle = async (m) => { await data.updateStaff(m.id, { is_active: !m.is_active }); reload(); };
-  const del = async (id) => { await data.deleteStaff(id); reload(); };
+  const del = (m) => confirm({
+    title: "מחיקת עובד", body: `למחוק את "${m.name}"? לא ניתן לבטל.`, danger: true,
+    onYes: async () => { await data.deleteStaff(m.id); reload(); },
+  });
   const add = async () => { if (!name.trim()) return; await data.createStaff(shop.id, name.trim()); setName(""); setAdding(false); reload(); };
   return html`
     <h2 class="text-headline-md text-2xl font-extrabold mb-4">ניהול עובדים</h2>
@@ -322,7 +363,7 @@ function StaffTab({ shop, staff, reload }) {
             class="w-12 h-7 rounded-full p-1 transition-colors ${m.is_active ? "bg-primary" : "bg-surface-variant"}">
             <span class="block w-5 h-5 rounded-full bg-white transition-transform ${m.is_active ? "translate-x-0" : "translate-x-5"}"></span>
           </button>
-          <button onClick=${() => del(m.id)} class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-danger"><${Icon} name="delete" className="text-[18px]" /></button>
+          <button onClick=${() => del(m)} class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-muted hover:text-danger"><${Icon} name="delete" className="text-[18px]" /></button>
         </div>
       </div>`)}
     </div>
@@ -391,13 +432,16 @@ function Chart({ values, color, line = false }) {
 }
 
 // ── Settings (Stitch _41) ────────────────────────────────────────────────────
-function SettingsTab({ shop, onSignOut }) {
+function SettingsTab({ shop, onSignOut, confirm, reload }) {
   const rows = [
     ["store", "פרטי העסק", shop.name],
     ["payments", "אמצעי תשלום", "חשבון בנק"],
     ["notifications", "התראות", ""],
     ["language", "שפה", "עברית"],
   ];
+  const signOut = () => confirm({
+    title: "התנתקות", body: "להתנתק מהחשבון?", confirmLabel: "התנתק", onYes: onSignOut,
+  });
   return html`
     <h2 class="text-headline-md text-2xl font-extrabold mb-4">הגדרות</h2>
     <div class="flex flex-col gap-3">
@@ -410,7 +454,7 @@ function SettingsTab({ shop, onSignOut }) {
         </div>
         <${Icon} name="chevron_left" className="text-text-muted" />
       </button>`)}
-      <${Btn} variant="danger" onClick=${onSignOut} className="w-full mt-4"><${Icon} name="logout" /> התנתקות</${Btn}>
+      <${Btn} variant="danger" onClick=${signOut} className="w-full mt-4"><${Icon} name="logout" /> התנתקות</${Btn}>
     </div>
   `;
 }

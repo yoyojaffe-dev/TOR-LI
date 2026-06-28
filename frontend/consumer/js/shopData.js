@@ -15,8 +15,11 @@ import { supabase } from "./supabaseClient.js";
 export async function fetchServices(shopId) {
   const { data, error } = await supabase
     .from("services")
-    .select("id, name, price, duration_mins, category, staff:staff_id ( name )")
+    // Embedded staff is inner-joined on is_active so a service whose (only)
+    // barber was deactivated still shows, but an inactive barber's name is hidden.
+    .select("id, name, price, duration_mins, category, staff:staff_id ( name, is_active )")
     .eq("shop_id", shopId)
+    .eq("is_active", true) // hide deactivated services from customers
     .order("category", { ascending: true, nullsFirst: false })
     .order("price", { ascending: true, nullsFirst: false });
   if (error) throw error;
@@ -26,7 +29,8 @@ export async function fetchServices(shopId) {
     price: s.price, // may be null → "מחיר לפי בקשה"
     duration_mins: s.duration_mins, // may be null → hide chip
     category: s.category, // may be null
-    barber: s.staff?.name ?? null, // may be null → hide
+    // hide the barber name when that staff member is deactivated
+    barber: s.staff?.is_active ? s.staff.name : null,
   }));
 }
 
