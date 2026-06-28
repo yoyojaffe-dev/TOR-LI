@@ -24,7 +24,8 @@ export function Dashboard({ shop, onSignOut }) {
   const [overrides, setOverrides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
-  const [unseen, setUnseen] = useState(0); // new-booking alerts badge
+  const [unseenList, setUnseenList] = useState([]); // new bookings since last seen
+  const [notifOpen, setNotifOpen] = useState(false); // bell dropdown
 
   const seenIds = useRef(new Set());
   const firstLoad = useRef(true);
@@ -45,7 +46,7 @@ export function Dashboard({ shop, onSignOut }) {
       const fresh = a.filter((b) => !seenIds.current.has(b.id));
       if (!firstLoad.current && fresh.length) {
         fresh.forEach((b) => toast(`📅 תור חדש: ${b.customer_name}`));
-        setUnseen((u) => u + fresh.length);
+        setUnseenList((prev) => [...fresh, ...prev]); // newest first
       }
       a.forEach((b) => seenIds.current.add(b.id));
       firstLoad.current = false;
@@ -75,19 +76,28 @@ export function Dashboard({ shop, onSignOut }) {
   const [confirmState, setConfirmState] = useState(null);
   const confirm = (opts) => setConfirmState(opts);
 
-  // Selecting Calendar acknowledges the new-booking alerts.
-  const selectTab = (k) => { setTab(k); if (k === "calendar") setUnseen(0); };
+  const selectTab = (k) => { setTab(k); };
+  const clearUnseen = () => { setUnseenList([]); setNotifOpen(false); };
+  // Tapping a notification jumps to that booking's day in the Calendar.
+  const gotoBooking = (b) => {
+    setNotifOpen(false);
+    setUnseenList([]);
+    setTab("calendar");
+  };
+  const unseen = unseenList.length;
 
   const common = { shop, appts, slots, services, staff, overrides, reload, confirm };
   return html`
     <div class="min-h-screen pt-16 pb-24 max-w-[480px] mx-auto">
       <${AppBar}
         title=${shop.name}
-        right=${html`<button onClick=${() => selectTab("calendar")} class="relative w-9 h-9 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-secondary">
+        right=${html`<button onClick=${() => setNotifOpen((o) => !o)} class="relative w-9 h-9 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-secondary">
           <${Icon} name="notifications" fill=${unseen > 0} className=${unseen > 0 ? "text-primary" : ""} />
           ${unseen > 0 && html`<span class="absolute -top-1 -left-1 min-w-[18px] h-[18px] px-1 rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center">${unseen}</span>`}
         </button>`}
       />
+      <${NotificationsPanel} open=${notifOpen} items=${unseenList}
+        onClose=${() => setNotifOpen(false)} onClear=${clearUnseen} onGoto=${gotoBooking} />
       ${loading
         ? html`<div class="flex justify-center pt-24"><${Spinner} className="text-primary text-3xl" /></div>`
         : err
@@ -109,6 +119,34 @@ export function Dashboard({ shop, onSignOut }) {
       <${ConfirmModal} state=${confirmState} onClose=${() => setConfirmState(null)} />
     </div>
   `;
+}
+
+// Bell dropdown: the unseen new-booking alerts. Tap an item to jump to it.
+function NotificationsPanel({ open, items, onClose, onClear, onGoto }) {
+  if (!open) return null;
+  return html`<div class="fixed inset-0 z-50" onClick=${onClose}>
+    <div class="absolute top-[60px] left-3 right-3 max-w-[460px] mx-auto bg-surface-container border border-border-light rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-3"
+         onClick=${(e) => e.stopPropagation()}>
+      <div class="flex justify-between items-center mb-2 px-1">
+        <h3 class="font-bold">התראות</h3>
+        ${items.length > 0 && html`<button onClick=${onClear} class="text-primary text-xs">סמן הכל כנקרא</button>`}
+      </div>
+      ${items.length === 0
+        ? html`<p class="text-text-muted text-sm text-center py-6">אין התראות חדשות</p>`
+        : html`<div class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
+            ${items.map((b) => html`<button key=${b.id} onClick=${() => onGoto(b)}
+              class="w-full text-right bg-surface-1 border border-border-light rounded-xl p-3 flex items-center gap-3 hover:bg-surface-2 transition-colors">
+              <div class="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <${Icon} name="event_available" className="text-[20px]" /></div>
+              <div class="flex-1 text-right min-w-0">
+                <p class="font-bold text-sm truncate">תור חדש · ${b.customer_name}</p>
+                <p class="text-text-muted text-xs truncate">${b.slot?.service_name || ""}${b.slot?.slot_time ? " · " + fmtTime(b.slot.slot_time) : ""}</p>
+              </div>
+              <${Icon} name="chevron_left" className="text-text-muted shrink-0" />
+            </button>`)}
+          </div>`}
+    </div>
+  </div>`;
 }
 
 // Confirmation dialog. state: { title, body, danger, confirmLabel, onYes }.
@@ -429,7 +467,9 @@ function LoyaltyTab({ appts, shop }) {
               <div><h3 class="font-bold">${c.name || "לקוח"}</h3>
                 <p class="text-text-muted mono text-xs" dir="ltr">${c.phone}</p></div>
             </div>
-            ${wa && html`<a href=${wa} target="_blank" rel="noopener" class="text-success"><${Icon} name="chat" /></a>`}
+            ${wa && html`<button onClick=${() => window.open(wa, "_blank", "noopener")} title="WhatsApp"
+              class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success active:scale-95 transition-transform">
+              <${Icon} name="chat" /></button>`}
           </div>
           <div class="grid grid-cols-3 gap-2 text-center">
             <div><span class="block mono font-bold">${c.visits}</span><span class="text-[11px] text-text-muted">ביקורים</span></div>
