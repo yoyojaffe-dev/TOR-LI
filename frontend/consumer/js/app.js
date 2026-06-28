@@ -7,6 +7,7 @@ import { renderMap, renderBarbershopMarkers, recenterMap, travelEtas, boundsToRa
 import { subscribeToSlots } from "./realtime.js";
 import { startBooking, confirmBooking, cancelBooking } from "./booking.js";
 import { fetchServices, fetchExternalReviews } from "./shopData.js";
+import { uploadAvatar } from "./storage.js";
 
 // --- DOM hooks ---
 const els = {
@@ -31,6 +32,7 @@ const els = {
   viewSplash:   () => document.getElementById("view-splash"),
   viewRole:     () => document.getElementById("view-role"),
   viewVerify:   () => document.getElementById("view-verify"),
+  viewRegister: () => document.getElementById("view-register"),
 };
 
 let unsubscribeSlots = null;
@@ -816,9 +818,9 @@ function externalReviewHTML(r) {
 
 const VIEW_IDS = [
   "view-home", "view-shops", "view-barber", "view-success", "view-bookings", "view-profile",
-  "view-splash", "view-role", "view-verify",
+  "view-splash", "view-role", "view-verify", "view-register",
 ];
-const ONBOARDING_VIEWS = ["view-splash", "view-role", "view-verify"];
+const ONBOARDING_VIEWS = ["view-splash", "view-role", "view-verify", "view-register"];
 
 function showView(id) {
   VIEW_IDS.forEach((v) => document.getElementById(v)?.classList.toggle("hidden", v !== id));
@@ -863,6 +865,9 @@ async function router() {
   } else if (hash.startsWith("#/verify")) {
     showView("view-verify");
     renderVerifyView();
+  } else if (hash.startsWith("#/register")) {
+    showView("view-register");
+    renderRegisterView();
   } else {
     showView("view-home");
   }
@@ -1361,7 +1366,7 @@ async function renderProfileView() {
     <!-- Settings -->
     <section class="px-gutter flex flex-col gap-stack-sm">
       ${row("favorite", "המועדפים שלי", 'id="pf-bookings"')}
-      ${row("history", "תורים קודמים", 'id="pf-past-bookings"')}
+      ${row("history", "היסטוריית ההזמנות שלי", 'id="pf-past-bookings"')}
       ${row("credit_card", "אמצעי תשלום", 'id="pf-pay"')}
       ${row("language", "שפה · עברית", 'id="pf-lang"')}
       ${row("notifications", "התראות", 'id="pf-notif"')}
@@ -1522,13 +1527,60 @@ function renderVerifyView() {
     document.getElementById("vf-confirm").addEventListener("click", () => {
       const code = otps.map((o) => o.value).join("");
       if (code.length < 4) { toast("הזן קוד בן 4 ספרות"); return; }
-      localStorage.setItem("torli_onboarded", "1");
-      toast("ברוך הבא! 🎉");
-      location.hash = "#/home";
+      // Phone verified — collect name (+ optional photo) before entering the app.
+      location.hash = "#/register";
     });
   };
 
   phoneStep();
+}
+
+// ── View: Registration (name + optional photo) ───────────────────────────────
+// Final onboarding step. Writes torli_customer_name (+ avatar) — the same keys
+// the profile and booking-confirm sheet read — then marks onboarding complete.
+function renderRegisterView() {
+  const view = els.viewRegister();
+  const phone = localStorage.getItem("torli_customer_phone") || "";
+  const namePrefill = localStorage.getItem("torli_customer_name") || "";
+
+  view.innerHTML = `
+    <main class="min-h-screen flex flex-col px-gutter py-section-gap">
+      <h1 class="font-headline-lg-mobile text-headline-lg-mobile mb-stack-sm">נעים להכיר</h1>
+      <p class="font-body-md text-body-md text-text-secondary mb-section-gap">עוד פרט אחד ואנחנו מתחילים.</p>
+
+      <!-- Optional profile photo -->
+      <button id="rg-avatar" data-avatar-slot="lg"
+              class="self-center w-24 h-24 rounded-full border-2 border-primary overflow-hidden bg-surface-2 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(239,178,0,0.15)] mb-stack-sm">
+        <span class="material-symbols-outlined text-3xl" style="font-variation-settings:'FILL' 1;">person</span>
+      </button>
+      <p class="text-center font-label-mono text-label-mono text-text-muted text-xs mb-section-gap">הוספת תמונה (אופציונלי)</p>
+
+      <!-- Full name -->
+      <label class="font-body-md text-text-secondary text-sm mb-stack-sm">שם מלא</label>
+      <input id="rg-name" type="text" value="${namePrefill}" placeholder="שם מלא"
+             class="w-full bg-surface-2 border border-border-light rounded-[20px] h-14 px-4 text-right font-body-md text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all mb-stack-lg"/>
+
+      <!-- Phone (verified, read-only) -->
+      <label class="font-body-md text-text-secondary text-sm mb-stack-sm">מספר טלפון</label>
+      <input id="rg-phone" type="tel" value="${phone}" readonly dir="ltr"
+             class="w-full bg-surface-1 border border-border-light rounded-[20px] h-14 px-4 text-left font-label-mono text-label-mono text-text-secondary focus:outline-none"/>
+
+      <div class="flex-grow"></div>
+      <button id="rg-continue" class="w-full bg-primary text-on-primary font-headline-sm text-headline-sm py-4 rounded-xl active:scale-[0.98] transition-transform">המשך</button>
+    </main>`;
+
+  // Tapping the avatar opens the shared photo sheet (uploads to Storage).
+  document.getElementById("rg-avatar").addEventListener("click", openPhotoSheet);
+  applyAvatar(); // reflect an already-chosen photo in the avatar slot
+
+  document.getElementById("rg-continue").addEventListener("click", () => {
+    const name = document.getElementById("rg-name").value.trim();
+    if (!name) { toast("הזן שם מלא"); return; }
+    localStorage.setItem("torli_customer_name", name);
+    localStorage.setItem("torli_onboarded", "1");
+    toast("ברוך הבא! 🎉");
+    location.hash = "#/home";
+  });
 }
 
 // ── Search: client-side filter by name/address ───────────────────────────────
@@ -2208,21 +2260,35 @@ function openPhotoSheet() {
     else input.removeAttribute("capture");
     input.click();
   };
-  input.addEventListener("change", () => {
-    const file = input.files?.[0];
-    if (!file) return;
+  // Save a local data-URL copy as a fallback when Storage upload fails.
+  const saveLocal = (file) => {
     const reader = new FileReader();
     reader.onload = () => {
       try {
         localStorage.setItem("torli_avatar", reader.result);
         applyAvatar();
-        toast("התמונה עודכנה");
+        toast("התמונה נשמרה");
       } catch {
         toast("התמונה גדולה מדי");
       }
-      close();
     };
     reader.readAsDataURL(file);
+  };
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    close();
+    toast("מעלה תמונה…");
+    try {
+      // Upload to the Supabase `avatars` bucket; store the public URL.
+      const url = await uploadAvatar(file, store.get().userToken);
+      localStorage.setItem("torli_avatar", url);
+      applyAvatar();
+      toast("התמונה עודכנה");
+    } catch (err) {
+      console.warn("avatar upload failed, saving locally:", err?.message);
+      saveLocal(file);
+    }
   });
   backdrop.querySelector("#ph-camera").addEventListener("click", () => pick(true));
   backdrop.querySelector("#ph-gallery").addEventListener("click", () => pick(false));

@@ -74,8 +74,12 @@ def confirm_booking(req: BookingRequest) -> BookingResponse:
         )
     )
     if not agent_result.get("success"):
-        locking.release_lock(req.slot_id, req.user_token)
-        raise HTTPException(status_code=502, detail="booking submission failed")
+        # Shops with no external booking site (active in-DB partners / seeded
+        # data) are booked directly in our own database — the app IS their
+        # booking system. Any other failure is a genuine submission error.
+        if agent_result.get("reason") != "no booking_url":
+            locking.release_lock(req.slot_id, req.user_token)
+            raise HTTPException(status_code=502, detail="booking submission failed")
 
     return locking.confirm_booking(
         req.slot_id,
