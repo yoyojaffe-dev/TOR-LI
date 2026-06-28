@@ -6,6 +6,7 @@ import { getCurrentPosition, geocodeAddress } from "./geo.js";
 import { renderMap, renderBarbershopMarkers, recenterMap, travelEtas } from "./map.js";
 import { subscribeToSlots } from "./realtime.js";
 import { startBooking, confirmBooking, cancelBooking } from "./booking.js";
+import { fetchServices, fetchExternalReviews } from "./shopData.js";
 
 // --- DOM hooks ---
 const els = {
@@ -567,6 +568,75 @@ function wireSlotTaps(container) {
   );
 }
 
+// Escape untrusted text (scraped reviews, service names) before innerHTML.
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
+}
+
+// ── Service menu row (Supabase `services`) ───────────────────────────────────
+// Graceful degradation: price / duration_mins / barber may all be null.
+function serviceRowHTML(s) {
+  const price = s.price != null
+    ? `<span class="font-price-lg text-price-lg text-primary leading-none">₪${s.price}</span>`
+    : `<span class="font-body-md text-text-secondary text-xs text-center leading-tight">מחיר<br>לפי בקשה</span>`;
+  const meta = [];
+  if (s.duration_mins != null) {
+    meta.push(`<span class="inline-flex items-center gap-1">
+      <span class="material-symbols-outlined text-[14px]">schedule</span>${s.duration_mins} דק'</span>`);
+  }
+  if (s.barber) {
+    meta.push(`<span class="inline-flex items-center gap-1">
+      <span class="material-symbols-outlined text-[14px]">person</span>${escapeHtml(s.barber)}</span>`);
+  }
+  const metaRow = meta.length
+    ? `<span class="font-body-md text-text-secondary text-xs mt-0.5 flex items-center gap-3" dir="rtl">${meta.join("")}</span>`
+    : "";
+  const category = s.category
+    ? `<span class="text-[11px] text-text-muted">${escapeHtml(s.category)}</span>`
+    : "";
+  return `
+    <div class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center">
+      <div class="flex flex-col items-center justify-center w-20" dir="ltr">${price}</div>
+      <div class="flex-1 text-right flex flex-col justify-center pr-3">
+        <span class="font-headline-sm text-base">${escapeHtml(s.name)}</span>
+        ${metaRow}
+        ${category}
+      </div>
+    </div>`;
+}
+
+// ── External (Google) review card (Supabase `external_reviews`) ──────────────
+// Graceful degradation: author / rating / text / reviewed_at may be null.
+function externalReviewHTML(r) {
+  const author = escapeHtml(r.author || "משתמש Google");
+  const date = r.reviewed_at
+    ? new Date(r.reviewed_at).toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "numeric" })
+    : "";
+  const stars = r.rating != null
+    ? Array.from({ length: 5 }).map((_, i) =>
+        `<span class="material-symbols-outlined text-primary text-[14px]" style="font-variation-settings:'FILL' ${i < Math.round(r.rating) ? 1 : 0};">star</span>`
+      ).join("")
+    : "";
+  const source = r.source ? `<span class="text-[11px] text-text-muted">${escapeHtml(r.source)}</span>` : "";
+  return `
+    <div class="bg-surface-1 border border-border-light rounded-xl p-stack-md">
+      <div class="flex items-center justify-between mb-stack-sm">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary text-sm">
+            <span class="material-symbols-outlined text-[18px]" style="font-variation-settings:'FILL' 1;">person</span>
+          </div>
+          <span class="font-body-md text-body-md text-text-primary">${author}</span>
+        </div>
+        ${date ? `<span class="font-label-mono text-label-mono text-text-muted text-[11px]">${date}</span>` : ""}
+      </div>
+      ${stars ? `<div class="flex gap-0.5 mb-stack-sm" dir="ltr">${stars}</div>` : ""}
+      ${r.text ? `<p class="font-body-md text-body-md text-text-secondary text-sm text-right">${escapeHtml(r.text)}</p>` : ""}
+      ${source ? `<div class="mt-stack-sm">${source}</div>` : ""}
+    </div>`;
+}
+
 // ── Router (hash-based) ──────────────────────────────────────────────────────
 
 const VIEW_IDS = [
@@ -694,15 +764,24 @@ async function renderBarberView(shopId) {
     <!-- Tabs -->
     <div class="border-b border-border-light sticky top-0 bg-background/90 backdrop-blur-xl z-30">
       <div class="flex px-gutter">
-        <button data-tab="services" class="bp-tab flex-1 py-4 text-center font-body-md text-body-md">שירותים</button>
-        <button data-tab="portfolio" class="bp-tab flex-1 py-4 text-center font-body-md text-body-md">תיק עבודות</button>
-        <button data-tab="reviews" class="bp-tab flex-1 py-4 text-center font-body-md text-body-md">חוות דעת</button>
+        <button data-tab="slots" class="bp-tab flex-1 py-4 text-center font-body-md text-sm whitespace-nowrap">תורים פנויים</button>
+        <button data-tab="services" class="bp-tab flex-1 py-4 text-center font-body-md text-sm whitespace-nowrap">שירותים</button>
+        <button data-tab="portfolio" class="bp-tab flex-1 py-4 text-center font-body-md text-sm whitespace-nowrap">תיק עבודות</button>
+        <button data-tab="reviews" class="bp-tab flex-1 py-4 text-center font-body-md text-sm whitespace-nowrap">חוות דעת</button>
       </div>
     </div>
 
-    <!-- Tab: Services (slots) — default -->
-    <section id="bp-services" class="px-gutter py-stack-lg">
+    <!-- Tab: Available Slots (live, via backend) — default -->
+    <section id="bp-slots-tab" class="px-gutter py-stack-lg">
       <div id="bp-slots" class="flex flex-col gap-3">
+        <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
+        <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
+      </div>
+    </section>
+
+    <!-- Tab: Services menu (from Supabase `services`) -->
+    <section id="bp-services" class="px-gutter py-stack-lg hidden">
+      <div id="bp-service-menu" class="flex flex-col gap-3">
         <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
         <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
       </div>
@@ -737,6 +816,10 @@ async function renderBarberView(shopId) {
         </div>
         <p class="font-body-md text-body-md text-text-secondary">מבוסס על ${shop.rating_count ?? 0} חוות דעת בגוגל</p>
       </div>` : ""}
+      <!-- Scraped Google reviews (external_reviews) load here -->
+      <div id="bp-external-reviews" class="flex flex-col gap-stack-sm mb-stack-lg">
+        <div class="h-20 bg-surface-2 rounded-xl border border-border-light animate-pulse"></div>
+      </div>
       <!-- User-submitted reviews load here -->
       <div id="bp-user-reviews" class="flex flex-col gap-stack-sm"></div>
     </section>`;
@@ -786,7 +869,7 @@ async function renderBarberView(shopId) {
   })();
 
   // Tabs.
-  const tabPanels = { services: "bp-services", portfolio: "bp-portfolio", reviews: "bp-reviews" };
+  const tabPanels = { slots: "bp-slots-tab", services: "bp-services", portfolio: "bp-portfolio", reviews: "bp-reviews" };
   const setTab = (name) => {
     Object.entries(tabPanels).forEach(([t, id]) =>
       document.getElementById(id)?.classList.toggle("hidden", t !== name)
@@ -803,7 +886,35 @@ async function renderBarberView(shopId) {
   view.querySelectorAll(".bp-tab").forEach((b) =>
     b.addEventListener("click", () => setTab(b.dataset.tab))
   );
-  setTab("services");
+  setTab("slots");
+
+  // Load services menu (real) into the Services tab.
+  (async () => {
+    const box = document.getElementById("bp-service-menu");
+    if (!box) return;
+    try {
+      const services = await fetchServices(shop.id);
+      box.innerHTML = services.length
+        ? services.map(serviceRowHTML).join("")
+        : `<p class="text-text-muted font-body-md py-6 text-center">תפריט השירותים עדיין לא זמין</p>`;
+    } catch (err) {
+      console.warn("fetchServices failed:", err?.message);
+      box.innerHTML = `<p class="text-text-muted font-body-md py-6 text-center">תפריט השירותים עדיין לא זמין</p>`;
+    }
+  })();
+
+  // Load scraped Google reviews (external_reviews) into the Reviews tab.
+  (async () => {
+    const box = document.getElementById("bp-external-reviews");
+    if (!box) return;
+    try {
+      const reviews = await fetchExternalReviews(shop.id);
+      box.innerHTML = reviews.length ? reviews.map(externalReviewHTML).join("") : "";
+    } catch (err) {
+      console.warn("fetchExternalReviews failed:", err?.message);
+      box.innerHTML = "";
+    }
+  })();
 
   // Load slots (real) + live updates into the Services tab.
   const fill = (slots) => {

@@ -3,7 +3,9 @@
     "allow": [
       "Bash(gh repo *)",
       "mcp__stitch__list_projects",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(node --check js/shopData.js)",
+      "Bash(node --check js/app.js)"
     ]
   },
   "enabledMcpjsonServers": [
