@@ -6,12 +6,54 @@ Mounted only when ENVIRONMENT != "production".
 from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
 
 from app.agents.discovery_agent import DiscoveryAgent
 from app.agents.enrichment_agent import EnrichmentAgent
 from app.agents.scraping_agent import ScrapingAgent
+from app.supabase_client import get_supabase_admin
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+class BarberSignupRequest(BaseModel):
+    """Self-serve barber account creation (dashboard onboarding)."""
+
+    email: str
+    password: str
+    full_name: str | None = None
+    phone: str | None = None
+
+
+@router.post("/barber-signup")
+def barber_signup(req: BarberSignupRequest) -> dict[str, Any]:
+    """Dev-only: create a PRE-CONFIRMED barber auth account + owner profile row.
+
+    Global email confirmation stays enabled; this endpoint (mounted only when
+    ENVIRONMENT != production) lets the barber dashboard sign up and onboard
+    without an email inbox. The dashboard then signs in normally via Supabase Auth.
+    """
+    admin = get_supabase_admin()
+    try:
+        created = admin.auth.admin.create_user(
+            {
+                "email": req.email,
+                "password": req.password,
+                "email_confirm": True,
+                "user_metadata": {"full_name": req.full_name or ""},
+            }
+        )
+    except Exception as exc:  # gotrue raises on duplicate email / weak password
+        raise HTTPException(status_code=400, detail=f"signup failed: {exc}") from exc
+
+    user = getattr(created, "user", None)
+    if user is None:
+        raise HTTPException(status_code=400, detail="signup failed: no user returned")
+
+    admin.table("users").upsert(
+        {"id": user.id, "role": "owner", "full_name": req.full_name, "phone": req.phone}
+    ).execute()
+    return {"success": True, "user_id": user.id}
 
 
 @router.post("/discovery/run")
