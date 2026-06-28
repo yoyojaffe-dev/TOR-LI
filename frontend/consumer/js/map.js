@@ -82,6 +82,28 @@ export async function renderMap(el, { lat, lng }, radiusM = config.DEFAULT_RADIU
   return map;
 }
 
+// Approximate the visible viewport as a radius in metres: haversine distance
+// from the map center to the north-east corner of the current bounds. Used to
+// refetch barbershops for "search this area" via the radius API. Computed
+// inline (no Google `geometry` library — the SDK is loaded with `marker` only).
+// Returns 0 if bounds aren't ready yet.
+export function boundsToRadius(map) {
+  const bounds = map?.getBounds?.();
+  const center = map?.getCenter?.();
+  if (!bounds || !center) return 0;
+  const ne = bounds.getNorthEast();
+  const R = 6371000; // Earth radius (m)
+  const toRad = (d) => (d * Math.PI) / 180;
+  const lat1 = toRad(center.lat());
+  const lat2 = toRad(ne.lat());
+  const dLat = lat2 - lat1;
+  const dLng = toRad(ne.lng() - center.lng());
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
 // Recenter an existing map on a new location, moving the user marker + circle.
 export function recenterMap(map, { lat, lng }) {
   if (!map) return;

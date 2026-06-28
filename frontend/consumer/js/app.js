@@ -3,7 +3,7 @@
 import { api, ApiError } from "./api.js";
 import { store } from "./state.js";
 import { geocodeAddress, locateSafely } from "./geo.js";
-import { renderMap, renderBarbershopMarkers, recenterMap, travelEtas } from "./map.js";
+import { renderMap, renderBarbershopMarkers, recenterMap, travelEtas, boundsToRadius } from "./map.js";
 import { subscribeToSlots } from "./realtime.js";
 import { startBooking, confirmBooking, cancelBooking } from "./booking.js";
 import { fetchServices, fetchExternalReviews } from "./shopData.js";
@@ -149,8 +149,53 @@ function setView(view) {
           const markers = renderBarbershopMarkers(map, shops, showMapPreview);
           store.set({ markers });
         }
+        // Reveal "search this area" once the user moves the map off its origin.
+        map.addListener("dragstart", showSearchArea);
+        map.addListener("zoom_changed", showSearchArea);
       });
     }
+  }
+}
+
+// ── Map: "search this area" viewport refetch ─────────────────────────────────
+
+function showSearchArea() {
+  document.getElementById("search-area")?.classList.remove("hidden");
+}
+function hideSearchArea() {
+  document.getElementById("search-area")?.classList.add("hidden");
+}
+
+// Refetch barbershops for the current map viewport (center + derived radius) and
+// re-render the list + pins. The user dot/circle stay put — only the shop source
+// moves to wherever the map is looking. Guards against concurrent taps.
+let viewFetchInFlight = false;
+async function fetchShopsForView() {
+  const map = store.get().map;
+  if (!map || viewFetchInFlight) return;
+  const center = map.getCenter();
+  if (!center) return;
+
+  const r = Math.round(boundsToRadius(map));
+  const radius = Math.min(r > 0 ? r : 2000, 50000); // backend caps radius at 50km
+
+  const btn = document.getElementById("search-area");
+  const icon = document.getElementById("search-area-icon");
+  viewFetchInFlight = true;
+  if (btn) btn.disabled = true;
+  if (icon) { icon.textContent = "progress_activity"; icon.classList.add("animate-spin"); }
+  try {
+    const shops = await api.nearbyBarbershops(center.lat(), center.lng(), radius);
+    store.set({ barbershops: shops });
+    renderShops(); // redraws list rail + ALL pins from visibleShops()
+    hideSearchArea();
+  } catch (err) {
+    console.warn("fetchShopsForView failed:", err?.message);
+    toast("טעינת האזור נכשלה — נסה שוב");
+  } finally {
+    viewFetchInFlight = false;
+    if (btn) btn.disabled = false;
+    if (icon) { icon.textContent = "search"; icon.classList.remove("animate-spin"); }
   }
 }
 
@@ -2493,6 +2538,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // "See All" -> full shop list; back arrow -> home.
   document.getElementById("see-all-shops")?.addEventListener("click", () => { location.hash = "#/shops"; });
   document.getElementById("shops-back")?.addEventListener("click", () => { location.hash = "#/home"; });
+
+  // "Search this area" -> refetch barbershops for the current map viewport.
+  document.getElementById("search-area")?.addEventListener("click", fetchShopsForView);
 
   // Filter button (tune/filter_list icon) -> open the filter bottom-sheet.
   document.querySelectorAll(".material-symbols-outlined").forEach((icon) => {
