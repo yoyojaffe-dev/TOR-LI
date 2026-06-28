@@ -1586,7 +1586,8 @@ function renderRoleView() {
     </main>`;
   document.getElementById("rl-back").addEventListener("click", () => { location.hash = "#/splash"; });
   document.getElementById("rl-customer").addEventListener("click", () => { location.hash = "#/verify"; });
-  document.getElementById("rl-barber").addEventListener("click", () => toast("אפליקציית הספרים בקרוב 🚧"));
+  // Barber chose the consumer entry by mistake — hand off to the dashboard app.
+  document.getElementById("rl-barber").addEventListener("click", () => { window.location.href = "../dashboard/index.html"; });
 }
 
 function renderVerifyView() {

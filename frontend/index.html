@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tor-li</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <style>
+      :root { --bg: #131315; --surface: #18171a; --border: rgba(255, 255, 255, 0.08);
+        --primary: #ffd174; --primary-dim: #efb200; --text: #fafaf9; --muted: #a1a1aa; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+        font-family: Heebo, sans-serif; display: flex; align-items: center; justify-content: center; padding: 24px; }
+      .wrap { width: 100%; max-width: 460px; }
+      .brand { text-align: center; margin-bottom: 40px; }
+      .logo { width: 72px; height: 72px; border-radius: 20px; background: rgba(239, 178, 0, 0.1);
+        border: 1px solid rgba(239, 178, 0, 0.3); color: var(--primary);
+        display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+      .logo .material-symbols-outlined { font-size: 38px; font-variation-settings: "FILL" 1; }
+      h1 { font-size: 34px; font-weight: 900; margin: 0; }
+      .sub { color: var(--muted); margin-top: 8px; font-size: 15px; }
+      .prompt { text-align: center; font-size: 17px; color: var(--text); margin: 0 0 20px; font-weight: 500; }
+      .cards { display: flex; flex-direction: column; gap: 16px; }
+      .card { display: flex; align-items: center; gap: 16px; text-decoration: none; color: inherit;
+        background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px;
+        transition: border-color 0.2s, transform 0.1s; }
+      .card:hover { border-color: rgba(239, 178, 0, 0.5); }
+      .card:active { transform: scale(0.985); }
+      .card .ic { width: 56px; height: 56px; flex: 0 0 auto; border-radius: 16px;
+        background: rgba(239, 178, 0, 0.1); color: var(--primary);
+        display: flex; align-items: center; justify-content: center; }
+      .card .ic .material-symbols-outlined { font-size: 30px; }
+      .card .txt { flex: 1; }
+      .card .txt h3 { margin: 0; font-size: 19px; font-weight: 800; }
+      .card .txt p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+      .card .arrow { color: var(--muted); }
+      .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 28px; }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="brand">
+        <div class="logo"><span class="material-symbols-outlined">content_cut</span></div>
+        <h1>Tor-li</h1>
+        <p class="sub">תורים למספרה ברגע האחרון</p>
+      </div>
+
+      <p class="prompt">מה מביא אותך לכאן?</p>
+
+      <div class="cards">
+        <a class="card" href="./consumer/index.html">
+          <div class="ic"><span class="material-symbols-outlined">event_available</span></div>
+          <div class="txt">
+            <h3>הזמנת תספורת</h3>
+            <p>מצא מספרה פנויה והזמן תור בכמה הקלקות</p>
+          </div>
+          <span class="material-symbols-outlined arrow">chevron_left</span>
+        </a>
+
+        <a class="card" href="./dashboard/index.html">
+          <div class="ic"><span class="material-symbols-outlined">storefront</span></div>
+          <div class="txt">
+            <h3>ניהול מספרה</h3>
+            <p>בעל עסק? נהל תורים, צוות ושירותים</p>
+          </div>
+          <span class="material-symbols-outlined arrow">chevron_left</span>
+        </a>
+      </div>
+
+      <p class="foot">בחר באפשרות כדי להמשיך</p>
+    </main>
+  </body>
+</html>
