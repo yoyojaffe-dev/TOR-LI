@@ -245,7 +245,13 @@
     <section class="mb-section-gap">
       <div class="px-gutter flex justify-between items-end mb-stack-md">
         <h2 class="font-headline-md text-headline-md">זמינים<br/>בקרבתך</h2>
-        <span class="font-body-md text-text-muted text-sm" id="shop-count"></span>
+        <div class="flex items-center gap-3">
+          <span class="font-body-md text-text-muted text-sm" id="shop-count"></span>
+          <button id="see-all-shops"
+                  class="hidden font-label-mono text-label-mono text-sm text-primary hover:underline">
+            ראה הכל ←
+          </button>
+        </div>
       </div>
 
       <!-- Horizontal scroll of barber cards; app.js renders into this -->
@@ -265,6 +271,24 @@
         <span class="font-body-md text-text-muted text-sm" id="nearby-slots-count"></span>
       </div>
       <div id="nearby-slots-list" class="flex flex-col gap-3"></div>
+    </section>
+
+    <!-- Last Minute Deals: soonest free slots (tap → confirm → book) -->
+    <section id="deals-section" class="mb-section-gap px-gutter hidden">
+      <div class="flex justify-between items-end mb-stack-md">
+        <h2 class="font-headline-md text-headline-md">מבצעי<br/>דקה תשעים</h2>
+        <span class="font-body-md text-text-muted text-sm" id="deals-count"></span>
+      </div>
+      <div id="deals-list" class="flex flex-col gap-3"></div>
+    </section>
+
+    <!-- Top Rated Near You: highest-rated nearby shops -->
+    <section id="top-rated-section" class="mb-section-gap hidden">
+      <div class="px-gutter flex justify-between items-end mb-stack-md">
+        <h2 class="font-headline-md text-headline-md">מדורגים<br/>בקרבתך</h2>
+        <span class="font-body-md text-text-muted text-sm" id="top-rated-count"></span>
+      </div>
+      <div id="top-rated-list" class="flex overflow-x-auto hide-scrollbar gap-4 px-gutter pb-4"></div>
     </section>
 
     <!-- Slots for selected barbershop (hidden until a shop is selected) -->
@@ -292,6 +316,21 @@
   </div><!-- /view-home -->
 
   <!-- ═══ Other views (rendered by app.js / router) ═══ -->
+
+  <!-- Full shop list ("See All" destination) -->
+  <div id="view-shops" class="hidden">
+    <header class="px-gutter pt-8 pb-4 flex items-center gap-3 sticky top-0 bg-background/90 backdrop-blur-xl z-30">
+      <button id="shops-back" class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-text-primary">
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+      <div class="flex flex-col">
+        <h1 class="font-headline-md text-headline-md">כל הספרים</h1>
+        <span class="font-body-md text-text-muted text-sm" id="all-shops-count"></span>
+      </div>
+    </header>
+    <div id="all-shops-list" class="flex flex-col gap-4 px-gutter pb-28"></div>
+  </div>
+
   <div id="view-barber" class="hidden"></div>
   <div id="view-success" class="hidden"></div>
   <div id="view-bookings" class="hidden"></div>

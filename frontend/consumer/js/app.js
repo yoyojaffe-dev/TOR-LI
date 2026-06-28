@@ -2,7 +2,7 @@
 // and keeps slots live via Supabase Realtime.
 import { api, ApiError } from "./api.js";
 import { store } from "./state.js";
-import { getCurrentPosition, geocodeAddress } from "./geo.js";
+import { geocodeAddress, locateSafely } from "./geo.js";
 import { renderMap, renderBarbershopMarkers, recenterMap, travelEtas } from "./map.js";
 import { subscribeToSlots } from "./realtime.js";
 import { startBooking, confirmBooking, cancelBooking } from "./booking.js";
@@ -162,14 +162,19 @@ async function init() {
     location.hash = "#/splash";
   }
 
-  // Priority on load: GPS -> Jerusalem fallback. (Manual search overrides later.)
-  try {
-    const position = await getCurrentPosition();
+  // Never block the home on GPS. Render default-location data immediately so the
+  // page is usable within a frame, then upgrade to real coords in the background
+  // if geolocation resolves. locateSafely() can never hang (hard wall-clock cap).
+  await setLocation(DEFAULT_POSITION, { label: "מאתר…" });
+
+  const position = await locateSafely();
+  if (position) {
     await setLocation(position, { label: "מיקומך" });
-  } catch {
+  } else {
     const banner = els.geoBanner();
     if (banner) banner.hidden = false;
-    await setLocation(DEFAULT_POSITION, { label: "ירושלים" });
+    const el = els.locationLabel();
+    if (el) el.textContent = "ירושלים";
   }
 }
 
@@ -205,24 +210,56 @@ async function loadNearby() {
   }
 }
 
+// Max barber cards shown on the home rail before "ראה הכל" (See All).
+const HOME_SHOP_LIMIT = 5;
+
 // Render the currently-visible shops (post-filter) into the list + map.
 function renderShops() {
   const shops = visibleShops();
-  renderBarbershops(shops);
+  // Home rail is capped; the full set lives behind "See All" (#/shops).
+  renderBarbershops(shops.slice(0, HOME_SHOP_LIMIT));
 
   const count = els.shopCount();
   if (count) count.textContent = `${shops.length} ספרים`;
 
-  // Redraw markers if the map exists (clear old pins first to avoid pileup).
+  // "See All" only matters when there's more than the rail shows.
+  const seeAll = document.getElementById("see-all-shops");
+  if (seeAll) seeAll.classList.toggle("hidden", shops.length <= HOME_SHOP_LIMIT);
+
+  // Markers show ALL visible shops (not just the rail's 5).
   if (store.get().map) {
     clearMarkers();
     const markers = renderBarbershopMarkers(store.get().map, shops, showMapPreview);
     store.set({ markers });
   }
+
+  // Derived "Top Rated" section refreshes whenever the shop set does.
+  renderTopRated();
+
+  // Keep the full-list view in sync if it's the active route.
+  if (location.hash.startsWith("#/shops")) renderAllShops();
+}
+
+// Full vertical list of every visible shop (the "See All" destination).
+function renderAllShops() {
+  const list = document.getElementById("all-shops-list");
+  if (!list) return;
+  const shops = visibleShops();
+  if (!shops.length) {
+    list.innerHTML = EMPTY_SHOPS_HTML;
+    return;
+  }
+  list.innerHTML = shops.map((b) => barberCardHTML(b, "full")).join("");
+  wireShopCards(list, shops);
+  const count = document.getElementById("all-shops-count");
+  if (count) count.textContent = `${shops.length} ספרים`;
 }
 
 // Render the "Available Nearby" quick-book slot cards.
 function renderNearbySlots() {
+  // Derived "Last Minute Deals" section refreshes whenever nearby slots do.
+  renderDeals();
+
   const section = document.getElementById("nearby-slots-section");
   const list = document.getElementById("nearby-slots-list");
   const count = document.getElementById("nearby-slots-count");
@@ -263,6 +300,87 @@ function renderNearbySlots() {
   list.querySelectorAll("[data-slot-id]").forEach((el) =>
     el.addEventListener("click", () => quickBookSlot(el.dataset.slotId))
   );
+}
+
+// Hebrew relative time for an upcoming slot ("בעוד 40 דק'" / "בעוד 2 שע'").
+function relativeTimeHe(date) {
+  const ms = date.getTime() - new Date().getTime();
+  if (ms <= 0) return "עכשיו";
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return `בעוד ${mins} דק'`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `בעוד ${hrs} שע'`;
+  return `בעוד ${Math.round(hrs / 24)} ימ'`;
+}
+
+// ── Section: Last Minute Deals (soonest upcoming free slots) ─────────────────
+function renderDeals() {
+  const section = document.getElementById("deals-section");
+  const list = document.getElementById("deals-list");
+  const count = document.getElementById("deals-count");
+  if (!section || !list) return;
+
+  const now = new Date();
+  const slots = (visibleSlots() || [])
+    .filter((s) => new Date(s.slot_time) >= now) // upcoming only
+    .sort((a, b) => new Date(a.slot_time) - new Date(b.slot_time))
+    .slice(0, 8);
+
+  if (!slots.length) {
+    section.classList.add("hidden");
+    return;
+  }
+  section.classList.remove("hidden");
+  if (count) count.textContent = `${slots.length} תורים`;
+
+  list.innerHTML = slots
+    .map((s) => {
+      const d = new Date(s.slot_time);
+      const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+      return `
+      <div data-slot-id="${s.slot_id}"
+           class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center
+                  cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
+        <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
+          <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
+          <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
+        </div>
+        <div class="flex-1 text-right flex flex-col justify-center pr-3 min-w-0">
+          <span class="font-headline-sm text-base truncate">${escapeHtml(s.shop_name)}</span>
+          <span class="font-body-md text-text-secondary text-xs mt-0.5 truncate">${escapeHtml(s.service_name)} · ${time}</span>
+        </div>
+        <span class="font-label-mono text-label-mono text-[11px] text-primary border border-primary/30 rounded-full px-2.5 py-1 whitespace-nowrap">
+          ${relativeTimeHe(d)}
+        </span>
+      </div>`;
+    })
+    .join("");
+
+  list.querySelectorAll("[data-slot-id]").forEach((el) =>
+    el.addEventListener("click", () => quickBookSlot(el.dataset.slotId))
+  );
+}
+
+// ── Section: Top Rated Near You (highest-rated visible shops) ────────────────
+function renderTopRated() {
+  const section = document.getElementById("top-rated-section");
+  const list = document.getElementById("top-rated-list");
+  const count = document.getElementById("top-rated-count");
+  if (!section || !list) return;
+
+  const shops = (visibleShops() || [])
+    .filter((b) => b.rating != null)
+    .sort((a, b) => b.rating - a.rating)
+    .slice(0, 5);
+
+  if (!shops.length) {
+    section.classList.add("hidden");
+    return;
+  }
+  section.classList.remove("hidden");
+  if (count) count.textContent = `${shops.length} ספרים`;
+  list.innerHTML = shops.map((b) => barberCardHTML(b, "rail")).join("");
+  wireShopCards(list, shops);
 }
 
 // Quick-book a nearby slot: confirm, then run the normal lock -> confirm flow.
@@ -415,26 +533,16 @@ async function bookSlot(slotId) {
 
 // ── Renderers ────────────────────────────────────────────────────────────────
 
-function renderBarbershops(barbershops) {
-  const list = els.shopList();
-  if (!list) return;
-
-  if (!barbershops.length) {
-    list.innerHTML = `
-      <div class="w-full flex flex-col items-center justify-center text-center py-12 px-gutter gap-3">
-        <span class="material-symbols-outlined text-5xl text-surface-variant">location_off</span>
-        <p class="font-headline-sm text-headline-sm text-text-primary">לא נמצאו ספרים באזור זה</p>
-        <p class="font-body-md text-text-secondary text-sm">נסה לחפש עיר אחרת או להרחיב את הסינון</p>
-      </div>`;
-    return;
-  }
-
-  list.innerHTML = barbershops
-    .map(
-      (b) => `
+// Shared barber card. `variant: "rail"` = fixed-width horizontal scroller card;
+// "full" = full-width card for the vertical "all shops" list.
+function barberCardHTML(b, variant = "rail") {
+  const wrap = variant === "full"
+    ? "w-full"
+    : "min-w-[260px] flex-shrink-0";
+  return `
     <div data-id="${b.id}"
-         class="min-w-[260px] bg-surface-2 rounded-[20px] overflow-hidden border border-border-light
-                relative flex-shrink-0 cursor-pointer hover:border-primary/40 transition-colors group">
+         class="${wrap} bg-surface-2 rounded-[20px] overflow-hidden border border-border-light
+                relative cursor-pointer hover:border-primary/40 transition-colors group">
       <!-- Card photo: real image when available, gradient fallback otherwise -->
       <div class="h-32 w-full relative overflow-hidden ${b.photo_url ? "" : "photo-placeholder"}">
         ${b.photo_url
@@ -473,17 +581,39 @@ function renderBarbershops(barbershops) {
           </span>
         </div>
       </div>
-    </div>`
-    )
-    .join("");
+    </div>`;
+}
 
-  list.querySelectorAll("[data-id]").forEach((el) => {
-    const shop = barbershops.find((b) => b.id === el.dataset.id);
+// Wire shop cards in a container to open the barber profile.
+function wireShopCards(container, shops) {
+  container.querySelectorAll("[data-id]").forEach((el) => {
+    const shop = shops.find((b) => b.id === el.dataset.id);
+    if (!shop) return;
     el.addEventListener("click", () => {
       store.set({ selectedBarbershop: shop });
       location.hash = `#/barber/${shop.id}`;
     });
   });
+}
+
+const EMPTY_SHOPS_HTML = `
+  <div class="w-full flex flex-col items-center justify-center text-center py-12 px-gutter gap-3">
+    <span class="material-symbols-outlined text-5xl text-surface-variant">location_off</span>
+    <p class="font-headline-sm text-headline-sm text-text-primary">לא נמצאו ספרים באזור זה</p>
+    <p class="font-body-md text-text-secondary text-sm">נסה לחפש עיר אחרת או להרחיב את הסינון</p>
+  </div>`;
+
+function renderBarbershops(barbershops) {
+  const list = els.shopList();
+  if (!list) return;
+
+  if (!barbershops.length) {
+    list.innerHTML = EMPTY_SHOPS_HTML;
+    return;
+  }
+
+  list.innerHTML = barbershops.map((b) => barberCardHTML(b, "rail")).join("");
+  wireShopCards(list, barbershops);
 }
 
 function renderSlots(slots) {
@@ -640,7 +770,7 @@ function externalReviewHTML(r) {
 // ── Router (hash-based) ──────────────────────────────────────────────────────
 
 const VIEW_IDS = [
-  "view-home", "view-barber", "view-success", "view-bookings", "view-profile",
+  "view-home", "view-shops", "view-barber", "view-success", "view-bookings", "view-profile",
   "view-splash", "view-role", "view-verify",
 ];
 const ONBOARDING_VIEWS = ["view-splash", "view-role", "view-verify"];
@@ -667,6 +797,9 @@ async function router() {
   if (barberMatch) {
     showView("view-barber");
     await renderBarberView(barberMatch[1]);
+  } else if (hash.startsWith("#/shops")) {
+    showView("view-shops");
+    renderAllShops();
   } else if (hash.startsWith("#/bookings")) {
     showView("view-bookings");
     renderBookingsView();
@@ -779,7 +912,7 @@ async function renderBarberView(shopId) {
       </div>
     </section>
 
-    <!-- Tab: Services menu (from Supabase `services`) -->
+    <!-- Tab: Services menu (from Supabase services table) -->
     <section id="bp-services" class="px-gutter py-stack-lg hidden">
       <div id="bp-service-menu" class="flex flex-col gap-3">
         <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
@@ -1358,7 +1491,7 @@ function renderVerifyView() {
 function handleSearch() {
   const input = els.searchInput();
   searchQuery = input?.value.trim() ?? "";
-  renderShops(visibleShops());
+  renderShops();
 }
 
 // ── Location city picker ──────────────────────────────────────────────────────
@@ -1382,12 +1515,6 @@ function openLocationSheet() {
     backdrop.className =
       "fixed inset-0 z-[70] bg-black/60 flex items-end justify-center " +
       "transition-opacity duration-200";
-    const cities = CITY_LIST.map((c) => `
-      <button data-lat="${c.lat}" data-lng="${c.lng}" data-name="${c.name}"
-              class="loc-city w-full flex items-center gap-stack-md p-stack-md rounded-xl hover:bg-surface-2 transition-colors text-right">
-        <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">location_city</span>
-        <span class="font-body-md text-body-md text-text-primary">${c.name}</span>
-      </button>`).join("");
     backdrop.innerHTML = `
       <div id="location-sheet"
            class="w-full max-w-[430px] bg-surface-container border-t border-border-light
@@ -1403,7 +1530,13 @@ function openLocationSheet() {
           <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">my_location</span>
           <span class="font-body-md font-medium text-primary">השתמש במיקום שלי</span>
         </button>
-        <div class="flex flex-col gap-1">${cities}</div>
+        <div class="relative mb-stack-md">
+          <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary">search</span>
+          <input id="loc-search" type="text" autocomplete="off"
+                 class="w-full bg-surface-1 border border-border-light rounded-xl h-12 pr-10 pl-4 font-body-md text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 transition-colors"
+                 placeholder="חפש עיר או כתובת..." />
+        </div>
+        <div id="loc-results" class="flex flex-col gap-1 max-h-[40vh] overflow-y-auto"></div>
       </div>`;
     document.body.appendChild(backdrop);
 
@@ -1415,26 +1548,84 @@ function openLocationSheet() {
     backdrop.querySelector("#loc-close").addEventListener("click", close);
     backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(); });
 
-    backdrop.querySelector("#loc-gps").addEventListener("click", async () => {
+    backdrop.querySelector("#loc-gps").addEventListener("click", async (e) => {
+      const btn = e.currentTarget;
+      const label = btn.querySelector("span.font-body-md");
+      const original = label ? label.textContent : "";
+      btn.disabled = true;
+      if (label) label.textContent = "מאתר…";
+      const pos = await locateSafely();
+      btn.disabled = false;
+      if (label) label.textContent = original;
       close();
-      try {
-        const pos = await getCurrentPosition();
+      if (pos) {
         await setLocation(pos, { label: "מיקומך" });
-      } catch {
+      } else {
+        toast("לא הצלחנו לאתר אותך — מציג ירושלים");
         await setLocation(DEFAULT_POSITION, { label: "ירושלים" });
       }
     });
-    backdrop.querySelectorAll(".loc-city").forEach((btn) => {
-      btn.addEventListener("click", async () => {
+    // Dynamic city search: live-filter the known list, geocode free text on miss.
+    const input = backdrop.querySelector("#loc-search");
+    const results = backdrop.querySelector("#loc-results");
+
+    const cityRowHTML = (c) => `
+      <button data-lat="${c.lat}" data-lng="${c.lng}" data-name="${escapeHtml(c.name)}"
+              class="loc-city w-full flex items-center gap-stack-md p-stack-md rounded-xl hover:bg-surface-2 transition-colors text-right">
+        <span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">location_city</span>
+        <span class="font-body-md text-body-md text-text-primary">${escapeHtml(c.name)}</span>
+      </button>`;
+
+    const renderResults = (query) => {
+      const q = (query || "").trim();
+      const matches = q ? CITY_LIST.filter((c) => c.name.includes(q)) : CITY_LIST;
+      if (matches.length) {
+        results.innerHTML = matches.map(cityRowHTML).join("");
+      } else {
+        results.innerHTML = `
+          <button class="loc-geocode w-full flex items-center gap-stack-md p-stack-md rounded-xl hover:bg-surface-2 transition-colors text-right">
+            <span class="material-symbols-outlined text-primary">travel_explore</span>
+            <span class="font-body-md text-body-md text-text-primary">חפש "${escapeHtml(q)}" במפה</span>
+          </button>`;
+      }
+    };
+
+    input.addEventListener("input", () => renderResults(input.value));
+
+    results.addEventListener("click", async (ev) => {
+      const cityBtn = ev.target.closest(".loc-city");
+      if (cityBtn) {
         close();
-        const lat = parseFloat(btn.dataset.lat);
-        const lng = parseFloat(btn.dataset.lng);
-        await setLocation({ lat, lng }, { label: btn.dataset.name });
-      });
+        await setLocation(
+          { lat: parseFloat(cityBtn.dataset.lat), lng: parseFloat(cityBtn.dataset.lng) },
+          { label: cityBtn.dataset.name }
+        );
+        return;
+      }
+      const geoBtn = ev.target.closest(".loc-geocode");
+      if (geoBtn) {
+        const q = input.value.trim();
+        if (!q) return;
+        geoBtn.disabled = true;
+        try {
+          const r = await geocodeAddress(q);
+          close();
+          await setLocation({ lat: r.lat, lng: r.lng }, { label: r.label || q });
+        } catch {
+          geoBtn.disabled = false;
+          toast("לא נמצאה כתובת כזו");
+        }
+      }
     });
   }
 
   const sheet = backdrop.querySelector("#location-sheet");
+  // Reset the search to the full city list each time the sheet opens.
+  const searchInput = backdrop.querySelector("#loc-search");
+  if (searchInput) {
+    searchInput.value = "";
+    searchInput.dispatchEvent(new Event("input"));
+  }
   backdrop.classList.remove("opacity-0", "pointer-events-none");
   requestAnimationFrame(() => sheet.classList.remove("translate-y-full"));
 }
@@ -2298,6 +2489,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Location picker: tap the location label to open the city picker.
   document.getElementById("location-btn")?.addEventListener("click", openLocationSheet);
+
+  // "See All" -> full shop list; back arrow -> home.
+  document.getElementById("see-all-shops")?.addEventListener("click", () => { location.hash = "#/shops"; });
+  document.getElementById("shops-back")?.addEventListener("click", () => { location.hash = "#/home"; });
 
   // Filter button (tune/filter_list icon) -> open the filter bottom-sheet.
   document.querySelectorAll(".material-symbols-outlined").forEach((icon) => {

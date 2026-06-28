@@ -26,6 +26,29 @@ export function getCurrentPosition(options = {}) {
   });
 }
 
+// Hardened geolocation that can NEVER hang the UI.
+//
+// The browser's own `timeout` does not run while the permission prompt is
+// pending, so an ignored prompt hangs `getCurrentPosition` forever. We race it
+// against a hard wall-clock timeout and resolve to `null` on ANY failure
+// (timeout / denied / unavailable / insecure context) — never reject, never
+// block. Callers branch on null and fall back to a default location.
+export async function locateSafely({ timeoutMs = 8000 } = {}) {
+  // Geolocation is unavailable on non-secure origins (e.g. http://<lan-ip>).
+  if (typeof window !== "undefined" && window.isSecureContext === false) {
+    return null;
+  }
+  const wallClock = new Promise((resolve) => setTimeout(() => resolve(null), timeoutMs));
+  // Coarse fix is fast and good enough for a radius search; high accuracy is
+  // slow and frequently never settles on desktop.
+  const locate = getCurrentPosition({
+    enableHighAccuracy: false,
+    timeout: timeoutMs,
+    maximumAge: 60000,
+  }).catch(() => null);
+  return Promise.race([locate, wallClock]);
+}
+
 // Convert a typed address/city into {lat, lng} via the Google Geocoder.
 // Region-biased to Israel. Rejects if the query yields no results.
 export async function geocodeAddress(query) {
