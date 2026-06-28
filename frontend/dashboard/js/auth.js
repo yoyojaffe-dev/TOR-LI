@@ -20,6 +20,32 @@ export function signOut() {
   return supabase.auth.signOut();
 }
 
+export async function currentEmail() {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.email;
+}
+
+// Re-authenticate the current user (required before sensitive account changes).
+// Throws if the supplied current password is wrong.
+export async function reauthenticate(currentPassword) {
+  const email = await currentEmail();
+  if (!email) throw new Error("לא מחובר");
+  const { error } = await supabase.auth.signInWithPassword({ email, password: currentPassword });
+  if (error) throw new Error("הסיסמה הנוכחית שגויה");
+}
+
+// Change password — caller must re-authenticate first.
+export async function updatePassword(newPassword) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw new Error(error.message || "עדכון הסיסמה נכשל");
+}
+
+// Change email — caller must re-authenticate first.
+export async function updateEmail(newEmail) {
+  const { error } = await supabase.auth.updateUser({ email: newEmail });
+  if (error) throw new Error(error.message || "עדכון האימייל נכשל");
+}
+
 // Create a pre-confirmed barber account through the backend, then sign in.
 export async function signUp(email, password, fullName, phone) {
   const res = await fetch(`${config.BACKEND_URL}/admin/barber-signup`, {

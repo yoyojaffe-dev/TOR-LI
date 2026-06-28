@@ -1,9 +1,10 @@
 // Barber dashboard — 5 tabs (Stitch _14/_23/_3/_18/_41) over live owner data.
 import {
   html, useState, useEffect, useMemo, Icon, Btn, Field, AppBar, BottomNav, FAB, Modal,
-  Spinner, fmtTime, ymd,
+  Spinner, toast, fmtTime, ymd,
 } from "./ui.js";
 import * as data from "./data.js";
+import * as auth from "./auth.js";
 
 const TABS = [
   { key: "calendar", label: "לוח", icon: "calendar_month" },
@@ -377,39 +378,84 @@ function StaffTab({ shop, staff, reload, confirm }) {
 }
 
 // ── Statistics (Stitch _23) ──────────────────────────────────────────────────
-function StatsTab({ appts }) {
+function StatsTab({ appts, staff }) {
   const [period, setPeriod] = useState(30);
+  const [staffFilter, setStaffFilter] = useState("all"); // "all" | staff id
+  const activeStaff = (staff || []).filter((m) => m.is_active);
+
   const stats = useMemo(() => {
     const since = Date.now() - period * 86400000;
-    const inRange = appts.filter((a) => new Date(a.created_at).getTime() >= since);
+    const inRange = appts.filter(
+      (a) =>
+        new Date(a.created_at).getTime() >= since &&
+        (staffFilter === "all" || a.slot?.staff_id === staffFilter)
+    );
     const revenue = inRange.reduce((s, a) => s + (Number(a.slot?.price) || 0), 0);
-    // bucket revenue by day for the chart
-    const buckets = {};
+    const visitBuckets = {};
+    const revBuckets = {};
     inRange.forEach((a) => {
       const k = ymd(new Date(a.created_at));
-      buckets[k] = (buckets[k] || 0) + (Number(a.slot?.price) || 0);
+      revBuckets[k] = (revBuckets[k] || 0) + (Number(a.slot?.price) || 0);
+      visitBuckets[k] = (visitBuckets[k] || 0) + 1;
     });
-    const series = Object.keys(buckets).sort().map((k) => buckets[k]);
-    return { revenue, visits: inRange.length, series };
-  }, [appts, period]);
+    const days = Object.keys(revBuckets).sort();
+    return {
+      revenue,
+      visits: inRange.length,
+      avg: inRange.length ? Math.round(revenue / inRange.length) : 0,
+      revSeries: days.map((k) => revBuckets[k]),
+      visitSeries: days.map((k) => visitBuckets[k]),
+    };
+  }, [appts, period, staffFilter]);
 
-  const periods = [[30, "1M"], [90, "3M"], [180, "6M"], [365, "1Y"], [99999, "All"]];
+  const periods = [[30, "חודש"], [90, "3 ח'"], [180, "6 ח'"], [365, "שנה"], [99999, "הכל"]];
   return html`
     <h2 class="text-headline-md text-2xl font-extrabold mb-4">סטטיסטיקות</h2>
+
+    <!-- Staff selector -->
+    <section class="mb-5 overflow-x-auto no-scrollbar">
+      <div class="flex gap-4 min-w-max pb-1">
+        <button onClick=${() => setStaffFilter("all")} class="flex flex-col items-center gap-1.5">
+          <div class="w-14 h-14 rounded-full flex items-center justify-center ${staffFilter === "all"
+            ? "bg-primary shadow-[0_0_15px_rgba(239,178,0,0.3)] text-on-primary"
+            : "bg-surface-2 border border-border-light text-text-muted"}">
+            <${Icon} name="group" fill=${true} /></div>
+          <span class="text-xs ${staffFilter === "all" ? "text-primary" : "text-text-muted"}">הכל</span>
+        </button>
+        ${activeStaff.map((m) => html`<button key=${m.id} onClick=${() => setStaffFilter(m.id)}
+          class="flex flex-col items-center gap-1.5 ${staffFilter === m.id ? "" : "opacity-60"}">
+          <div class="w-14 h-14 rounded-full flex items-center justify-center border ${staffFilter === m.id
+            ? "border-primary text-primary" : "border-border-light text-text-muted"} bg-surface-2">
+            <${Icon} name="person" fill=${true} /></div>
+          <span class="text-xs">${m.name}</span>
+        </button>`)}
+      </div>
+    </section>
+
+    <!-- Period filter -->
     <div class="flex flex-row-reverse bg-surface-3 rounded-xl p-1 border border-border-light mb-5">
       ${periods.map(([d, l]) => html`<button key=${l} onClick=${() => setPeriod(d)}
-        class="flex-1 py-1.5 rounded-lg mono text-sm ${period === d ? "bg-surface-1 text-primary" : "text-text-muted"}">${l}</button>`)}
+        class="flex-1 py-1.5 rounded-lg text-sm ${period === d ? "bg-surface-1 text-primary font-bold" : "text-text-muted"}">${l}</button>`)}
     </div>
+
+    <!-- Summary tiles -->
+    <div class="grid grid-cols-3 gap-3 mb-5">
+      ${[["הכנסות", `₪${stats.revenue.toLocaleString()}`, "text-primary"], ["תורים", stats.visits, ""], ["ממוצע", `₪${stats.avg}`, ""]].map(
+        ([l, v, c], i) => html`<div key=${i} class="bg-surface-1 rounded-xl p-3 flex flex-col items-center border border-border-light">
+          <span class="text-lg font-extrabold ${c}">${v}</span><span class="text-[11px] text-text-muted mt-1">${l}</span></div>`
+      )}
+    </div>
+
     <article class="bg-surface-2 rounded-xl p-5 border border-border-light mb-4">
       <h3 class="text-text-secondary text-sm mb-1">הכנסות</h3>
       <div class="flex items-baseline gap-1" dir="ltr"><span class="text-text-muted">₪</span>
         <span class="text-4xl font-extrabold">${stats.revenue.toLocaleString()}</span></div>
-      <${Chart} values=${stats.series} color="#34C759" />
+      <${Chart} values=${stats.revSeries} color="#34C759" />
     </article>
     <article class="bg-surface-2 rounded-xl p-5 border border-border-light">
       <h3 class="text-text-secondary text-sm mb-1">מספר תורים</h3>
       <span class="text-4xl font-extrabold">${stats.visits}</span>
-      <${Chart} values=${stats.series.map((v) => (v > 0 ? 1 : 0))} color="#0A84FF" line />
+      <${Chart} values=${stats.visitSeries} color="#0A84FF" line />
     </article>
   `;
 }
@@ -433,11 +479,12 @@ function Chart({ values, color, line = false }) {
 
 // ── Settings (Stitch _41) ────────────────────────────────────────────────────
 function SettingsTab({ shop, onSignOut, confirm, reload }) {
+  const [pwOpen, setPwOpen] = useState(false);
   const rows = [
-    ["store", "פרטי העסק", shop.name],
-    ["payments", "אמצעי תשלום", "חשבון בנק"],
-    ["notifications", "התראות", ""],
-    ["language", "שפה", "עברית"],
+    ["store", "פרטי העסק", shop.name, null],
+    ["lock", "שינוי סיסמה", "דורש אימות מחדש", () => setPwOpen(true)],
+    ["payments", "אמצעי תשלום", "חשבון בנק", null],
+    ["language", "שפה", "עברית", null],
   ];
   const signOut = () => confirm({
     title: "התנתקות", body: "להתנתק מהחשבון?", confirmLabel: "התנתק", onYes: onSignOut,
@@ -445,8 +492,8 @@ function SettingsTab({ shop, onSignOut, confirm, reload }) {
   return html`
     <h2 class="text-headline-md text-2xl font-extrabold mb-4">הגדרות</h2>
     <div class="flex flex-col gap-3">
-      ${rows.map(([icon, title, sub]) => html`<button key=${title}
-        class="w-full flex items-center justify-between p-4 bg-surface-2 rounded-xl border border-border-light">
+      ${rows.map(([icon, title, sub, onClick]) => html`<button key=${title} onClick=${onClick || (() => {})}
+        class="w-full flex items-center justify-between p-4 bg-surface-2 rounded-xl border border-border-light ${onClick ? "active:scale-[0.99]" : "opacity-70"}">
         <div class="flex items-center gap-4">
           <div class="w-11 h-11 rounded-lg bg-surface-3 flex items-center justify-center text-primary"><${Icon} name=${icon} /></div>
           <div class="text-right"><h3 class="font-bold">${title}</h3>
@@ -456,5 +503,39 @@ function SettingsTab({ shop, onSignOut, confirm, reload }) {
       </button>`)}
       <${Btn} variant="danger" onClick=${signOut} className="w-full mt-4"><${Icon} name="logout" /> התנתקות</${Btn}>
     </div>
+    <${ChangePasswordModal} open=${pwOpen} onClose=${() => setPwOpen(false)} />
   `;
+}
+
+// Sensitive account change: requires re-authentication with the current password.
+function ChangePasswordModal({ open, onClose }) {
+  const [cur, setCur] = useState("");
+  const [nw, setNw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const save = async () => {
+    if (nw.length < 6) { setErr("הסיסמה החדשה חייבת להכיל לפחות 6 תווים"); return; }
+    setBusy(true); setErr("");
+    try {
+      await auth.reauthenticate(cur); // verify current password (re-auth)
+      await auth.updatePassword(nw);
+      toast("הסיסמה עודכנה ✓");
+      setCur(""); setNw("");
+      onClose();
+    } catch (e) {
+      setErr(e.message || "העדכון נכשל");
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (!open) return null;
+  return html`<${Modal} open=${true} onClose=${onClose} title="שינוי סיסמה">
+    <div class="flex flex-col gap-4">
+      <p class="text-text-muted text-sm">לאבטחת החשבון, יש לאמת את הסיסמה הנוכחית.</p>
+      ${err && html`<p class="text-danger text-sm">${err}</p>`}
+      <${Field} label="סיסמה נוכחית" type="password" value=${cur} onInput=${(e) => setCur(e.target.value)} dir="ltr" />
+      <${Field} label="סיסמה חדשה" type="password" value=${nw} onInput=${(e) => setNw(e.target.value)} dir="ltr" />
+      <${Btn} variant="gold" onClick=${save} loading=${busy} className="w-full">אמת ושמור</${Btn}>
+    </div>
+  </${Modal}>`;
 }

@@ -109,6 +109,17 @@ export const Modal = ({ open, onClose, title, children }) =>
         </div>
       </div>`;
 
+// Lightweight transient toast.
+export function toast(msg) {
+  const el = document.createElement("div");
+  el.textContent = msg;
+  el.className =
+    "fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] bg-surface-3 border border-border-light " +
+    "text-text-primary px-4 py-2 rounded-full text-sm shadow-lg";
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2200);
+}
+
 export const fmtTime = (iso) =>
   new Date(iso).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
 export const fmtDate = (iso) =>
