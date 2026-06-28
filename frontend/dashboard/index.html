@@ -1,15 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tor-li — Management Dashboard</title>
-    <!--
-      PLACEHOLDER SHELL. Paste the Stitch dashboard markup/styles here, keeping a
-      <div id="root"> mount point for the React app in js/app.js.
-    -->
+    <title>Tor-li — לוח ניהול</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Stitch barber design tokens (see frontend/stitch/design.md).
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              background: "#131315",
+              surface: "#131315",
+              "surface-1": "#101012",
+              "surface-2": "#18171A",
+              "surface-3": "#201f22",
+              "surface-variant": "#3a3a3e",
+              "surface-container": "#201f22",
+              primary: "#ffd174",
+              "primary-container": "#efb200",
+              "on-primary": "#131315",
+              "text-primary": "#FAFAF9",
+              "text-secondary": "#A1A1AA",
+              "text-muted": "#71717A",
+              "border-light": "rgba(255,255,255,0.08)",
+              success: "#34C759",
+              danger: "#FF453A",
+              error: "#FF453A",
+              info: "#0A84FF",
+            },
+            fontFamily: {
+              sans: ["Heebo", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body { background: #131315; color: #fafaf9; font-family: Heebo, sans-serif; }
+      .mono { font-family: "JetBrains Mono", monospace; }
+      .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 400; }
+      .fill .material-symbols-outlined, .material-symbols-outlined.fill { font-variation-settings: "FILL" 1; }
+      ::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
   </head>
-  <body>
+  <body class="bg-background text-text-primary">
     <div id="root"></div>
     <script type="module" src="./js/app.js"></script>
   </body>

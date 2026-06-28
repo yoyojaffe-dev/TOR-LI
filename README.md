@@ -11,10 +11,42 @@ site. Hebrew/RTL frontend.
 - **Frontend:** buildless vanilla JS ES modules + Tailwind (CDN).
 - **Live Supabase project:** `ekugfzrmitvoiamevtfa`.
 
-> **Status:** Foundation phase complete on `main` (four-agent pipeline + full profile schema,
-> live). **Consumer Frontend phases 1–5.1** built on `develop-phase-4` — barbershop profiles, a
-> viewport-driven map, registration/onboarding, an end-to-end booking flow, favorites, payments,
-> and home polish. Barber Admin side is next.
+> **Status — MVP complete** (branch `feature/barber-dashboard-mvp`). Foundation (four-agent
+> pipeline + full profile schema) is live on `main`; the **Consumer app** (phases 1–5.1) and the
+> **Barber Dashboard** (phase 6 + advanced statistics, active/inactive toggles, hardened settings)
+> are built and browser-verified. A unified landing routes to either app. Next features:
+> see [`docs/future_growth_roadmap.md`](docs/future_growth_roadmap.md).
+
+## Key features
+
+**Consumer app** — GPS/search-based shop discovery, viewport-driven map (pan → "search this area"),
+barbershop profiles (services / live slots / portfolio / reviews), registration + profile (avatar to
+Supabase Storage), **end-to-end booking** (pessimistic lock → countdown → confirm → DB), favorites,
+mock payments, capped home carousels with full-list pages, and cascading filters.
+
+**Barber Dashboard** — Supabase-Auth login/registration + 5-step onboarding (business → services →
+staff → payment → sync); **5-tab management**: Calendar (live appointments with client name/phone +
+slot management), **Statistics** (per-employee + time-period filters, dynamic charts), Employees,
+Services, Settings.
+
+**Cross-cutting** — **RLS security** (owner-scoped policies + `SECURITY DEFINER` booking RPCs;
+`owner_read_bookings` lets an owner read only their shop's bookings); **active/inactive toggles** on
+staff + services that **globally** hide deactivated items from the consumer + operational pickers
+while keeping them in the management view; **hardened settings** (confirmation modals on every
+destructive action + re-authentication for password changes); live Supabase Realtime everywhere.
+
+## Quick start (run it)
+
+```bash
+# 1) Backend API (data + booking + dev barber signup)
+cd backend && ../venv/bin/uvicorn app.main:app --port 8000
+
+# 2) Unified frontend — landing + consumer + dashboard from one origin
+cd frontend && python3 -m http.server 4000
+```
+Open **http://localhost:4000/** → choose **הזמנת תספורת** (consumer, `/consumer/`) or **ניהול מספרה**
+(dashboard, `/dashboard/`). Demo barber: **`barber@torli.dev` / `torli1234`** (owns a seeded shop with
+a real appointment). Seed/refresh mock data with the scripts in `scripts/` (see below).
 
 ---
 
@@ -89,6 +121,38 @@ cd frontend/consumer && python3 -m http.server 3001    # open http://localhost:3
 ```
 First load runs onboarding (splash → role → verify → register). To replay: `localStorage.clear()`
 in the console, then reload.
+
+---
+
+## Barber Dashboard (Phase 6)
+
+A **separate** buildless app in `frontend/dashboard/` — **React via CDN + htm** (no build step),
+Tailwind CDN with the Stitch barber design tokens, RTL. Unlike the anonymous consumer, barbers have
+**real accounts via Supabase Auth**; the dashboard reads/writes **directly through `supabase-js`
+under the owner RLS** (no backend data API). Live updates via Supabase Realtime on `bookings` +
+`available_slots`.
+
+- **Auth:** email + password (`js/auth.js`, `js/supabaseClient.js` with `persistSession`). Self-serve
+  signup creates a **pre-confirmed** account through a dev-only backend endpoint
+  (`POST /admin/barber-signup`, service-role) so onboarding works without an email inbox; global
+  email confirmation stays on. On login the app finds the shop where `owner_id = auth.uid()` →
+  dashboard, or runs onboarding (which inserts the shop with that owner).
+- **Onboarding** (`js/onboarding.js`): business details + working hours → services → staff →
+  bank/payment → calendar-sync, from the Stitch mockups (`_50/_1/_7/_2/_33`).
+- **Dashboard** (`js/dashboard.js`): five tabs —
+  - **Calendar** — day picker + active-staff filter, summary tiles, appointment timeline (client
+    name/phone/service/time joined from `bookings`+`available_slots`) and free-slot management.
+  - **Statistics** — per-employee selector + period filter (month/3m/6m/year/all); revenue / visits /
+    average + dynamic SVG charts.
+  - **Employees / Services** — full CRUD with **active/inactive toggles**.
+  - **Settings** — business info, **change password (re-authentication required)**, sign out.
+- **Data layer** (`js/data.js`): owner reads/writes via `unwrap()` (logs + rethrows errors, so
+  failures surface instead of hanging). Shared `ConfirmModal` guards all destructive actions.
+
+### Run the dashboard
+Served by the same unified server (see Quick start): **http://localhost:4000/dashboard/index.html**,
+or via the landing at `http://localhost:4000/`. Log in with `barber@torli.dev` / `torli1234`.
+Re-seed the demo barber + ownership with `node scripts/seed_barber.js`.
 
 ---
 

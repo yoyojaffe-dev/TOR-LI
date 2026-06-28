@@ -666,10 +666,12 @@ async function bookSlot(slotId) {
     });
     openConfirmSheet(shop, slot);
   } catch (err) {
+    // Surface the failure instead of failing silently (was console.error only).
     if (err instanceof ApiError && err.status === 409) {
       toast("מצטערים, התור הזה כבר נתפס");
     } else {
-      console.error(err);
+      console.error("bookSlot failed:", err);
+      toast("ההזמנה נכשלה — בדוק חיבור לשרת ונסה שוב");
     }
   }
 }
@@ -1586,7 +1588,8 @@ function renderRoleView() {
     </main>`;
   document.getElementById("rl-back").addEventListener("click", () => { location.hash = "#/splash"; });
   document.getElementById("rl-customer").addEventListener("click", () => { location.hash = "#/verify"; });
-  document.getElementById("rl-barber").addEventListener("click", () => toast("אפליקציית הספרים בקרוב 🚧"));
+  // Barber chose the consumer entry by mistake — hand off to the dashboard app.
+  document.getElementById("rl-barber").addEventListener("click", () => { window.location.href = "../dashboard/index.html"; });
 }
 
 function renderVerifyView() {
