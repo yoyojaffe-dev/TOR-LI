@@ -59,13 +59,26 @@ function Center({ children }) {
   return html`<div class="min-h-screen flex items-center justify-center">${children}</div>`;
 }
 
+// Dismiss the static boot overlay + fade the app in (once, idempotent).
+let _appReady = false;
+function markReady() {
+  if (_appReady) return;
+  _appReady = true;
+  document.body.classList.add("app-ready");
+  const loader = document.getElementById("app-loader");
+  if (loader) setTimeout(() => loader.remove(), 400); // after the fade
+}
+
 function App() {
   const [session, setSession] = useState(undefined); // undefined=loading, null=out
   const [shop, setShop] = useState(undefined);
 
   useEffect(() => {
     auth.getSession().then(setSession);
-    const { data: sub } = auth.onAuthChange((s) => { setSession(s); setShop(undefined); });
+    // Supabase also fires TOKEN_REFRESHED on tab focus/visibility — only update
+    // the session here. The user-id-keyed effect below decides whether to
+    // reload the shop, so a token refresh no longer flashes the loading screen.
+    const { data: sub } = auth.onAuthChange((s) => setSession(s));
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -76,11 +89,17 @@ function App() {
 
   const signOut = async () => { await auth.signOut(); };
 
+  // Reveal the app once it settles on a real screen. For the dashboard we wait
+  // for its first data load (onReady); auth/onboarding are ready immediately.
+  useEffect(() => {
+    if (session === null || shop === null) markReady();
+  }, [session, shop]);
+
   if (session === undefined) return html`<${Center}><${Spinner} className="text-primary text-3xl" /></${Center}>`;
   if (session === null) return html`<${AuthScreen} />`;
   if (shop === undefined) return html`<${Center}><${Spinner} className="text-primary text-3xl" /></${Center}>`;
   if (shop === null) return html`<${Onboarding} onComplete=${setShop} />`;
-  return html`<${Dashboard} shop=${shop} onSignOut=${signOut} />`;
+  return html`<${Dashboard} shop=${shop} onSignOut=${signOut} onReady=${markReady} onShopChange=${setShop} />`;
 }
 
 createRoot(document.getElementById("root")).render(html`<${App} />`);

@@ -4,16 +4,27 @@ Mirrors test_routers.py (TestClient + mocked locking) and test_locking.py
 (mocked get_supabase). No network/DB calls happen.
 """
 
+from collections.abc import Iterator
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.dependencies import get_authed_supabase
 from app.main import app
 from app.services import locking
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _override_authed_client() -> Iterator[None]:
+    """POST /reviews requires a bearer token; override it with a dummy client.
+    (Auth/401 behaviour is covered in test_auth.py.)"""
+    app.dependency_overrides[get_authed_supabase] = lambda: MagicMock()
+    yield
+    app.dependency_overrides.pop(get_authed_supabase, None)
 
 
 def _mock_supabase(data):
@@ -35,14 +46,14 @@ def test_create_review_success() -> None:
             "/reviews",
             json={
                 "booking_id": "bk1",
-                "user_token": "u1",
                 "rating": 5,
                 "comment": "great",
             },
         )
     assert res.status_code == 200
     assert res.json()["success"] is True
-    assert sr.call_args[0] == ("bk1", "u1", 5, "great")
+    # (client, booking_id, rating, comment) — identity comes from the JWT.
+    assert sr.call_args[0][1:] == ("bk1", 5, "great")
 
 
 def test_create_review_conflict_returns_409() -> None:
@@ -220,22 +231,20 @@ def test_nearby_slots_db_error_becomes_502() -> None:
 
 def test_submit_review_success() -> None:
     sb = _mock_supabase([{"success": True, "message": "saved"}])
-    with patch.object(locking, "get_supabase", return_value=sb):
-        out = locking.submit_review("bk1", "u1", 5, "great")
+    out = locking.submit_review(sb, "bk1", 5, "great")
     assert out["success"] is True
     assert out["message"] == "saved"
     name, args = sb.rpc.call_args[0]
     assert name == "submit_review"
     assert args["p_booking_id"] == "bk1"
-    assert args["p_user"] == "u1"
+    assert "p_user" not in args
     assert args["p_rating"] == 5
     assert args["p_comment"] == "great"
 
 
 def test_submit_review_failure() -> None:
     sb = _mock_supabase([{"success": False, "message": "booking not found for this user"}])
-    with patch.object(locking, "get_supabase", return_value=sb):
-        out = locking.submit_review("bk1", "u1", 5)
+    out = locking.submit_review(sb, "bk1", 5)
     assert out["success"] is False
     assert out["message"] == "booking not found for this user"
 

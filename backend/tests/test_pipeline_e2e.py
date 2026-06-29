@@ -59,12 +59,14 @@ class FakeDB:
         if slot["status"] != "free":
             return [{"success": False, "message": "already locked or booked"}]
         slot["status"] = "locked"
-        slot["locked_by"] = args["p_user"]
+        # Identity now comes from auth.uid() inside the RPC, not a p_user arg;
+        # the fake DB stands in a constant holder for the single test caller.
+        slot["locked_by"] = args.get("p_user", "auth-user")
         return [{"success": True, "locked_until": "2026-06-27T12:05:00+03:00", "message": "locked"}]
 
     def _rpc_confirm_booking(self, args: dict) -> list:
         slot = self.slots[args["p_slot_id"]]
-        if slot["status"] != "locked" or slot["locked_by"] != args["p_user"]:
+        if slot["status"] != "locked" or slot["locked_by"] != args.get("p_user", "auth-user"):
             return [{"success": False, "status": "failed", "message": "lock not held"}]
         slot["status"] = "booked"
         return [{"success": True, "status": "booked", "message": "confirmed"}]
@@ -126,7 +128,6 @@ def _booking(db: FakeDB) -> BookingAgent:
 
 def test_pipeline_discovery_to_booked(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     db = FakeDB()
-    user = "user-token-1"
 
     # 1. Discovery upserts a men's barbershop (with its booking_url).
     _discovery(db)._upsert(
@@ -149,9 +150,8 @@ def test_pipeline_discovery_to_booked(monkeypatch) -> None:  # type: ignore[no-u
     slot_id = next(iter(db.slots))
     assert db.slots[slot_id]["status"] == "free"
 
-    # 3. A booker locks the slot (anon client -> same fake DB).
-    monkeypatch.setattr(locking, "get_supabase", lambda: db)
-    lock = locking.acquire_lock(slot_id, user)
+    # 3. A booker locks the slot (authed client -> same fake DB).
+    lock = locking.acquire_lock(db, slot_id)
     assert lock.success is True
     assert db.slots[slot_id]["status"] == "locked"
 
@@ -192,7 +192,7 @@ def test_pipeline_discovery_to_booked(monkeypatch) -> None:  # type: ignore[no-u
     assert used_url["url"] == "https://book.coolcuts.example"
 
     # 5. Confirm the booking -> slot becomes booked.
-    booking = locking.confirm_booking(slot_id, user, "bk-1", "Dana", "+972500000000")
+    booking = locking.confirm_booking(db, slot_id, "bk-1", "Dana", "+972500000000")
     assert booking.success is True
     assert booking.status == "booked"
     assert db.slots[slot_id]["status"] == "booked"

@@ -7,8 +7,10 @@ Appointment. Submission validates the booking belongs to the caller (via the
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from supabase import Client
 
+from app.dependencies import get_authed_supabase
 from app.models.schemas import ActionResult, Review, ReviewRequest
 from app.services import locking
 from app.supabase_client import Row
@@ -17,9 +19,12 @@ router = APIRouter(prefix="/reviews", tags=["reviews"])
 
 
 @router.post("", response_model=ActionResult)
-def create_review(req: ReviewRequest) -> Row:
+def create_review(
+    req: ReviewRequest,
+    client: Annotated[Client, Depends(get_authed_supabase)],
+) -> Row:
     """Submit (or update) a review for the caller's completed booking."""
-    result = locking.submit_review(req.booking_id, req.user_token, req.rating, req.comment)
+    result = locking.submit_review(client, req.booking_id, req.rating, req.comment)
     if not result["success"]:
         raise HTTPException(status_code=409, detail=result["message"] or "cannot save review")
     return result

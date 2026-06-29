@@ -57,11 +57,67 @@ class Slot(BaseModel):
     slot_time: datetime
     status: SlotStatus = SlotStatus.free
     locked_until: datetime | None = None
+    is_deal: bool = False
+    deal_price: float | None = None
+
+
+def _to_e164(value: str) -> str:
+    """Normalise an Israeli phone number to E.164 (``+972…``).
+
+    Accepts local (``05x-xxx-xxxx``), already-prefixed (``+972…``), or
+    ``972…`` forms with arbitrary spaces/dashes/parens, and rejects anything
+    without enough digits. GoTrue requires E.164 for SMS OTP.
+    """
+    digits = "".join(c for c in value if c.isdigit() or c == "+")
+    if digits.startswith("+"):
+        normalised = digits
+    elif digits.startswith("972"):
+        normalised = f"+{digits}"
+    elif digits.startswith("0"):
+        normalised = f"+972{digits[1:]}"
+    else:
+        normalised = f"+{digits}"
+    if sum(c.isdigit() for c in normalised) < 9:
+        raise ValueError("phone must be a valid E.164 number")
+    return normalised
+
+
+class SendOtpRequest(_RequestModel):
+    """Client login step 1: request an SMS one-time code for a phone number."""
+
+    phone: str = Field(min_length=7, max_length=20)
+
+    @field_validator("phone")
+    @classmethod
+    def _normalise_phone(cls, v: str) -> str:
+        return _to_e164(v)
+
+
+class VerifyOtpRequest(_RequestModel):
+    """Client login step 2: verify the SMS code and exchange it for a session."""
+
+    phone: str = Field(min_length=7, max_length=20)
+    token: str = Field(min_length=4, max_length=10, description="The SMS one-time code.")
+
+    @field_validator("phone")
+    @classmethod
+    def _normalise_phone(cls, v: str) -> str:
+        return _to_e164(v)
+
+
+class SessionResponse(BaseModel):
+    """A GoTrue session handed back to the client after a successful login."""
+
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_at: int | None = None
+    expires_in: int | None = None
+    user_id: str
 
 
 class LockRequest(_RequestModel):
     slot_id: str = Field(min_length=1)
-    user_token: str = Field(min_length=1, description="Opaque client identifier holding the lock.")
 
 
 class LockResponse(BaseModel):
@@ -73,7 +129,6 @@ class LockResponse(BaseModel):
 
 class BookingRequest(_RequestModel):
     slot_id: str = Field(min_length=1)
-    user_token: str = Field(min_length=1)
     customer_name: str = Field(min_length=1, max_length=80)
     customer_phone: str = Field(min_length=7, max_length=20)
 
@@ -88,7 +143,6 @@ class BookingRequest(_RequestModel):
 
 class CancelRequest(_RequestModel):
     booking_id: str = Field(min_length=1)
-    user_token: str = Field(min_length=1)
 
 
 class BookingResponse(BaseModel):
@@ -100,7 +154,6 @@ class BookingResponse(BaseModel):
 
 class ReviewRequest(_RequestModel):
     booking_id: str = Field(min_length=1)
-    user_token: str = Field(min_length=1)
     rating: int = Field(ge=1, le=5)
     comment: str | None = Field(default=None, max_length=1000)
 
@@ -145,6 +198,16 @@ class NearbySlot(BaseModel):
     lat_out: float | None = None
     lng_out: float | None = None
     distance_m: float | None = None
+    is_deal: bool = False
+    deal_price: float | None = None
+
+
+class GeocodeResult(BaseModel):
+    """Lat/lng (+ canonical address) for a free-text address, via Google Maps."""
+
+    lat: float
+    lng: float
+    formatted_address: str | None = None
 
 
 # ---------------------------------------------------------------------------

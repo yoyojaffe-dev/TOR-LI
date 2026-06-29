@@ -17,14 +17,29 @@ function createStore(initial) {
   };
 }
 
-// A stable per-browser token identifies who holds a pessimistic lock.
-function getUserToken() {
-  let token = localStorage.getItem("torli_user_token");
-  if (!token) {
-    token = crypto.randomUUID();
-    localStorage.setItem("torli_user_token", token);
+const SESSION_KEY = "torli_session";
+const DEVICE_KEY = "torli_device_id";
+
+// A GoTrue session (access + refresh JWTs) issued after phone-OTP login.
+// Replaces the old anonymous `torli_user_token`: identity is now verified and
+// every booking/review request is authorized with the access token.
+function loadSession() {
+  try {
+    return JSON.parse(localStorage.getItem(SESSION_KEY)) || null;
+  } catch {
+    return null;
   }
-  return token;
+}
+
+// A stable per-browser id used only for non-auth keying (e.g. avatar filenames),
+// so those keep working before the user logs in.
+function getDeviceId() {
+  let id = localStorage.getItem(DEVICE_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(DEVICE_KEY, id);
+  }
+  return id;
 }
 
 export const store = createStore({
@@ -33,5 +48,22 @@ export const store = createStore({
   selectedBarbershop: null,
   slots: [],
   activeLock: null, // { slotId, lockedUntil }
-  userToken: getUserToken(),
+  session: loadSession(), // { access_token, refresh_token, expires_at, user_id }
+  deviceId: getDeviceId(),
 });
+
+// ── Session helpers ──────────────────────────────────────────────────────────
+
+export function getSession() {
+  return store.get().session;
+}
+
+export function setSession(session) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  store.set({ session });
+}
+
+export function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+  store.set({ session: null });
+}

@@ -1,5 +1,19 @@
 // Owner data layer — all calls run as the authenticated barber under owner RLS.
 import { supabase } from "./supabaseClient.js";
+import { config } from "./config.js";
+
+// Geocode a free-text address via the backend (Google key stays server-side).
+// Returns { lat, lng, formatted_address } or null on failure.
+export async function geocodeAddress(address) {
+  try {
+    const res = await fetch(`${config.BACKEND_URL}/geocode?address=${encodeURIComponent(address)}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    console.error("[data] geocodeAddress:", e.message || e);
+    return null;
+  }
+}
 
 async function uid() {
   const { data } = await supabase.auth.getUser();
@@ -81,16 +95,19 @@ export async function listSlots(shopId) {
       "listSlots",
       await supabase
         .from("available_slots")
-        .select("id,service_name,slot_time,price,status,staff_id")
+        .select("id,service_name,slot_time,price,status,staff_id,is_deal,deal_price")
         .eq("barbershop_id", shopId)
         .order("slot_time", { ascending: true })
     ) || []
   );
 }
-export async function createSlot(shopId, { service_name, price, slot_time, staff_id }) {
+// Create a slot. `payload` may include service_name, price, slot_time, staff_id,
+// and (for last-minute deals) is_deal + deal_price.
+export async function createSlot(shopId, payload) {
+  const { staff_id, ...rest } = payload;
   const { data, error } = await supabase
     .from("available_slots")
-    .insert({ barbershop_id: shopId, service_name, price, slot_time, staff_id: staff_id || null })
+    .insert({ barbershop_id: shopId, staff_id: staff_id || null, ...rest })
     .select("id")
     .single();
   if (error) throw error;
@@ -110,6 +127,7 @@ export async function listServices(shopId) {
         .from("services")
         .select("id,name,category,price,duration_mins,staff_id,is_active")
         .eq("shop_id", shopId)
+        .is("deleted_at", null)
         .order("price", { ascending: true })
     ) || []
   );
@@ -128,7 +146,28 @@ export async function updateService(id, patch) {
   if (error) throw error;
 }
 export async function deleteService(id) {
-  const { error } = await supabase.from("services").delete().eq("id", id);
+  // SOFT delete: keep the row (with deleted_at) so the name-match filters in
+  // free_slots / available_slots_nearby reliably strip this service's slots from
+  // every consumer feed. Also cascade-remove its FREE slots so they disappear
+  // immediately; booked slots are real appointments and are left intact.
+  const { data: svc } = await supabase
+    .from("services").select("shop_id,name").eq("id", id).single();
+  if (svc?.name) {
+    const { error: slotErr } = await supabase
+      .from("available_slots")
+      .delete()
+      .eq("barbershop_id", svc.shop_id)
+      .eq("service_name", svc.name)
+      .eq("status", "free");
+    if (slotErr) {
+      console.error("[data] deleteService slot cascade:", slotErr.message);
+      throw new Error(slotErr.message);
+    }
+  }
+  const { error } = await supabase
+    .from("services")
+    .update({ deleted_at: new Date().toISOString(), is_active: false })
+    .eq("id", id);
   if (error) throw error;
 }
 

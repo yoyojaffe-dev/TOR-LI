@@ -5,7 +5,8 @@ import { store } from "./state.js";
 import { geocodeAddress, locateSafely } from "./geo.js";
 import { renderMap, renderBarbershopMarkers, recenterMap, travelEtas, boundsToRadius } from "./map.js";
 import { subscribeToSlots } from "./realtime.js";
-import { startBooking, confirmBooking, cancelBooking } from "./booking.js";
+import { startBooking, confirmBooking, cancelBooking, LoginRequiredError } from "./booking.js";
+import { ensureLoggedIn, isLoggedIn } from "./auth.js";
 import { fetchServices, fetchExternalReviews } from "./shopData.js";
 import { uploadAvatar } from "./storage.js";
 
@@ -68,14 +69,26 @@ function clearMarkers() {
   store.set({ markers: [] });
 }
 
-// Is a shop open right now? Honors an explicit `open_now` flag when present;
-// when hours are unknown/null (most seeded + scraped shops) we DON'T exclude it
-// — better to show a shop of unknown status than to empty the whole list.
+// Is a shop open right now? Barber-defined weekly hours take precedence; then an
+// explicit Google `open_now` flag; when hours are unknown/null (most seeded +
+// scraped shops) we DON'T exclude it — better to show a shop of unknown status
+// than to empty the whole list.
+const WEEK_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 function isOpenNow(b) {
   const oh = b.opening_hours;
   if (!oh || typeof oh !== "object") return true; // unknown -> keep
+  // Structured weekly hours { sun:{open,close,closed}, ... } (barber-managed).
+  const today = oh[WEEK_KEYS[new Date().getDay()]];
+  if (today && typeof today === "object" && "closed" in today) {
+    if (today.closed) return false;
+    if (today.open && today.close) {
+      const now = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit", hour12: false });
+      return now >= today.open && now < today.close;
+    }
+    return true;
+  }
   if (typeof oh.open_now === "boolean") return oh.open_now;
-  return true; // structured weekly hours not parsed here -> keep
+  return true; // unknown -> keep
 }
 
 // The shops currently visible after applying all active filters + search query.
@@ -265,6 +278,16 @@ async function loadNearby() {
   } catch (err) {
     console.warn("nearbySlots failed:", err?.message);
   }
+
+  // Last-Minute Deals are promotions worth travelling for, so they are NOT
+  // distance-capped — a dedicated endpoint returns every active deal, nearest first.
+  try {
+    const deals = await api.deals(position.lat, position.lng);
+    store.set({ deals: deals || [] });
+    renderDeals();
+  } catch (err) {
+    console.warn("deals fetch failed:", err?.message);
+  }
 }
 
 // Max barber cards shown on the home rail before "ראה הכל" (See All).
@@ -426,14 +449,11 @@ function nearbySlotCardHTML(s) {
   const date = d.toLocaleDateString("he-IL", { weekday: "short", day: "numeric", month: "short" });
   return `
     <div data-slot-id="${s.slot_id}"
-         class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center
+         class="bg-surface-1 border ${s.is_deal ? "border-danger/40" : "border-border-light"} rounded-2xl p-3 flex justify-between items-center
                 cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
-      <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
-        <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
-        <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
-      </div>
+      <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">${priceBlockHTML(s)}</div>
       <div class="flex-1 text-right flex flex-col justify-center pr-3 min-w-0">
-        <span class="font-headline-sm text-base truncate">${escapeHtml(s.shop_name)}</span>
+        <span class="font-headline-sm text-base truncate">${escapeHtml(s.shop_name)}${s.is_deal ? ` <span class="text-danger text-[11px] font-bold">🔥 מבצע</span>` : ""}</span>
         <span class="font-body-md text-text-secondary text-xs mt-0.5 truncate">${escapeHtml(s.service_name)} · ${time} · ${date}</span>
         ${s.distance_m != null ? `<span class="font-label-mono text-label-mono text-text-muted text-[11px] mt-0.5">${Math.round(s.distance_m)} מ' ממך</span>` : ""}
       </div>
@@ -472,31 +492,42 @@ function renderDeals() {
   );
 }
 
-// Upcoming free slots, soonest first (the "deals" set — shared by carousel + page).
+// Barber-flagged last-minute deals (wide-radius set), soonest first.
 function dealSlots() {
   const now = new Date();
-  return (visibleSlots() || [])
-    .filter((s) => new Date(s.slot_time) >= now)
+  return (store.get().deals || [])
+    .filter((s) => s.is_deal && new Date(s.slot_time) >= now)
     .sort((a, b) => new Date(a.slot_time) - new Date(b.slot_time));
 }
 
-// Deal card (shop + service · time + "בעוד X" relative-time chip).
+// Deal price helpers: the effective (discounted) price + a strike-through of the
+// original when a deal_price is set.
+function effPrice(s) {
+  return s.is_deal && s.deal_price != null ? s.deal_price : s.price;
+}
+function priceBlockHTML(s) {
+  const eff = effPrice(s);
+  const struck = s.is_deal && s.deal_price != null && s.price != null;
+  return `<span class="font-price-lg text-price-lg ${s.is_deal ? "text-danger" : "text-primary"} leading-none">${eff != null ? "₪" + eff : ""}</span>
+    ${struck ? `<span class="line-through text-text-muted text-[10px] leading-none">₪${s.price}</span>` : ""}`;
+}
+
+// Deal card — eye-catching: fire badge + "₪X במקום ₪Y" + relative-time chip.
 function dealSlotCardHTML(s) {
   const d = new Date(s.slot_time);
   const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
   return `
     <div data-slot-id="${s.slot_id}"
-         class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center
-                cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
-      <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
-        <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
-        <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
-      </div>
+         class="bg-surface-1 border border-danger/40 rounded-2xl p-3 flex justify-between items-center relative
+                cursor-pointer hover:bg-surface-2 transition-colors shadow-[0_0_18px_rgba(255,69,58,0.12)]">
+      <span class="absolute -top-2 right-3 bg-danger text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5">
+        <span class="material-symbols-outlined text-[12px]" style="font-variation-settings:'FILL' 1;">local_fire_department</span>מבצע</span>
+      <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">${priceBlockHTML(s)}</div>
       <div class="flex-1 text-right flex flex-col justify-center pr-3 min-w-0">
         <span class="font-headline-sm text-base truncate">${escapeHtml(s.shop_name)}</span>
         <span class="font-body-md text-text-secondary text-xs mt-0.5 truncate">${escapeHtml(s.service_name)} · ${time}</span>
       </div>
-      <span class="font-label-mono text-label-mono text-[11px] text-primary border border-primary/30 rounded-full px-2.5 py-1 whitespace-nowrap">
+      <span class="font-label-mono text-label-mono text-[11px] text-danger border border-danger/30 rounded-full px-2.5 py-1 whitespace-nowrap">
         ${relativeTimeHe(d)}
       </span>
     </div>`;
@@ -528,13 +559,18 @@ function renderTopRated() {
 
 // Quick-book a nearby slot: confirm, then run the normal lock -> confirm flow.
 async function quickBookSlot(slotId) {
-  const slot = (store.get().nearbySlots || []).find((s) => s.slot_id === slotId);
+  // Deals live in store.deals (a separate, non-distance-capped fetch), nearby
+  // quick-book slots in store.nearbySlots — search BOTH so deal cards are bookable.
+  const pool = [...(store.get().nearbySlots || []), ...(store.get().deals || [])];
+  const slot = pool.find((s) => s.slot_id === slotId);
   if (!slot) return;
+  const isDeal = !!slot.is_deal && slot.deal_price != null;
   const d = new Date(slot.slot_time);
   const time = d.toLocaleString("he-IL", { weekday: "long", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const priceNote = isDeal ? ` · מבצע ₪${slot.deal_price} (במקום ₪${slot.price})` : "";
   const ok = await confirmDialog(
     "הזמנת תור",
-    `להזמין תור ל-${time} אצל ${slot.shop_name}?`,
+    `להזמין תור ל-${time} אצל ${escapeHtml(slot.shop_name)}?${priceNote}`,
     "הזמן"
   );
   if (!ok) return;
@@ -554,9 +590,11 @@ async function quickBookSlot(slotId) {
       id: slot.slot_id,
       barbershop_id: slot.barbershop_id,
       service_name: slot.service_name,
-      price: slot.price,
+      price: slot.price, // keep ORIGINAL; the sheet derives the deal price from is_deal/deal_price
       slot_time: slot.slot_time,
       status: "free",
+      is_deal: slot.is_deal,
+      deal_price: slot.deal_price,
     }],
   });
   bookSlot(slot.slot_id);
@@ -667,7 +705,9 @@ async function bookSlot(slotId) {
     openConfirmSheet(shop, slot);
   } catch (err) {
     // Surface the failure instead of failing silently (was console.error only).
-    if (err instanceof ApiError && err.status === 409) {
+    if (err instanceof LoginRequiredError) {
+      return; // user dismissed the login prompt — no error toast.
+    } else if (err instanceof ApiError && err.status === 409) {
       toast("מצטערים, התור הזה כבר נתפס");
     } else {
       console.error("bookSlot failed:", err);
@@ -691,7 +731,7 @@ function barberCardHTML(b, variant = "rail") {
       <!-- Card photo: real image when available, gradient fallback otherwise -->
       <div class="h-32 w-full relative overflow-hidden ${b.photo_url ? "" : "photo-placeholder"}">
         ${b.photo_url
-          ? `<img src="${b.photo_url}" alt="${b.name}" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.classList.add('photo-placeholder');this.remove()">`
+          ? `<img src="${safeUrl(b.photo_url)}" alt="${escapeHtml(b.name)}" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.classList.add('photo-placeholder');this.remove()">`
           : `<span class="material-symbols-outlined text-5xl text-primary/30 group-hover:scale-110 transition-transform duration-300 absolute inset-0 flex items-center justify-center">content_cut</span>`
         }
         <div class="absolute inset-0 card-gradient"></div>
@@ -711,8 +751,8 @@ function barberCardHTML(b, variant = "rail") {
       </div>
       <!-- Info -->
       <div class="p-4 pt-6">
-        <h3 class="font-headline-sm text-headline-sm text-right mb-0.5 truncate">${b.name}</h3>
-        <p class="font-body-md text-text-secondary text-sm text-right truncate">${b.address || ""}</p>
+        <h3 class="font-headline-sm text-headline-sm text-right mb-0.5 truncate">${escapeHtml(b.name)}</h3>
+        <p class="font-body-md text-text-secondary text-sm text-right truncate">${escapeHtml(b.address || "")}</p>
         ${b.rating != null ? `
         <div class="mt-1.5 flex items-center justify-end gap-1">
           <span class="font-label-mono text-label-mono text-[11px] text-text-muted">(${b.rating_count ?? 0})</span>
@@ -782,14 +822,12 @@ function renderSlots(slots) {
                 hover:bg-surface-2 hover:border-surface-variant transition-colors">
       <!-- Price / bolt -->
       <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
-        <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
-        <span class="font-price-lg text-price-lg text-primary leading-none">
-          ${s.price != null ? "₪" + s.price : ""}
-        </span>
+        <span class="material-symbols-outlined ${s.is_deal ? "text-danger" : "text-primary"} text-[18px]" ${s.is_deal ? `style="font-variation-settings:'FILL' 1;"` : ""}>${s.is_deal ? "local_fire_department" : "bolt"}</span>
+        ${priceBlockHTML(s)}
       </div>
       <!-- Time + service -->
       <div class="flex-1 text-right flex flex-col justify-center pr-3">
-        <span class="font-headline-sm text-base">${s.service_name}</span>
+        <span class="font-headline-sm text-base">${escapeHtml(s.service_name)}${s.is_deal ? ` <span class="text-danger text-[11px] font-bold">🔥 מבצע</span>` : ""}</span>
         <span class="font-body-md text-text-secondary text-xs mt-0.5">
           ${new Date(s.slot_time).toLocaleTimeString("he-IL", {
             hour: "2-digit",
@@ -826,11 +864,11 @@ function slotRowHTML(s) {
          class="bg-surface-1 border border-border-light rounded-2xl p-3 flex justify-between items-center
                 cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
       <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
-        <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
-        <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
+        <span class="material-symbols-outlined ${s.is_deal ? "text-danger" : "text-primary"} text-[18px]" ${s.is_deal ? `style="font-variation-settings:'FILL' 1;"` : ""}>${s.is_deal ? "local_fire_department" : "bolt"}</span>
+        ${priceBlockHTML(s)}
       </div>
       <div class="flex-1 text-right flex flex-col justify-center pr-3">
-        <span class="font-headline-sm text-base">${s.service_name}</span>
+        <span class="font-headline-sm text-base">${escapeHtml(s.service_name)}${s.is_deal ? ` <span class="text-danger text-[11px] font-bold">🔥 מבצע</span>` : ""}</span>
         <span class="font-body-md text-text-secondary text-xs mt-0.5">${time} · ${date}</span>
       </div>
       <span class="material-symbols-outlined text-text-muted">chevron_left</span>
@@ -848,6 +886,13 @@ function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
   );
+}
+
+// Only allow http(s) URLs into `src`/`href`; escape for attribute safety.
+// Blocks javascript:/data: and attribute-breakout via DB-sourced photo URLs.
+function safeUrl(u) {
+  const s = String(u ?? "");
+  return /^https?:\/\//i.test(s) ? escapeHtml(s) : "";
 }
 
 // ── Service menu row (Supabase `services`) ───────────────────────────────────
@@ -981,10 +1026,18 @@ async function router() {
 
 async function renderBarberView(shopId) {
   const view = els.viewBarber();
+  // Always refetch the shop so address / map pin / hours / services are fresh
+  // (a stale cached copy showed the old address after a Settings edit).
   let shop = store.get().selectedBarbershop;
-  if (!shop || shop.id !== shopId) {
-    try { shop = await api.getBarbershop(shopId); store.set({ selectedBarbershop: shop }); }
-    catch { view.innerHTML = `<p class="p-gutter text-text-muted">לא נמצא</p>`; return; }
+  try {
+    shop = await api.getBarbershop(shopId);
+    store.set({ selectedBarbershop: shop });
+  } catch {
+    if (!shop || shop.id !== shopId) {
+      view.innerHTML = `<p class="p-gutter text-text-muted">לא נמצא</p>`;
+      return;
+    }
+    // transient fetch failure -> fall back to the cached shop if it matches
   }
 
   view.innerHTML = `
@@ -992,7 +1045,7 @@ async function renderBarberView(shopId) {
     <section class="relative w-full h-[240px]">
       <div class="w-full h-full ${shop.photo_url ? "" : "photo-placeholder"} flex items-center justify-center overflow-hidden">
         ${shop.photo_url
-          ? `<img src="${shop.photo_url}" alt="${shop.name}" class="w-full h-full object-cover" loading="eager" onerror="this.parentElement.classList.add('photo-placeholder');this.remove()">`
+          ? `<img src="${safeUrl(shop.photo_url)}" alt="${escapeHtml(shop.name)}" class="w-full h-full object-cover" loading="eager" onerror="this.parentElement.classList.add('photo-placeholder');this.remove()">`
           : `<span class="material-symbols-outlined text-7xl text-primary/25">content_cut</span>`
         }
       </div>
@@ -1009,7 +1062,7 @@ async function renderBarberView(shopId) {
       <div class="absolute bottom-0 right-gutter translate-y-1/2">
         <div class="w-24 h-24 rounded-full border-2 border-primary overflow-hidden bg-surface-2 flex items-center justify-center shadow-[0_0_15px_rgba(239,178,0,0.15)]">
           ${shop.photo_url
-            ? `<img src="${shop.photo_url}" alt="${shop.name}" class="w-full h-full object-cover">`
+            ? `<img src="${safeUrl(shop.photo_url)}" alt="${escapeHtml(shop.name)}" class="w-full h-full object-cover">`
             : `<span class="material-symbols-outlined text-4xl text-primary" style="font-variation-settings:'FILL' 1;">storefront</span>`
           }
         </div>
@@ -1018,8 +1071,8 @@ async function renderBarberView(shopId) {
 
     <!-- Info -->
     <section class="px-gutter pt-16 pb-stack-lg">
-      <h1 class="font-headline-lg-mobile text-headline-lg-mobile text-text-primary">${shop.name}</h1>
-      <p class="font-body-md text-body-md text-text-secondary mt-1">${shop.address || ""}</p>
+      <h1 class="font-headline-lg-mobile text-headline-lg-mobile text-text-primary">${escapeHtml(shop.name)}</h1>
+      <p class="font-body-md text-body-md text-text-secondary mt-1">${escapeHtml(shop.address || "")}</p>
       <div class="flex items-center gap-stack-md mt-stack-sm flex-wrap">
         ${shop.distance_m != null ? `
         <div class="flex items-center gap-1 text-text-secondary">
@@ -1084,7 +1137,7 @@ async function renderBarberView(shopId) {
         const url = urls[i] || null;
         return url
           ? `<div class="aspect-square rounded-sm overflow-hidden">
-               <img src="${url}" alt="${shop.name}" class="w-full h-full object-cover" loading="lazy"
+               <img src="${safeUrl(url)}" alt="${escapeHtml(shop.name)}" class="w-full h-full object-cover" loading="lazy"
                     onerror="this.parentElement.classList.add('photo-placeholder','flex','items-center','justify-center');this.remove()">
              </div>`
           : `<div class="aspect-square rounded-sm photo-placeholder flex items-center justify-center">
@@ -1305,9 +1358,22 @@ async function renderBookingsView() {
       <div class="h-20 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
     </div>`;
 
+  // "My bookings" is scoped to the logged-in user — prompt for OTP login first.
+  if (!(await ensureLoggedIn())) {
+    const box = document.getElementById("mb-list");
+    if (box) {
+      box.innerHTML = `
+        <div class="flex flex-col items-center justify-center text-center gap-3 py-16">
+          <span class="material-symbols-outlined text-6xl text-surface-variant">lock</span>
+          <p class="font-body-lg text-body-lg text-text-secondary">התחבר כדי לראות את התורים שלך</p>
+        </div>`;
+    }
+    return;
+  }
+
   let bookings = [];
   try {
-    bookings = await api.listBookings(store.get().userToken);
+    bookings = await api.listBookings();
   } catch (err) {
     console.error("listBookings failed:", err);
   }
@@ -1340,8 +1406,8 @@ async function renderBookingsView() {
             <span class="material-symbols-outlined">content_cut</span>
           </div>
           <div class="flex-1 text-right min-w-0">
-            <p class="font-headline-sm text-base truncate">${b.shop_name}</p>
-            <p class="font-body-md text-text-secondary text-sm truncate">${b.service_name}${b.price != null ? " · ₪" + b.price : ""}</p>
+            <p class="font-headline-sm text-base truncate">${escapeHtml(b.shop_name)}</p>
+            <p class="font-body-md text-text-secondary text-sm truncate">${escapeHtml(b.service_name)}${b.price != null ? " · ₪" + b.price : ""}</p>
             <p class="font-label-mono text-label-mono text-text-muted text-[11px] mt-0.5">
               ${d.toLocaleDateString("he-IL", { day: "numeric", month: "short" })} · ${d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
             </p>
@@ -1374,7 +1440,7 @@ async function renderBookingsView() {
       const ok = await confirmDialog("ביטול תור", "לבטל את התור? לא ניתן לשחזר.", "בטל תור");
       if (!ok) return;
       try {
-        await api.cancelBooking(btn.dataset.cancelId, store.get().userToken);
+        await api.cancelBooking(btn.dataset.cancelId);
         toast("התור בוטל");
         renderBookingsView();
       } catch (err) {
@@ -1429,6 +1495,43 @@ function confirmDialog(title, body, confirmLabel = "אישור") {
     };
     backdrop.querySelector('[data-act="yes"]').addEventListener("click", () => close(true));
     backdrop.querySelector('[data-act="no"]').addEventListener("click", () => close(false));
+    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(false); });
+  });
+}
+
+// Mock phone verification (Auth is paused): a 4-digit OTP sheet. Any 4-digit
+// code is accepted. Resolves true on verify, false on cancel.
+function requestOtp(phone) {
+  return new Promise((resolve) => {
+    const backdrop = document.createElement("div");
+    backdrop.className =
+      "fixed inset-0 z-[95] bg-black/60 flex items-end justify-center opacity-0 transition-opacity duration-200";
+    backdrop.innerHTML = `
+      <div class="otp-card w-full max-w-[430px] bg-surface-1 border-t border-border-light rounded-t-3xl
+                  p-gutter pb-[calc(20px+env(safe-area-inset-bottom))] translate-y-full transition-transform duration-300 ease-out">
+        <div class="w-10 h-1 bg-surface-variant rounded-full mx-auto mb-stack-lg"></div>
+        <h2 class="font-headline-md text-headline-md mb-1">אימות מספר טלפון</h2>
+        <p class="font-body-md text-body-md text-text-secondary mb-stack-lg">
+          קוד אימות נשלח אל <span dir="ltr">${escapeHtml(phone)}</span> · הדגמה: כל קוד בן 4 ספרות יתקבל
+        </p>
+        <input id="otp-input" inputmode="numeric" maxlength="4" placeholder="••••"
+               class="w-full text-center tracking-[0.6em] text-2xl mono bg-surface-2 border border-border-light rounded-xl py-3 mb-stack-lg focus:outline-none focus:border-primary" />
+        <div class="flex gap-3">
+          <button data-act="no" class="flex-1 py-3 rounded-xl border border-border-light text-text-primary font-body-lg">ביטול</button>
+          <button data-act="yes" class="flex-1 py-3 rounded-xl bg-primary text-on-primary font-headline-sm active:scale-95 transition-transform">אמת</button>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    const card = backdrop.querySelector(".otp-card");
+    const input = backdrop.querySelector("#otp-input");
+    requestAnimationFrame(() => { backdrop.classList.remove("opacity-0"); card.classList.remove("translate-y-full"); });
+    setTimeout(() => input.focus(), 200);
+    const close = (val) => { backdrop.remove(); resolve(val); };
+    backdrop.querySelector('[data-act="no"]').addEventListener("click", () => close(false));
+    backdrop.querySelector('[data-act="yes"]').addEventListener("click", () => {
+      if ((input.value || "").trim().length === 4) close(true);
+      else input.classList.add("border-danger");
+    });
     backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(false); });
   });
 }
@@ -1497,13 +1600,27 @@ async function renderProfileView() {
   document.getElementById("pf-edit").addEventListener("click", () =>
     document.getElementById("pf-edit-form").classList.toggle("hidden")
   );
-  document.getElementById("pf-save").addEventListener("click", () => {
+  document.getElementById("pf-save").addEventListener("click", async () => {
     const n = document.getElementById("pf-name-input").value.trim();
     const p = document.getElementById("pf-phone-input").value.trim();
+    const oldPhone = localStorage.getItem("torli_customer_phone") || "";
     if (n) localStorage.setItem("torli_customer_name", n);
-    if (p) localStorage.setItem("torli_customer_phone", p);
+    // Changing the phone is sensitive -> require (mock) OTP verification first.
+    if (p && p !== oldPhone) {
+      const ok = await requestOtp(p);
+      if (!ok) {
+        document.getElementById("pf-name").textContent = n || "אורח";
+        document.getElementById("pf-edit-form").classList.add("hidden");
+        toast("האימות בוטל — הטלפון לא עודכן");
+        return;
+      }
+      localStorage.setItem("torli_customer_phone", p);
+    } else if (p) {
+      localStorage.setItem("torli_customer_phone", p);
+    }
     document.getElementById("pf-name").textContent = n || "אורח";
-    document.getElementById("pf-phone").textContent = p || "אין מספר טלפון";
+    document.getElementById("pf-phone").textContent =
+      localStorage.getItem("torli_customer_phone") || "אין מספר טלפון";
     document.getElementById("pf-edit-form").classList.add("hidden");
     toast("הפרטים נשמרו");
   });
@@ -1520,12 +1637,14 @@ async function renderProfileView() {
   document.getElementById("pf-notif").addEventListener("click", () => openProfileSheet("notifications"));
   document.getElementById("pf-help").addEventListener("click", () => openProfileSheet("help"));
 
-  // Bookings count.
-  try {
-    const bookings = await api.listBookings(store.get().userToken);
-    const c = document.getElementById("pf-count");
-    if (c) c.textContent = String(bookings.length);
-  } catch { /* leave dash */ }
+  // Bookings count (only when logged in — avoids a 401 on the public profile).
+  if (isLoggedIn()) {
+    try {
+      const bookings = await api.listBookings();
+      const c = document.getElementById("pf-count");
+      if (c) c.textContent = String(bookings.length);
+    } catch { /* leave dash */ }
+  }
 }
 
 // ── Onboarding: Splash / Role / Verify (UI flow; no auth backend) ────────────
@@ -2340,7 +2459,7 @@ function openReviewSheet(booking) {
     submit.textContent = "שולח...";
     try {
       const comment = backdrop.querySelector("#rv-comment").value.trim();
-      await api.submitReview(booking.booking_id, store.get().userToken, rating, comment || null);
+      await api.submitReview(booking.booking_id, rating, comment || null);
       toast("תודה על הדירוג!");
       close();
       renderBookingsView();
@@ -2402,7 +2521,7 @@ function openPhotoSheet() {
     toast("מעלה תמונה…");
     try {
       // Upload to the Supabase `avatars` bucket; store the public URL.
-      const url = await uploadAvatar(file, store.get().userToken);
+      const url = await uploadAvatar(file, store.get().deviceId);
       localStorage.setItem("torli_avatar", url);
       applyAvatar();
       toast("התמונה עודכנה");
@@ -2739,9 +2858,16 @@ function openConfirmSheet(shop, slot) {
   $("#cs-time").textContent = new Date(slot.slot_time).toLocaleString("he-IL", {
     day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
   });
-  const price = slot.price != null ? `₪${slot.price}` : "—";
-  $("#cs-total").textContent = price;
-  $("#cs-cta-price").textContent = price;
+  // Deal-aware price: charge deal_price when this is a deal, strike the original.
+  const isDeal = !!slot.is_deal && slot.deal_price != null;
+  const effPrice = isDeal ? slot.deal_price : slot.price;
+  const ctaPrice = effPrice != null ? `₪${effPrice}` : "—";
+  $("#cs-total").innerHTML = isDeal
+    ? `<span class="text-danger font-bold">₪${slot.deal_price}</span> ` +
+      `<span class="line-through text-text-muted text-sm">₪${slot.price}</span> ` +
+      `<span class="text-danger text-xs font-bold">🔥 מבצע</span>`
+    : (slot.price != null ? `₪${slot.price}` : "—");
+  $("#cs-cta-price").textContent = ctaPrice;
 
   // Prefill saved customer details.
   $("#cs-name").value = localStorage.getItem("torli_customer_name") || "";
@@ -2785,8 +2911,10 @@ async function onConfirmBooking() {
       btn.querySelector("span").textContent = "אשר תור";
     }
   } catch (err) {
-    console.error(err);
-    toast("ההזמנה נכשלה — נסה שוב");
+    // Surface the actual reason (timeout / RLS / constraint / network) and ALWAYS
+    // release the locked/loading state so the screen can never stay frozen.
+    console.error("[booking] confirm failed:", err?.status, err?.detail || err?.message, err);
+    toast(`ההזמנה נכשלה: ${err?.detail || err?.message || "נסה שוב"}`);
     btn.disabled = false;
     btn.querySelector("span").textContent = "אשר תור";
   }
@@ -2850,6 +2978,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Hash router: nav links + deep links + back/forward all flow through here.
   window.addEventListener("hashchange", router);
+
+  // Refresh the home feed (shops/slots/deals) when the tab is refocused so the
+  // consumer never shows stale data after a barber edits services/deals/hours.
+  document.addEventListener("visibilitychange", () => {
+    const onHome = !location.hash || location.hash === "#/home";
+    if (document.visibilityState === "visible" && onHome && store.get().position) {
+      loadNearby().catch((err) => console.warn("focus refresh failed:", err?.message));
+    }
+  });
 
   init().then(router);
 });

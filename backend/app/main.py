@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 
 from app.agents.scraping_agent import ScrapingAgent
 from app.config import get_settings
-from app.routers import admin, barbershops, bookings, reviews, slots
+from app.routers import admin, auth, barbershops, bookings, geocode, reviews, slots
 
 settings = get_settings()
 
@@ -52,10 +52,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Tor-li API", version="0.1.0", lifespan=lifespan)
 
-# Dev CORS: open. Tighten to the deployed frontend origin before production.
+# CORS origins come from settings: "*" (open) for local dev, or a comma-separated
+# allowlist of deployed frontend origins in production (CORS_ALLOW_ORIGINS).
+_cors_origins = [o.strip() for o in settings.cors_allow_origins.split(",") if o.strip()] or ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -87,10 +89,12 @@ async def log_requests(
     return response
 
 
+app.include_router(auth.router)
 app.include_router(barbershops.router)
 app.include_router(slots.router)
 app.include_router(bookings.router)
 app.include_router(reviews.router)
+app.include_router(geocode.router)
 
 # Admin/ops endpoints trigger billed Google/OpenAI work — keep them out of
 # production until auth is added. Mounted only in non-production environments.

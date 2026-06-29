@@ -54,9 +54,29 @@
       .fill .material-symbols-outlined, .material-symbols-outlined.fill { font-variation-settings: "FILL" 1; }
       ::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+      /* Graceful boot: keep the app hidden until React has mounted AND the first
+         data load finishes, so there's no flash of empty / jumping content. */
+      #root { opacity: 0; transition: opacity 0.35s ease; }
+      body.app-ready #root { opacity: 1; }
+      #app-loader {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        background: #131315; transition: opacity 0.35s ease;
+      }
+      body.app-ready #app-loader { opacity: 0; pointer-events: none; }
+      #app-loader .ring {
+        width: 44px; height: 44px; border-radius: 50%;
+        border: 3px solid rgba(255, 209, 116, 0.2); border-top-color: #ffd174;
+        animation: app-spin 0.8s linear infinite;
+      }
+      @keyframes app-spin { to { transform: rotate(360deg); } }
     </style>
   </head>
   <body class="bg-background text-text-primary">
+    <!-- Instant boot spinner (pure CSS, shows before the React CDN loads);
+         removed by app.js once the dashboard is mounted + data-ready. -->
+    <div id="app-loader" aria-hidden="true"><div class="ring"></div></div>
     <div id="root"></div>
     <script type="module" src="./js/app.js"></script>
   </body>

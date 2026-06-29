@@ -5,14 +5,31 @@ service, and agents are mocked so no network/DB calls happen. TestClient is used
 without a `with` block so the lifespan (APScheduler) does not start.
 """
 
+from collections.abc import Iterator
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
+from app.dependencies import get_authed_supabase
 from app.main import app
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _override_authed_client() -> Iterator[None]:
+    """Bypass the bearer-token check for booking/review routes.
+
+    Every booking/review endpoint depends on ``get_authed_supabase`` (which
+    validates the JWT and yields a user-scoped client). These tests mock the
+    locking service directly, so we override that dependency with a dummy client.
+    Auth/401 behaviour itself is covered in test_auth.py.
+    """
+    app.dependency_overrides[get_authed_supabase] = lambda: MagicMock()
+    yield
+    app.dependency_overrides.pop(get_authed_supabase, None)
 
 
 def _supabase_returning(data):
@@ -92,6 +109,28 @@ def test_list_slots_returns_rows() -> None:
         res = client.get("/slots", params={"barbershop_id": "b1"})
     assert res.status_code == 200
     assert res.json()[0]["service_name"] == "Cut"
+
+
+def test_list_deals_returns_rows() -> None:
+    rows = [
+        {
+            "slot_id": "s1",
+            "slot_time": "2026-06-26T09:00:00+03:00",
+            "service_name": "Cut",
+            "price": 80,
+            "barbershop_id": "b1",
+            "shop_name": "Demo",
+            "is_deal": True,
+            "deal_price": 9,
+        }
+    ]
+    with patch("app.routers.slots.locking.active_deals", return_value=rows) as ad:
+        res = client.get("/slots/deals", params={"lat": 32.09, "lng": 34.79})
+    assert res.status_code == 200
+    body = res.json()
+    assert body[0]["is_deal"] is True
+    assert body[0]["deal_price"] == 9
+    ad.assert_called_once()
 
 
 def test_list_slots_requires_barbershop_id() -> None:
@@ -213,11 +252,11 @@ def test_list_bookings_endpoint() -> None:
         }
     ]
     with patch("app.routers.bookings.locking.list_bookings", return_value=rows) as lb:
-        res = client.get("/bookings", params={"user_token": "u1"})
+        res = client.get("/bookings")
     assert res.status_code == 200
     assert res.json()[0]["shop_name"] == "Cuts"
     assert res.json()[0]["status"] == "confirmed"
-    assert lb.call_args[0][0] == "u1"
+    lb.assert_called_once()
 
 
 def test_list_bookings_response_is_filtered_to_history_schema() -> None:
@@ -232,13 +271,9 @@ def test_list_bookings_response_is_filtered_to_history_schema() -> None:
         }
     ]
     with patch("app.routers.bookings.locking.list_bookings", return_value=rows):
-        res = client.get("/bookings", params={"user_token": "u1"})
+        res = client.get("/bookings")
     assert res.status_code == 200
     assert "user_token" not in res.json()[0]
-
-
-def test_list_bookings_requires_user_token() -> None:
-    assert client.get("/bookings").status_code == 422
 
 
 def test_cancel_booking_ok() -> None:
@@ -246,10 +281,10 @@ def test_cancel_booking_ok() -> None:
         "app.routers.bookings.locking.cancel_booking",
         return_value={"success": True, "message": "cancelled"},
     ) as cb:
-        res = client.post("/bookings/cancel", json={"booking_id": "bk1", "user_token": "u1"})
+        res = client.post("/bookings/cancel", json={"booking_id": "bk1"})
     assert res.status_code == 200
     assert res.json()["success"] is True
-    assert cb.call_args[0] == ("bk1", "u1")
+    assert cb.call_args[0][1] == "bk1"  # (client, booking_id)
 
 
 def test_cancel_booking_conflict() -> None:
@@ -257,12 +292,12 @@ def test_cancel_booking_conflict() -> None:
         "app.routers.bookings.locking.cancel_booking",
         return_value={"success": False, "message": "not found"},
     ):
-        res = client.post("/bookings/cancel", json={"booking_id": "bk1", "user_token": "u1"})
+        res = client.post("/bookings/cancel", json={"booking_id": "bk1"})
     assert res.status_code == 409
 
 
 def test_cancel_booking_validation() -> None:
-    assert client.post("/bookings/cancel", json={"booking_id": "bk1"}).status_code == 422
+    assert client.post("/bookings/cancel", json={"booking_id": ""}).status_code == 422
 
 
 # ── /admin ───────────────────────────────────────────────────────────────────
@@ -395,10 +430,10 @@ def test_lock_rejects_blank_slot_id() -> None:
     assert res.status_code == 422
 
 
-def test_review_rejects_blank_user_token() -> None:
+def test_review_rejects_blank_booking_id() -> None:
     res = client.post(
         "/reviews",
-        json={"booking_id": "bk1", "user_token": "  ", "rating": 5},
+        json={"booking_id": "  ", "rating": 5},
     )
     assert res.status_code == 422
 
@@ -406,6 +441,6 @@ def test_review_rejects_blank_user_token() -> None:
 def test_review_rejects_overlong_comment() -> None:
     res = client.post(
         "/reviews",
-        json={"booking_id": "bk1", "user_token": "u1", "rating": 5, "comment": "x" * 1001},
+        json={"booking_id": "bk1", "rating": 5, "comment": "x" * 1001},
     )
     assert res.status_code == 422

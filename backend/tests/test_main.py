@@ -1,10 +1,11 @@
 """Tests for app-level middleware + router mounting."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
 
 import app.main as main
+from app.dependencies import get_authed_supabase
 from app.main import app
 
 
@@ -12,11 +13,15 @@ def test_unhandled_error_becomes_safe_500() -> None:
     """An unexpected exception in a handler is converted to a generic 500 by the
     logging middleware — the internal error message must not leak to the client."""
     client = TestClient(app, raise_server_exceptions=False)
-    with patch(
-        "app.routers.bookings.locking.list_bookings",
-        side_effect=RuntimeError("secret internal detail"),
-    ):
-        res = client.get("/bookings", params={"user_token": "u1"})
+    app.dependency_overrides[get_authed_supabase] = lambda: MagicMock()
+    try:
+        with patch(
+            "app.routers.bookings.locking.list_bookings",
+            side_effect=RuntimeError("secret internal detail"),
+        ):
+            res = client.get("/bookings")
+    finally:
+        app.dependency_overrides.pop(get_authed_supabase, None)
     assert res.status_code == 500
     assert res.json() == {"detail": "internal server error"}
     assert "secret internal detail" not in res.text

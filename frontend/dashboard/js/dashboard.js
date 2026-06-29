@@ -15,7 +15,7 @@ const TABS = [
   { key: "settings", label: "הגדרות", icon: "settings" },
 ];
 
-export function Dashboard({ shop, onSignOut }) {
+export function Dashboard({ shop, onSignOut, onReady, onShopChange }) {
   const [tab, setTab] = useState("calendar");
   const [appts, setAppts] = useState([]);
   const [slots, setSlots] = useState([]);
@@ -72,6 +72,10 @@ export function Dashboard({ shop, onSignOut }) {
     return () => unsub();
   }, [shop.id]);
 
+  // Signal the boot overlay to fade out once the first data load settles
+  // (success or error — either way the shell is ready to show).
+  useEffect(() => { if (!loading) onReady?.(); }, [loading]);
+
   // Shared confirmation modal for sensitive actions.
   const [confirmState, setConfirmState] = useState(null);
   const confirm = (opts) => setConfirmState(opts);
@@ -113,7 +117,7 @@ export function Dashboard({ shop, onSignOut }) {
             ${tab === "stats" && html`<${StatsTab} appts=${appts} staff=${staff} />`}
             ${tab === "staff" && html`<${StaffTab} ...${common} />`}
             ${tab === "services" && html`<${ServicesTab} ...${common} />`}
-            ${tab === "settings" && html`<${SettingsTab} shop=${shop} onSignOut=${onSignOut} confirm=${confirm} reload=${reload} />`}
+            ${tab === "settings" && html`<${SettingsTab} shop=${shop} onSignOut=${onSignOut} confirm=${confirm} reload=${reload} onShopChange=${onShopChange} />`}
           </div>`}
       <${BottomNav} tabs=${TABS} active=${tab} onSelect=${selectTab} />
       <${ConfirmModal} state=${confirmState} onClose=${() => setConfirmState(null)} />
@@ -174,6 +178,7 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
   const [staffFilter, setStaffFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
+  const [dealOpen, setDealOpen] = useState(false); // Create Deal modal
   const activeStaff = staff.filter((m) => m.is_active);
   const activeServices = services.filter((s) => s.is_active);
 
@@ -203,26 +208,24 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
 
   const matchStaff = (sid) => staffFilter === "all" || sid === staffFilter;
 
-  // Unified day timeline: booked appointments + free slots, sorted by time.
+  // The calendar shows only CONFIRMED bookings for the day (free slots + open
+  // deals live off-calendar until a consumer books them). Blocked times are
+  // listed in the "חסימת זמינות" section below.
   const items = useMemo(() => {
-    const booked = appts
+    return appts
       .filter((a) => ymd(new Date(a.slot.slot_time)) === day && matchStaff(a.slot.staff_id))
-      .map((a) => ({ kind: "booked", time: a.slot.slot_time, id: a.id,
+      .map((a) => ({ time: a.slot.slot_time, id: a.id,
         title: `${a.slot.service_name} · ${a.customer_name}`, sub: a.customer_phone,
-        name: a.customer_name, phone: a.customer_phone, price: a.slot.price, status: a.status }));
-    const free = slots
-      .filter((s) => s.status === "free" && ymd(new Date(s.slot_time)) === day && matchStaff(s.staff_id))
-      .map((s) => ({ kind: "free", time: s.slot_time, id: s.id, title: s.service_name, price: s.price, staff_id: s.staff_id }));
-    return [...booked, ...free].sort((x, y) => new Date(x.time) - new Date(y.time));
-  }, [appts, slots, day, staffFilter]);
+        name: a.customer_name, phone: a.customer_phone, price: a.slot.price, status: a.status }))
+      .sort((x, y) => new Date(x.time) - new Date(y.time));
+  }, [appts, day, staffFilter]);
 
-  const dayBooked = items.filter((i) => i.kind === "booked");
-  const revenue = dayBooked.reduce((s, i) => s + (Number(i.price) || 0), 0);
-
-  const delSlot = (id) => confirm({
-    title: "מחיקת תור פנוי", body: "למחוק את התור הפנוי הזה?", danger: true,
-    onYes: async () => { await data.deleteSlot(id); reload(); },
-  });
+  const revenue = items.reduce((s, i) => s + (Number(i.price) || 0), 0);
+  // Active deals = upcoming, still-free, flagged slots (off-calendar, consumer-facing).
+  const dealCount = useMemo(
+    () => slots.filter((s) => s.is_deal && s.status === "free" && new Date(s.slot_time) > new Date()).length,
+    [slots]
+  );
 
   return html`
     <!-- staff filter -->
@@ -264,7 +267,7 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
 
     <!-- summary tiles -->
     <section class="grid grid-cols-3 gap-3 mb-6">
-      ${[["תורים", dayBooked.length], ["פנויים", items.length - dayBooked.length], ["הכנסות", `₪${revenue}`]].map(
+      ${[["תורים", items.length], ["מבצעים", dealCount], ["הכנסות", `₪${revenue}`]].map(
         ([l, v], i) => html`<div key=${i} class="bg-surface-1 rounded-xl p-4 flex flex-col items-center border border-border-light">
           <span class="mono text-headline-sm text-xl ${i === 2 ? "text-primary" : ""}">${v}</span>
           <span class="text-xs text-text-muted mt-1">${l}</span>
@@ -272,31 +275,29 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
       )}
     </section>
 
-    <${Btn} variant="dashedGold" onClick=${() => setAddOpen(true)} className="w-full mb-6">
-      <${Icon} name="add" /> הוסף תור פנוי
-    </${Btn}>
+    <div class="flex gap-3 mb-6">
+      <${Btn} variant="dashedGold" onClick=${() => setAddOpen(true)} className="flex-1">
+        <${Icon} name="add" /> הוסף תור
+      </${Btn}>
+      <${Btn} variant="dashedGold" onClick=${() => setDealOpen(true)} className="flex-1">
+        <${Icon} name="local_fire_department" /> צור מבצע
+      </${Btn}>
+    </div>
 
-    <!-- timeline -->
+    <!-- timeline: confirmed bookings only -->
     <section class="flex flex-col gap-3 relative">
-      ${items.length === 0 && html`<p class="text-center text-text-muted py-10">אין תורים ביום זה</p>`}
+      ${items.length === 0 && html`<p class="text-center text-text-muted py-10">אין תורים מאושרים ביום זה</p>`}
       ${items.map((it) => {
-        const blocked = it.kind === "free" && timeBlocked(it.time, it.staff_id);
-        const wa = it.kind === "booked" && it.phone
-          ? waLink(it.phone, `שלום ${it.name}, בנוגע לתורך ב-${shop.name}`)
-          : null;
-        return html`<div key=${it.kind + it.id} class="flex items-start gap-3 ${blocked ? "opacity-50" : ""}">
+        const wa = it.phone ? waLink(it.phone, `שלום ${it.name}, בנוגע לתורך ב-${shop.name}`) : null;
+        return html`<div key=${it.id} class="flex items-start gap-3">
         <div class="w-[46px] pt-4 text-left flex-shrink-0 mono text-sm text-text-muted">${fmtTime(it.time)}</div>
-        <div class="w-2 h-2 rounded-full mt-5 ${it.kind === "booked" ? "bg-info" : "bg-primary/40"}"></div>
-        <div class="flex-1 bg-surface-2 border ${it.kind === "booked" ? "border-info/30" : "border-border-light"} rounded-xl p-4">
+        <div class="w-2 h-2 rounded-full mt-5 bg-info"></div>
+        <div class="flex-1 bg-surface-2 border border-info/30 rounded-xl p-4">
           <div class="flex justify-between items-start gap-2">
             <h3 class="font-bold">${it.title}</h3>
             <div class="flex items-center gap-2 shrink-0">
               ${wa && html`<a href=${wa} target="_blank" rel="noopener" class="text-success" title="WhatsApp"><${Icon} name="chat" className="text-[20px]" /></a>`}
-              ${it.kind === "booked"
-                ? html`<span class="px-2 py-0.5 rounded bg-info/10 text-info text-xs">מוזמן</span>`
-                : blocked
-                ? html`<span class="px-2 py-0.5 rounded bg-surface-3 text-text-muted text-xs">חסום</span>`
-                : html`<button onClick=${() => delSlot(it.id)} class="text-text-muted hover:text-danger"><${Icon} name="delete" className="text-[18px]" /></button>`}
+              <span class="px-2 py-0.5 rounded bg-info/10 text-info text-xs">מוזמן</span>
             </div>
           </div>
           <div class="flex items-center gap-2 text-text-muted mono text-sm mt-1" dir="rtl">
@@ -335,7 +336,65 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
       onSaved=${() => { setAddOpen(false); reload(); }} />
     <${AddBlockModal} open=${blockOpen} onClose=${() => setBlockOpen(false)} shop=${shop}
       staff=${activeStaff} day=${day} onSaved=${() => { setBlockOpen(false); reload(); }} />
+    <${CreateDealModal} open=${dealOpen} onClose=${() => setDealOpen(false)} shop=${shop}
+      services=${activeServices} staff=${activeStaff} defaultDay=${day}
+      onSaved=${() => { setDealOpen(false); reload(); }} />
   `;
+}
+
+// Standalone "create a last-minute deal": pick service/date/time + discounted
+// price. Creates an OPEN deal slot (is_deal) that is consumer-facing but does
+// NOT appear on the barber calendar until a customer books it.
+function CreateDealModal({ open, onClose, shop, services, staff, defaultDay, onSaved }) {
+  const [svc, setSvc] = useState("");
+  const [date, setDate] = useState(defaultDay);
+  const [time, setTime] = useState("18:00");
+  const [dealPrice, setDealPrice] = useState("");
+  const [staffId, setStaffId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  useEffect(() => { if (open) { setDate(defaultDay); setErr(""); } }, [open]);
+  if (!open) return null;
+  const service = services.find((s) => s.id === svc) || services[0];
+  const save = async () => {
+    if (!service) { setErr("הוסף שירות קודם בלשונית שירותים"); return; }
+    setBusy(true); setErr("");
+    try {
+      const slot_time = new Date(`${date}T${time}:00`).toISOString();
+      await data.createSlot(shop.id, {
+        service_name: service.name, price: service.price, slot_time,
+        staff_id: staffId || null,
+        is_deal: true, deal_price: dealPrice !== "" ? Number(dealPrice) : null,
+      });
+      onSaved();
+    } catch (e) { setErr(e.message || "שמירה נכשלה"); setBusy(false); }
+  };
+  return html`<${Modal} open=${true} onClose=${onClose} title="צור מבצע דקה ה-90">
+    <div class="flex flex-col gap-4">
+      ${err && html`<p class="text-danger text-sm">${err}</p>`}
+      <label class="flex flex-col gap-2"><span class="text-sm text-text-secondary">שירות</span>
+        <select value=${svc} onChange=${(e) => setSvc(e.target.value)}
+          class="bg-surface-2 border border-border-light rounded-xl px-4 py-3 focus:outline-none focus:border-primary">
+          ${services.length === 0 && html`<option value="">— אין שירותים —</option>`}
+          ${services.map((s) => html`<option key=${s.id} value=${s.id}>${s.name} · ₪${s.price ?? "—"}</option>`)}
+        </select></label>
+      <div class="flex gap-3">
+        <${Field} label="תאריך" type="date" value=${date} onInput=${(e) => setDate(e.target.value)} dir="ltr" class="flex-1" />
+        <${Field} label="שעה" type="time" value=${time} onInput=${(e) => setTime(e.target.value)} dir="ltr" class="flex-1" />
+      </div>
+      <${Field} label="מחיר מבצע" type="number" value=${dealPrice} onInput=${(e) => setDealPrice(e.target.value)}
+        placeholder=${service ? `רגיל: ₪${service.price ?? ""}` : "₪"} dir="ltr" />
+      <label class="flex flex-col gap-2"><span class="text-sm text-text-secondary">ספר (אופציונלי)</span>
+        <select value=${staffId} onChange=${(e) => setStaffId(e.target.value)}
+          class="bg-surface-2 border border-border-light rounded-xl px-4 py-3 focus:outline-none focus:border-primary">
+          <option value="">— ללא —</option>
+          ${staff.map((m) => html`<option key=${m.id} value=${m.id}>${m.name}</option>`)}
+        </select></label>
+      <${Btn} variant="gold" onClick=${save} loading=${busy} className="w-full">
+        <${Icon} name="local_fire_department" /> פרסם מבצע
+      </${Btn}>
+    </div>
+  </${Modal}>`;
 }
 
 function AddSlotModal({ open, onClose, shop, services, staff, day, timeBlocked, onSaved }) {
@@ -432,6 +491,7 @@ function AddBlockModal({ open, onClose, shop, staff, day, onSaved }) {
 // ── Client Loyalty ───────────────────────────────────────────────────────────
 function LoyaltyTab({ appts, shop }) {
   const [sort, setSort] = useState("visits"); // visits | recent | spend
+  const [detail, setDetail] = useState(null); // client whose history is open
   const clients = useMemo(() => {
     const map = {};
     appts.forEach((a) => {
@@ -460,25 +520,65 @@ function LoyaltyTab({ appts, shop }) {
       ? html`<p class="text-text-muted text-center py-10">אין עדיין לקוחות</p>`
       : html`<div class="flex flex-col gap-3">${clients.map((c) => {
           const wa = waLink(c.phone, `שלום ${c.name}`);
-          return html`<div key=${c.phone} class="bg-surface-2 rounded-xl p-4 border border-border-light">
-          <div class="flex justify-between items-center mb-2">
+          return html`<button key=${c.phone} onClick=${() => setDetail(c)}
+            class="text-right bg-surface-2 rounded-xl p-4 border border-border-light hover:border-primary/40 transition-colors active:scale-[0.99]">
+          <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-2">
               <div class="w-9 h-9 rounded-full bg-surface-3 flex items-center justify-center text-primary"><${Icon} name="person" fill=${true} /></div>
               <div><h3 class="font-bold">${c.name || "לקוח"}</h3>
                 <p class="text-text-muted mono text-xs" dir="ltr">${c.phone}</p></div>
             </div>
-            ${wa && html`<button onClick=${() => window.open(wa, "_blank", "noopener")} title="WhatsApp"
-              class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success active:scale-95 transition-transform">
-              <${Icon} name="chat" /></button>`}
+            <div class="flex items-center gap-2">
+              ${wa && html`<a href=${wa} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()} title="WhatsApp"
+                class="w-9 h-9 rounded-full bg-success/10 flex items-center justify-center text-success active:scale-95 transition-transform">
+                <${Icon} name="chat" className="text-[18px]" /></a>`}
+              <${Icon} name="chevron_left" className="text-text-muted" />
+            </div>
           </div>
           <div class="grid grid-cols-3 gap-2 text-center">
             <div><span class="block mono font-bold">${c.visits}</span><span class="text-[11px] text-text-muted">ביקורים</span></div>
             <div><span class="block mono font-bold text-primary">₪${c.spend}</span><span class="text-[11px] text-text-muted">סה"כ</span></div>
             <div><span class="block mono text-sm">${c.last ? new Date(c.last).toLocaleDateString("he-IL", { day: "numeric", month: "short" }) : "—"}</span><span class="text-[11px] text-text-muted">אחרון</span></div>
           </div>
-        </div>`;
+        </button>`;
         })}</div>`}
+    <${ClientHistoryModal} client=${detail} appts=${appts} onClose=${() => setDetail(null)} />
   `;
+}
+
+// Client detail: visits / total spend / last visit + full booking history (by
+// phone). Read-only — no action buttons.
+function ClientHistoryModal({ client, appts, onClose }) {
+  if (!client) return null;
+  const history = (appts || [])
+    .filter((a) => ((a.customer_phone || "").trim() || "ללא טלפון") === client.phone)
+    .sort((a, b) => new Date(b.slot?.slot_time || b.created_at) - new Date(a.slot?.slot_time || a.created_at));
+  const statusLabel = { booked: "מוזמן", completed: "הושלם", cancelled: "בוטל" };
+  const wa = waLink(client.phone, `שלום ${client.name}`);
+  return html`<${Modal} open=${true} onClose=${onClose} title=${client.name || "לקוח"}>
+    <div class="flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <p class="text-text-muted mono text-sm" dir="ltr">${client.phone}</p>
+        ${wa && html`<a href=${wa} target="_blank" rel="noopener"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/10 text-success text-sm"><${Icon} name="chat" className="text-[18px]" /> WhatsApp</a>`}
+      </div>
+      <h3 class="font-bold text-text-secondary text-sm">היסטוריית תורים</h3>
+      <div class="flex flex-col gap-2 max-h-[45vh] overflow-y-auto">
+        ${history.length === 0
+          ? html`<p class="text-text-muted text-sm text-center py-4">אין תורים</p>`
+          : history.map((a) => html`<div key=${a.id} class="flex items-center justify-between bg-surface-1 border border-border-light rounded-xl p-3">
+          <div>
+            <p class="font-bold text-sm">${a.slot?.service_name || "—"}</p>
+            <p class="text-text-muted text-xs mono">${a.slot?.slot_time ? `${new Date(a.slot.slot_time).toLocaleDateString("he-IL", { day: "numeric", month: "short", year: "2-digit" })} · ${fmtTime(a.slot.slot_time)}` : "—"}</p>
+          </div>
+          <div class="text-left">
+            <span class="block text-primary mono text-sm">${a.slot?.price != null ? "₪" + a.slot.price : "—"}</span>
+            <span class="text-[11px] text-text-muted">${statusLabel[a.status] || a.status}</span>
+          </div>
+        </div>`)}
+      </div>
+    </div>
+  </${Modal}>`;
 }
 
 // ── Services (Stitch _18) ────────────────────────────────────────────────────
@@ -691,10 +791,13 @@ function Chart({ values, color, line = false }) {
 }
 
 // ── Settings (Stitch _41) ────────────────────────────────────────────────────
-function SettingsTab({ shop, onSignOut, confirm, reload }) {
+function SettingsTab({ shop, onSignOut, confirm, reload, onShopChange }) {
   const [pwOpen, setPwOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
+  const [hoursOpen, setHoursOpen] = useState(false);
   const rows = [
-    ["store", "פרטי העסק", shop.name, null],
+    ["store", "פרטי חשבון", shop.name, () => setShopOpen(true)],
+    ["schedule", "שעות פעילות", "ימים ושעות עבודה", () => setHoursOpen(true)],
     ["lock", "שינוי סיסמה", "דורש אימות מחדש", () => setPwOpen(true)],
     ["payments", "אמצעי תשלום", "חשבון בנק", null],
     ["language", "שפה", "עברית", null],
@@ -717,7 +820,114 @@ function SettingsTab({ shop, onSignOut, confirm, reload }) {
       <${Btn} variant="danger" onClick=${signOut} className="w-full mt-4"><${Icon} name="logout" /> התנתקות</${Btn}>
     </div>
     <${ChangePasswordModal} open=${pwOpen} onClose=${() => setPwOpen(false)} />
+    <${EditShopModal} open=${shopOpen} shop=${shop} onClose=${() => setShopOpen(false)}
+      onSaved=${(updated) => { setShopOpen(false); onShopChange?.(updated); reload?.(); }} />
+    <${BusinessHoursModal} open=${hoursOpen} shop=${shop} onClose=${() => setHoursOpen(false)}
+      onSaved=${(updated) => { setHoursOpen(false); onShopChange?.(updated); }} />
   `;
+}
+
+// Weekly business hours editor -> barbershops.opening_hours (jsonb), matching the
+// onboarding shape: { sun:{open,close,closed}, ... sat:{...} }.
+const HOURS_DAYS = [["sun", "א'"], ["mon", "ב'"], ["tue", "ג'"], ["wed", "ד'"], ["thu", "ה'"], ["fri", "ו'"], ["sat", "ש'"]];
+function defaultHours() {
+  return HOURS_DAYS.reduce((a, [k]) => ((a[k] = { open: "09:00", close: "18:00", closed: k === "sat" }), a), {});
+}
+function BusinessHoursModal({ open, shop, onClose, onSaved }) {
+  const [hours, setHours] = useState(defaultHours());
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    if (!open) return;
+    setErr("");
+    const oh = shop.opening_hours;
+    // Only adopt a stored value that has the per-day shape (ignore Google's open_now/weekday_text form).
+    const valid = oh && typeof oh === "object" && oh.sun && typeof oh.sun === "object";
+    const base = defaultHours();
+    setHours(valid ? HOURS_DAYS.reduce((a, [k]) => ((a[k] = { ...base[k], ...oh[k] }), a), {}) : base);
+  }, [open]);
+  if (!open) return null;
+  const upd = (k, patch) => setHours((h) => ({ ...h, [k]: { ...h[k], ...patch } }));
+  const save = async () => {
+    setBusy(true); setErr("");
+    try {
+      const updated = await data.updateShop(shop.id, { opening_hours: hours });
+      toast("שעות הפעילות נשמרו ✓");
+      onSaved(updated);
+    } catch (e) { setErr(e.message || "השמירה נכשלה"); setBusy(false); }
+  };
+  return html`<${Modal} open=${true} onClose=${onClose} title="שעות פעילות">
+    <div class="flex flex-col gap-3">
+      ${err && html`<p class="text-danger text-sm">${err}</p>`}
+      ${HOURS_DAYS.map(([k, label]) => html`<div key=${k}
+        class="flex items-center gap-3 bg-surface-1 border border-border-light rounded-xl px-3 py-2">
+        <span class="w-6 text-center font-bold">${label}</span>
+        ${hours[k].closed
+          ? html`<span class="flex-1 text-text-muted text-sm">סגור</span>`
+          : html`<div class="flex-1 flex items-center gap-2 mono text-sm" dir="ltr">
+              <input type="time" value=${hours[k].open} onInput=${(e) => upd(k, { open: e.target.value })}
+                class="bg-surface-2 border border-border-light rounded-lg px-2 py-1 focus:outline-none focus:border-primary" />
+              <span>—</span>
+              <input type="time" value=${hours[k].close} onInput=${(e) => upd(k, { close: e.target.value })}
+                class="bg-surface-2 border border-border-light rounded-lg px-2 py-1 focus:outline-none focus:border-primary" />
+            </div>`}
+        <button onClick=${() => upd(k, { closed: !hours[k].closed })}
+          class="text-xs ${hours[k].closed ? "text-primary" : "text-text-muted"}">${hours[k].closed ? "פתח" : "סגור"}</button>
+      </div>`)}
+      <${Btn} variant="gold" onClick=${save} loading=${busy} className="w-full mt-2">שמירה</${Btn}>
+    </div>
+  </${Modal}>`;
+}
+
+// Edit the shop's basic info (barbershops table) + account email.
+function EditShopModal({ open, shop, onClose, onSaved }) {
+  const [f, setF] = useState({ name: "", address: "", phone: "", email: "" });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
+  useEffect(() => {
+    if (!open) return;
+    setErr("");
+    setF({ name: shop.name || "", address: shop.address || "", phone: shop.phone || "", email: "" });
+    auth.currentEmail().then((em) => setF((p) => ({ ...p, email: em || "" }))).catch(() => {});
+  }, [open]);
+  if (!open) return null;
+  const save = async () => {
+    if (!f.name.trim()) { setErr("שם העסק חובה"); return; }
+    setBusy(true); setErr("");
+    try {
+      const newAddr = f.address.trim();
+      const patch = { name: f.name.trim(), address: newAddr || null, phone: f.phone.trim() || null };
+      // Address changed -> geocode and move the map pin (PostGIS point: lng lat).
+      if (newAddr && newAddr !== (shop.address || "")) {
+        const geo = await data.geocodeAddress(newAddr);
+        if (geo) patch.location = `SRID=4326;POINT(${geo.lng} ${geo.lat})`;
+      }
+      const updated = await data.updateShop(shop.id, patch);
+      // Account email is sensitive — only call updateEmail when it actually changed.
+      const curEmail = await auth.currentEmail();
+      if (f.email && f.email !== curEmail) {
+        await auth.updateEmail(f.email.trim());
+        toast("פרטי העסק נשמרו · נשלח אימות לאימייל החדש ✓");
+      } else {
+        toast("פרטי העסק נעדכנו ✓");
+      }
+      onSaved(updated);
+    } catch (e) { setErr(e.message || "העדכון נכשל"); setBusy(false); }
+  };
+  return html`<${Modal} open=${true} onClose=${onClose} title="פרטי חשבון">
+    <div class="flex flex-col gap-4">
+      ${err && html`<p class="text-danger text-sm">${err}</p>`}
+      <${Field} label="שם העסק" value=${f.name} onInput=${set("name")} placeholder="מספרת ..." />
+      <${Field} label="כתובת" value=${f.address} onInput=${set("address")} placeholder="רחוב, עיר" />
+      <${Field} label="טלפון" value=${f.phone} onInput=${set("phone")} placeholder="05X-XXXXXXX" dir="ltr" />
+      <div class="border-t border-border-light pt-3">
+        <${Field} label="אימייל חשבון" type="email" value=${f.email} onInput=${set("email")} dir="ltr" />
+        <p class="text-text-muted text-[11px] mt-1">שינוי האימייל ידרוש אימות בתיבת הדואר החדשה.</p>
+      </div>
+      <${Btn} variant="gold" onClick=${save} loading=${busy} className="w-full">שמירה</${Btn}>
+    </div>
+  </${Modal}>`;
 }
 
 // Sensitive account change: requires re-authentication with the current password.

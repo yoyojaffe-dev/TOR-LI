@@ -60,6 +60,20 @@ def list_nearby_slots(
     return [NearbySlot(**row) for row in rows]
 
 
+@router.get("/deals", response_model=list[NearbySlot])
+def list_deals(
+    lat: Annotated[float, Query(description="User latitude (WGS84), for nearest-first ordering.")],
+    lng: Annotated[float, Query(description="User longitude (WGS84).")],
+) -> list[NearbySlot]:
+    """All currently-bookable last-minute deals (NOT distance-capped), nearest first."""
+    try:
+        rows = locking.active_deals(lat, lng)
+    except Exception as exc:  # surface DB/RPC errors as 502
+        raise HTTPException(status_code=502, detail=f"deals query failed: {exc}") from exc
+
+    return [NearbySlot(**row) for row in rows]
+
+
 @router.get("/realtime-info")
 def realtime_info() -> dict[str, str]:
     """Expose the channel + table the frontend should subscribe to."""
