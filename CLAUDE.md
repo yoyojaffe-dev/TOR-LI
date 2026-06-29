@@ -110,6 +110,10 @@ Dashboard (`frontend/dashboard/`) is a separate buildless React-via-CDN app.
   sites — a live submit is irreversible.
 - `GET /slots` is not time-filtered (returns past-dated free slots by design);
   `GET /slots/nearby` is the future-only one.
-- Auth is not wired — the consumer uses an anonymous `user_token`; the owner-scoped RLS
-  policies for the barber/dashboard side (`users`/`services`/`staff`/`appointments`) exist
-  in migrations but `auth.uid()` is not yet supplied.
+- Auth is wired on Supabase Auth (GoTrue) for both audiences. **Barbers**: email/password —
+  the dashboard logs in client-side (`signInWithPassword`); the dev-only `/admin/barber-signup`
+  pre-creates accounts. **Clients**: phone SMS-OTP via `POST /auth/send-otp` + `/auth/verify-otp`
+  (thin wrappers over GoTrue; Twilio is configured in the Supabase dashboard, never in our env).
+  Booking/review now require a bearer JWT — `app/dependencies.py` (`get_current_user` /
+  `get_authed_supabase`) validates it and the RPCs scope by `auth.uid()` (no more `p_user`
+  token). `public.users` is auto-provisioned for new auth users by the `handle_new_user` trigger.

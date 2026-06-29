@@ -16,6 +16,12 @@ site. Hebrew/RTL frontend.
 > **Barber Dashboard** (phase 6 + advanced statistics, active/inactive toggles, hardened settings)
 > are built and browser-verified. A unified landing routes to either app. Next features:
 > see [`docs/future_growth_roadmap.md`](docs/future_growth_roadmap.md).
+>
+> **In progress — Authentication layer** (branch `feature/auth-layer`, *pending live verification*).
+> Client **phone SMS-OTP** login (Supabase-native, Twilio configured in the Supabase dashboard) and
+> a unified **GoTrue session** model: the consumer's old anonymous `user_token` is replaced by a
+> real JWT, and the booking/review RPCs are scoped by `auth.uid()`. See [Authentication](#authentication).
+> ⚠️ Not yet merged — the RPC change is breaking and must ship in lockstep with its migrations.
 
 ## Key features
 
@@ -81,18 +87,23 @@ targets the **Stitch** design mockups in `frontend/stitch/` (the shared design s
 background, `#efb200`/`#ffd174` gold, `surface-*` tiers, `rounded-[20px]` cards, floating-label
 inputs, glassmorphic bottom sheets).
 
-### Architecture — anonymous-user model
-There is **no auth** (by design). Each browser gets a stable `torli_user_token`
-(`crypto.randomUUID()`, in `localStorage`) that scopes everything user-owned. The app reads data
-two ways:
-- **FastAPI backend** (`js/api.js`) — barbershops, slots, lock→confirm booking, in-app reviews.
+### Architecture — user identity
+Clients log in with **phone SMS-OTP** (Supabase Auth / GoTrue) — see [Authentication](#authentication).
+A verified session (access + refresh JWT) is held in `localStorage` under `torli_session` and sent as
+`Authorization: Bearer …` on every booking/review call; the backend RPCs scope by `auth.uid()`.
+Booking, cancelling, and reviewing require a session (the RTL OTP modal pops on first booking). A
+separate `torli_device_id` (`crypto.randomUUID()`) is kept only for non-auth keys like avatar
+filenames, so uploads work before login. The app reads data two ways:
+- **FastAPI backend** (`js/api.js`) — barbershops, slots, lock→confirm booking, in-app reviews, and
+  the `/auth/*` OTP endpoints.
 - **Direct Supabase anon client** (`js/supabaseClient.js`) — public-read tables (`services`,
   `staff`, `external_reviews`) and Storage uploads. RLS enforces anon read-only.
 
-**Client state lives in `localStorage`** (per browser): `torli_user_token`, `torli_onboarded`,
-`torli_customer_name`/`_phone`, `torli_avatar` (Supabase Storage URL), `torli_favorites` (shop-id
-array), `torli_pay_method` / `torli_pay_cards` (masked). A tiny observable store (`js/state.js`)
-holds in-memory session state (position, fetched shops/slots, map, active lock).
+**Client state lives in `localStorage`** (per browser): `torli_session` (GoTrue JWTs),
+`torli_device_id`, `torli_onboarded`, `torli_customer_name`/`_phone`, `torli_avatar` (Supabase
+Storage URL), `torli_favorites` (shop-id array), `torli_pay_method` / `torli_pay_cards` (masked). A
+tiny observable store (`js/state.js`) holds in-memory state (position, fetched shops/slots, map,
+active lock, session).
 
 ### Key features
 | Feature | What it does | Where |
@@ -102,7 +113,7 @@ holds in-memory session state (position, fetched shops/slots, map, active lock).
 | **Map** | Google Maps dark style; gold pins; **viewport-driven fetch** — pan/zoom → "חפש באזור זה" reloads shops for the visible bounds (center+radius via the radius API). Pin → preview → profile. | `js/map.js`, `fetchShopsForView` |
 | **Home** | Capped-to-5 carousels (תורים זמינים בקרבתך / מבצעי דקה תשעים / מדורגים בקרבתך) each with a "ראה הכל" full-list page (`#/list/<kind>`); 5-shop rail + `#/shops`. | `renderNearbySlots`/`renderDeals`/`renderTopRated`/`renderListView` |
 | **Filters** | Service / budget / date / rating / distance / open-now; Apply cascades to **map pins + list + carousels** from one `visibleShops()`/`visibleSlots()` pipeline. | `openFilterSheet`, `visibleShops` |
-| **Registration** | After phone-OTP, a registration step captures Name + optional **profile photo → Supabase Storage** (public `avatars` bucket, keyed by `user_token`; base64 fallback). Auto-populates profile + booking. | `renderRegisterView`, `js/storage.js` |
+| **Login / registration** | **Phone SMS-OTP** via the RTL modal (`js/auth.js` → `/auth/send-otp` → `/auth/verify-otp`), storing a GoTrue session. A registration step captures Name + optional **profile photo → Supabase Storage** (public `avatars` bucket, keyed by `device_id`; base64 fallback). | `js/auth.js`, `renderRegisterView`, `js/storage.js` |
 | **Booking flow** | Tap slot → pessimistic **lock** (300s countdown) → confirm sheet **pre-filled** with registered name/phone → `POST /bookings/confirm` → slot booked in DB → success. History via `/bookings`. | `bookSlot`/`booking.js`/`openConfirmSheet` |
 | **Favorites** | Heart on the profile toggles a `localStorage` favorites set; "המועדפים שלי" (`#/favorites`) lists saved shops. | `toggleFavorite`, `renderFavoritesView` |
 | **Payments** | Add-card form (number/expiry/CVV, live formatting + validation) with a mock "מאמת…" verification step; saves a masked card. | `openAddCardSheet` |
@@ -156,10 +167,60 @@ Re-seed the demo barber + ownership with `node scripts/seed_barber.js`.
 
 ---
 
+## Authentication
+
+Both audiences are unified on **Supabase Auth (GoTrue)**. *(Branch `feature/auth-layer` — pending
+live verification; not yet merged.)*
+
+**Barbers — email / password.** Unchanged: the dashboard logs in client-side with
+`supabase.auth.signInWithPassword` (`frontend/dashboard/js/auth.js`); the dev-only
+`POST /admin/barber-signup` (service-role) pre-creates confirmed accounts for onboarding. Owner RLS
+keys on `auth.uid()` → `barbershops.owner_id`. There is intentionally **no backend `/auth/login`** —
+it would duplicate what the dashboard already does directly.
+
+**Clients — phone SMS-OTP.** Two thin wrappers over GoTrue (`backend/app/routers/auth.py`):
+
+| Endpoint | Calls | Returns |
+|---|---|---|
+| `POST /auth/send-otp` | `auth.sign_in_with_otp({phone})` | `{success}` — GoTrue sends the SMS via the Twilio provider |
+| `POST /auth/verify-otp` | `auth.verify_otp({phone, token, type:"sms"})` | `SessionResponse` — `access_token` + `refresh_token` + `user_id` |
+
+Phone numbers are normalised to E.164 (Israeli `05x…` → `+972…`) in the Pydantic model. GoTrue owns
+code generation, hashing, expiry, attempt-lockout, and rate-limiting — **we never store OTP codes**.
+
+**Sessions & request auth.** Clients and barbers both hold GoTrue JWTs (short-lived access token +
+rotating refresh token). The consumer stores the session in `localStorage` (`torli_session`) and
+sends `Authorization: Bearer …` on booking/review calls. The backend validates it in
+`backend/app/dependencies.py`:
+- `get_current_user` — strips the bearer, calls `auth.get_user(token)`, returns the caller (401 on
+  missing/invalid/expired).
+- `get_authed_supabase` — returns a per-request Supabase client with the JWT applied
+  (`client.postgrest.auth(token)`) so **`auth.uid()` resolves inside the RPCs**.
+
+**Schema.** `public.users` (role `client|barber|owner`, PK → `auth.users.id`) is the profile table;
+new auth users get a `role='client'` row automatically via the `handle_new_user` trigger. The
+consumer migration drops the old `p_user` argument from `lock_slot` / `release_slot` /
+`confirm_booking` / `cancel_booking` / `bookings_for_user` / `submit_review` — they now read
+`auth.uid()` — and **revokes `anon` execute, granting `authenticated`**. Migrations:
+`20260629140000_auth_profile_trigger.sql`, `20260629140100_bookings_use_auth_uid.sql`.
+
+> ⚠️ **Release ordering (breaking change).** The `auth.uid()` migration revokes `anon` from the
+> booking RPCs. The two migrations **and** the JWT-sending frontend must ship together, and Twilio
+> must be configured in **Supabase Dashboard → Auth → Phone** (credentials live there, never in our
+> `.env`). Deploying code without the migrations applied — or vice-versa — breaks booking.
+
+**Twilio credentials** are configured in the Supabase Auth dashboard, **not** in this repo. The
+`TWILIO_*` vars in `config.py` are for the separate, parked SMS-confirmation feature and are *not*
+read by OTP login.
+
+---
+
 ## Testing & QA
 
-**Backend unit tests:** **208 passing**, ~94% branch coverage, mypy `--strict` + ruff clean. All
-external services mocked (no network). `cd backend && ../venv/bin/python -m pytest tests/ -q`.
+**Backend unit tests:** **229 passing** (+1 integration auto-skipped when no live backend), ~93%
+branch coverage, mypy `--strict` + ruff + black clean. All external services — Supabase, GoTrue,
+OpenAI, Google, Playwright — mocked (no network). `cd backend && ../venv/bin/python -m pytest tests/ -q`.
+Auth coverage lives in `tests/test_auth.py` (OTP send/verify + the JWT dependencies).
 
 **End-to-end QA pass:** a 20-scenario manual/automated suite ([`docs/qa_test_plan.md`](docs/qa_test_plan.md))
 was executed against the live stack — **all passing**:
@@ -176,7 +237,9 @@ The consumer + barber dashboard MVP is **feature-complete and verified**. Securi
 Postgres RLS (owner-scoped policies + `SECURITY DEFINER` booking RPCs); the service-role key is
 never exposed to the browser. Intentional, documented constraints before a real launch:
 
-- **Consumer is anonymous** by design (`torli_user_token` + localStorage); no consumer accounts.
+- **Consumer accounts** are phone SMS-OTP (Supabase Auth) on branch `feature/auth-layer` — booking
+  requires a verified session. *(On `main` today the consumer is still the anonymous `torli_user_token`
+  model; the auth layer lands once live-verified.)* See [Authentication](#authentication).
 - **Payments are mock** (card form + simulated verification) — no real charge/PSP integration.
 - **Booking submission** to external sites is gated by `BOOKING_LIVE` (default `false` = dry run);
   in-DB partner shops book directly. Set `BOOKING_LIVE=true` only after validating real sites.
@@ -224,10 +287,12 @@ never exposed to the browser. Intentional, documented constraints before a real 
 - See `backend/app/agents/README.md` for the deep dive.
 
 ### `/backend/app/routers/` — API endpoints
+- `auth.py` — client phone-OTP login (`/auth/send-otp`, `/auth/verify-otp`); see [Authentication](#authentication).
 - `barbershops.py` — shop search + PostGIS radius. `slots.py` — slot lists / nearby.
-- `bookings.py` — lock → confirm → cancel flow. `reviews.py` — in-app reviews.
+- `bookings.py` — lock → confirm → cancel flow (JWT-scoped). `reviews.py` — in-app reviews (JWT-scoped).
 - `admin.py` — dev-only ops triggers (mounted when `ENVIRONMENT != production`):
-  `/admin/discovery/run`, `/admin/scraping/run`, **`/admin/enrichment/run`**.
+  `/admin/discovery/run`, `/admin/scraping/run`, **`/admin/enrichment/run`**, `/admin/barber-signup`.
+- `dependencies.py` — shared `get_current_user` / `get_authed_supabase` JWT auth dependencies.
 
 ### `/backend/scripts/` — CLI runners
 - `run_discovery.py` / `run_national_discovery.py` — single-point / 10-city grid discovery.
@@ -248,7 +313,9 @@ schema: `barbershops`, `available_slots`, `bookings`, `reviews`, `external_revie
 `services` (per-barber via `staff_id`), `users`/`appointments`, plus SECURITY DEFINER RPCs
 (`upsert_barbershop`, `upsert_free_slot`, `lock_slot`/`confirm_booking`, `upsert_staff`,
 `upsert_service`, `upsert_external_review`, radius/nearby search). Public-read RLS on shop-facing
-tables; owner-scoped writes; service-role for agents.
+tables; owner-scoped writes; service-role for agents. The auth-layer migrations
+(`*_auth_profile_trigger.sql`, `*_bookings_use_auth_uid.sql`) add the `handle_new_user` profile
+trigger and move the booking/review RPCs onto `auth.uid()` (see [Authentication](#authentication)).
 
 ---
 
@@ -279,6 +346,11 @@ tables; owner-scoped writes; service-role for agents.
 | `OPENAI_API_KEY` | Discovery / Scraping / Enrichment / Booking |
 | `BOOKING_LIVE` | Booking — `true` submits for real; default `false` (dry run) |
 | `AGENTS_AUTOSTART` | `main.py` — `true` starts the Scraping loop on boot; default `false` |
+
+> **Auth note:** client phone-OTP uses Twilio, but those credentials live in **Supabase Dashboard →
+> Auth → Phone**, *not* in `.env`. The `TWILIO_*` vars above are only for the parked SMS-confirmation
+> feature. JWTs are validated against GoTrue (no signing secret needed); set the optional
+> `SUPABASE_JWT_SECRET` only if switching to local HS256 verification later.
 
 ## Known limitations (best-effort by design)
 - Google Places exposes no staff / per-barber menus / durations; those come only from booking
