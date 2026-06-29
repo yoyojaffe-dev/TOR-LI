@@ -2903,6 +2903,24 @@ async function onConfirmBooking() {
       store.set({
         lastBooking: { shop: store.get().selectedBarbershop, slot: store.get().pendingSlot },
       });
+
+      // The slot is now booked server-side. Drop it from the cached feeds so the
+      // list is accurate the instant the user returns from the success screen,
+      // then refetch in the background to reconcile with the server (picks up
+      // anything else that changed). Without this the booked slot lingers as
+      // "available" until the next manual reload.
+      const bookedId = store.get().pendingSlot?.id;
+      if (bookedId != null) {
+        store.set({
+          nearbySlots: (store.get().nearbySlots || []).filter((s) => s.slot_id !== bookedId),
+          deals: (store.get().deals || []).filter((s) => s.slot_id !== bookedId),
+        });
+        renderNearbySlots(); // also re-renders the deals rail (see renderNearbySlots)
+      }
+      if (store.get().position) {
+        loadNearby().catch((err) => console.warn("post-booking refresh failed:", err?.message));
+      }
+
       closeConfirmSheet();
       location.hash = "#/success";
     } else {
@@ -2974,7 +2992,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Minimal debug/test hook (used by the Playwright E2E to drive the map preview,
   // which is otherwise reachable only via a Google Maps marker click).
-  window.__torli = { showMapPreview, openNavSheet, store, visibleShops, openConfirmSheet };
+  window.__torli = { showMapPreview, openNavSheet, store, visibleShops, openConfirmSheet, renderNearbySlots };
 
   // Hash router: nav links + deep links + back/forward all flow through here.
   window.addEventListener("hashchange", router);
