@@ -1,5 +1,5 @@
 // Barber dashboard root: auth gate → onboarding (no shop) or dashboard (has shop).
-import { html, useState, useEffect, createRoot, Icon, Field, Btn, Spinner } from "./ui.js";
+import { html, useState, useEffect, useRef, createRoot, Icon, Field, Btn, Spinner } from "./ui.js";
 import * as auth from "./auth.js";
 import { getMyShop } from "./data.js";
 import { Onboarding } from "./onboarding.js";
@@ -62,17 +62,22 @@ function Center({ children }) {
 function App() {
   const [session, setSession] = useState(undefined); // undefined=loading, null=out
   const [shop, setShop] = useState(undefined);
+  const lastUserId = useRef(undefined); // last authenticated user id we acted on
 
   useEffect(() => {
-    auth.getSession().then(setSession);
+    auth.getSession().then((s) => { lastUserId.current = s?.user?.id ?? null; setSession(s); });
     const { data: sub } = auth.onAuthChange((event, s) => {
       // Always keep the session/token current.
       setSession(s);
-      // Only a real sign-in/out should re-resolve the shop (and remount the
-      // Dashboard). A routine TOKEN_REFRESHED — which supabase-js fires when a
-      // backgrounded tab regains focus — must NOT reset shop, or the Dashboard
-      // unmounts/remounts and loses its realtime channel + seenIds/prevStatus.
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+      // Reset the shop (which unmounts/remounts Dashboard) ONLY when the
+      // authenticated identity actually changes — a real sign-out (id -> null)
+      // or a different user. supabase-js re-broadcasts SIGNED_IN on cross-tab
+      // localStorage session sync with the SAME user id; those must be ignored,
+      // or every other tab's focus tears down Dashboard's realtime + state.
+      const newId = s?.user?.id ?? null;
+      const identityChanged = newId !== lastUserId.current;
+      lastUserId.current = newId;
+      if (identityChanged) {
         setShop(undefined);
       }
     });
