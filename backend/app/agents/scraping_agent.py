@@ -98,6 +98,10 @@ class ScrapingAgent:
             self.db.table("barbershops")
             .select("id, name, booking_url")
             .not_.is_("booking_url", "null")
+            # Don't waste scrape/OpenAI cycles on non-barbershops — same
+            # place_type restriction the consumer barbershops_within_radius RPC
+            # applies, so only real barbers reach the scraping pipeline.
+            .in_("place_type", ["barber_shop", "hair_care"])
             .execute()
         )
         return [

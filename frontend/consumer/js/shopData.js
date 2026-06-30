@@ -34,6 +34,20 @@ export async function fetchServices(shopId) {
   }));
 }
 
+// Active team members for a shop's "Our Team" section. Column is `shop_id`
+// (same as services). The staff table has no photo column, so the render layer
+// shows a generic person icon — names only.
+export async function fetchStaff(shopId) {
+  const { data, error } = await supabase
+    .from("staff")
+    .select("id, name, is_active")
+    .eq("shop_id", shopId)
+    .eq("is_active", true) // hide deactivated barbers from customers
+    .order("name", { ascending: true, nullsFirst: false });
+  if (error) throw error;
+  return data || [];
+}
+
 // Scraped external (Google) reviews. Column here is `barbershop_id`.
 export async function fetchExternalReviews(shopId) {
   const { data, error } = await supabase
