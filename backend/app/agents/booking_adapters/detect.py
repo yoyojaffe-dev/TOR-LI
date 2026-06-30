@@ -20,6 +20,12 @@ _DOMAIN_MARKERS: dict[str, tuple[str, ...]] = {
     "tor4you": ("tor4you.", "tor4u.", "tor-4-you."),
     "glamera": ("glamera.",),
     "booksy": ("booksy.",),
+    # Multi-tenant booking platforms verified to render structured price+duration.
+    "calmark": ("calmark.",),
+    "eztor": ("eztor.",),
+    # cut-shave.com is a single shop's own booking site (not a multi-tenant
+    # platform), but it serves clean structured prices, so trust it like one.
+    "cutshave": ("cut-shave.",),
 }
 
 # Platforms with a dedicated static adapter. Detected platforms not listed here

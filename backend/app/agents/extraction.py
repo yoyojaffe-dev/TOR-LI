@@ -34,7 +34,7 @@ MIN_CONTENT_LENGTH = 200
 
 # Platforms whose pages we trust for price/duration. Generic/marketing pages
 # list service names but rarely real prices, so we null those out.
-_PRICING_PLATFORMS = {"tor4you", "glamera"}
+_PRICING_PLATFORMS = {"tor4you", "glamera", "calmark", "eztor", "cutshave"}
 
 # Authors that signal a non-attributable review — dropped to keep the table clean.
 _GENERIC_AUTHORS = ("anonymous", "אנונימי", "google user", "a google user", "משתמש")
