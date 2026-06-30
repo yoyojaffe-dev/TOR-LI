@@ -144,8 +144,34 @@ export async function createService(shopId, s) {
   return data;
 }
 export async function updateService(id, patch) {
-  const { error } = await supabase.from("services").update(patch).eq("id", id);
+  const { data: svc, error } = await supabase
+    .from("services")
+    .update(patch)
+    .eq("id", id)
+    .select("name,shop_id,price")
+    .single();
   if (error) throw error;
+
+  // Cascade the (possibly updated) price onto this barbershop's FREE slots for
+  // this service. Slots link to services by service_name (no service_id column).
+  // Only status='free' rows are touched — 'locked'/'booked' slots keep the price
+  // the customer reserved/paid at. A cascade failure is logged, not thrown: the
+  // services table remains the source of truth for newly created slots, so we do
+  // not roll back the service update on a slots error.
+  if (svc) {
+    const { error: slotErr } = await supabase
+      .from("available_slots")
+      .update({ price: svc.price })
+      .eq("barbershop_id", svc.shop_id)
+      .eq("service_name", svc.name)
+      .eq("status", "free");
+    if (slotErr) {
+      console.error(
+        `updateService: price cascade to available_slots failed for service "${svc.name}" (shop ${svc.shop_id}):`,
+        slotErr.message || slotErr
+      );
+    }
+  }
 }
 export async function deleteService(id) {
   const { error } = await supabase.from("services").delete().eq("id", id);
