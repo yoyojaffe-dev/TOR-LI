@@ -23,7 +23,7 @@ def _agent() -> EnrichmentAgent:
 
 def test_fetch_targets_filters_skippable() -> None:
     agent = _agent()
-    chain = agent.db.table.return_value.select.return_value.not_.is_.return_value
+    chain = agent.db.table.return_value.select.return_value.not_.is_.return_value.in_.return_value
     chain.order.return_value.limit.return_value.execute.return_value = SimpleNamespace(
         data=[
             {"id": "1", "name": "A", "booking_url": "https://book.tor4you.co.il/a"},

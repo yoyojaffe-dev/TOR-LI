@@ -59,7 +59,7 @@ def test_fetch_targets_filters_out_social_urls() -> None:
         {"id": "1", "name": "Real", "booking_url": "https://ok-barber.co.il/"},
         {"id": "2", "name": "FB", "booking_url": "https://facebook.com/x"},
     ]
-    agent.db.table.return_value.select.return_value.not_.is_.return_value.execute.return_value = (
+    agent.db.table.return_value.select.return_value.not_.is_.return_value.in_.return_value.execute.return_value = (
         SimpleNamespace(data=rows)
     )
     targets = agent.fetch_targets()
@@ -68,7 +68,7 @@ def test_fetch_targets_filters_out_social_urls() -> None:
 
 def test_fetch_targets_handles_empty() -> None:
     agent = _agent()
-    agent.db.table.return_value.select.return_value.not_.is_.return_value.execute.return_value = (
+    agent.db.table.return_value.select.return_value.not_.is_.return_value.in_.return_value.execute.return_value = (
         SimpleNamespace(data=None)
     )
     assert agent.fetch_targets() == []
