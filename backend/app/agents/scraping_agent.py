@@ -45,6 +45,28 @@ _MAX_CONCURRENT_SHOPS = 5
 # Domains that require auth or block headless browsers — skip them.
 _SKIP_DOMAINS = {"facebook.com", "instagram.com", "twitter.com", "t.me"}
 
+# TODO(scraping-shortcut, calmark): The flat visible-text scrape can't reach
+# interaction-gated slot grids (services render on load — why enrichment gets
+# prices — but availability only appears after service→barber→date clicks), so
+# calmark/eztor/smartor shops yield ~0 slots. Investigation (this session) found
+# calmark.io exposes a clean ASP.NET page-methods API instead of needing full
+# click simulation:
+#   - POST https://calmark.io/Pages/Page.aspx/<Method>, plain-JSON body, JSON
+#     response ({"d":"<escaped-json>"}). No auth/CSRF/cookie needed — just standard
+#     browser headers (UA + X-Requested-With + Origin + Referer). Bare requests get
+#     a 403 Cloudflare challenge; the browser-header set passed.
+#   - Confirmed methods: GetPageData {"businessId":<int>} -> business + service menu
+#     (with IDs); GetBusinessReviewsFiltered -> paged reviews. Per-shop businessId
+#     is resolved from the stored calmark.io/p/<slug> URL via GetPageData.
+#   - MISSING PIECE: the availability/slots method name (likely a sibling like
+#     GetAvailableTimes taking {businessId, serviceId, staffId, date}). A future
+#     session should drive the UI manually once to capture it, or grep calmark's
+#     bundled JS for the method name.
+# With that method, a `calmark` adapter could fetch slots via direct HTTP
+# (GetPageData -> per service/staff -> GetAvailable…(date)) instead of Playwright
+# automation, covering the 5 calmark shops (the largest SPA-platform cluster).
+# Not built today — documented for later. Cloudflare may harden the header bypass.
+
 SLOT_EXTRACTION_TOOL = {
     "type": "function",
     "function": {
