@@ -95,7 +95,7 @@ function App() {
   if (session === null) return html`<${AuthScreen} />`;
   if (shop === undefined) return html`<${Center}><${Spinner} className="text-primary text-3xl" /></${Center}>`;
   if (shop === null) return html`<${Onboarding} onComplete=${setShop} />`;
-  return html`<${Dashboard} shop=${shop} onSignOut=${signOut} />`;
+  return html`<${Dashboard} shop=${shop} onSignOut=${signOut} onShopUpdated=${setShop} />`;
 }
 
 createRoot(document.getElementById("root")).render(html`<${App} />`);

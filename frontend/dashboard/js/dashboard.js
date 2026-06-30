@@ -15,7 +15,7 @@ const TABS = [
   { key: "settings", label: "הגדרות", icon: "settings" },
 ];
 
-export function Dashboard({ shop, onSignOut }) {
+export function Dashboard({ shop, onSignOut, onShopUpdated }) {
   const [tab, setTab] = useState("calendar");
   const [appts, setAppts] = useState([]);
   const [slots, setSlots] = useState([]);
@@ -122,7 +122,7 @@ export function Dashboard({ shop, onSignOut }) {
             ${tab === "stats" && html`<${StatsTab} appts=${appts} staff=${staff} />`}
             ${tab === "staff" && html`<${StaffTab} ...${common} />`}
             ${tab === "services" && html`<${ServicesTab} ...${common} />`}
-            ${tab === "settings" && html`<${SettingsTab} shop=${shop} onSignOut=${onSignOut} confirm=${confirm} reload=${reload} />`}
+            ${tab === "settings" && html`<${SettingsTab} shop=${shop} onSignOut=${onSignOut} confirm=${confirm} reload=${reload} onShopUpdated=${onShopUpdated} />`}
           </div>`}
       <${BottomNav} tabs=${TABS} active=${tab} onSelect=${selectTab} />
       <${ConfirmModal} state=${confirmState} onClose=${() => setConfirmState(null)} />
@@ -729,10 +729,11 @@ function Chart({ values, color, line = false }) {
 }
 
 // ── Settings (Stitch _41) ────────────────────────────────────────────────────
-function SettingsTab({ shop, onSignOut, confirm, reload }) {
+function SettingsTab({ shop, onSignOut, confirm, reload, onShopUpdated }) {
   const [pwOpen, setPwOpen] = useState(false);
+  const [bizOpen, setBizOpen] = useState(false);
   const rows = [
-    ["store", "פרטי העסק", shop.name, null],
+    ["store", "פרטי העסק", shop.name, () => setBizOpen(true)],
     ["lock", "שינוי סיסמה", "דורש אימות מחדש", () => setPwOpen(true)],
     ["payments", "אמצעי תשלום", "חשבון בנק", null],
     ["language", "שפה", "עברית", null],
@@ -755,7 +756,88 @@ function SettingsTab({ shop, onSignOut, confirm, reload }) {
       <${Btn} variant="danger" onClick=${signOut} className="w-full mt-4"><${Icon} name="logout" /> התנתקות</${Btn}>
     </div>
     <${ChangePasswordModal} open=${pwOpen} onClose=${() => setPwOpen(false)} />
+    <${BizInfoModal} open=${bizOpen} shop=${shop} onClose=${() => setBizOpen(false)}
+      onSaved=${(updated) => { setBizOpen(false); onShopUpdated?.(updated); reload(); }} />
   `;
+}
+
+// Edit core business details (name, address, phone, opening hours). Pre-filled
+// from `shop`; on save persists via updateShop and hands the fresh row back so
+// the dashboard (AppBar title etc.) reflects the change immediately.
+const BIZ_DAY_LABELS = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"];
+const BIZ_DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+function BizInfoModal({ open, shop, onClose, onSaved }) {
+  const [f, setF] = useState({ name: "", address: "", phone: "" });
+  const [hours, setHours] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setF({ name: shop.name || "", address: shop.address || "", phone: shop.phone || "" });
+    // Seed every day with a full {open, close, closed} shape, overlaying whatever
+    // the shop already has so partial/legacy opening_hours objects still edit.
+    const seeded = BIZ_DAY_KEYS.reduce((a, k) => {
+      a[k] = { open: "09:00", close: "19:00", closed: k === "sat", ...(shop.opening_hours?.[k] || {}) };
+      return a;
+    }, {});
+    setHours(seeded);
+    setErr("");
+  }, [open, shop]);
+
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const setDay = (k, patch) => setHours({ ...hours, [k]: { ...hours[k], ...patch } });
+
+  const save = async () => {
+    if (!f.name.trim()) { setErr("יש להזין שם עסק"); return; }
+    setBusy(true); setErr("");
+    try {
+      const updated = await data.updateShop(shop.id, {
+        name: f.name.trim(),
+        address: f.address.trim() || null,
+        phone: f.phone.trim() || null,
+        opening_hours: hours,
+      });
+      toast("הפרטים עודכנו ✓");
+      onSaved(updated);
+    } catch (e) { setErr(e.message || "העדכון נכשל"); setBusy(false); }
+  };
+
+  if (!open) return null;
+  return html`<${Modal} open=${true} onClose=${onClose} title="פרטי העסק">
+    <div class="flex flex-col gap-4">
+      ${err && html`<p class="text-danger text-sm">${err}</p>`}
+      <${Field} label="שם העסק" value=${f.name} onInput=${set("name")} placeholder="שם המספרה" />
+      <${Field} label="כתובת" value=${f.address} onInput=${set("address")} placeholder="רחוב, עיר" />
+      <${Field} label="טלפון" value=${f.phone} onInput=${set("phone")} placeholder="05X-XXXXXXX" dir="ltr" />
+      <div>
+        <span class="text-sm text-text-secondary">שעות פעילות</span>
+        <div class="mt-2 flex flex-col gap-2">
+          ${BIZ_DAY_KEYS.map((k, i) => html`<div key=${k}
+            class="flex items-center gap-3 bg-surface-1 border border-border-light rounded-xl px-3 py-2">
+            <span class="w-6 text-center font-bold">${BIZ_DAY_LABELS[i]}</span>
+            ${hours[k]?.closed
+              ? html`<span class="flex-1 text-text-muted text-sm">סגור</span>`
+              : html`<div class="flex-1 flex items-center gap-2 mono text-sm" dir="ltr">
+                  <input type="time" value=${hours[k]?.open || "09:00"}
+                    onInput=${(e) => setDay(k, { open: e.target.value })}
+                    class="bg-surface-2 border border-border-light rounded px-2 py-1" />
+                  <span>—</span>
+                  <input type="time" value=${hours[k]?.close || "19:00"}
+                    onInput=${(e) => setDay(k, { close: e.target.value })}
+                    class="bg-surface-2 border border-border-light rounded px-2 py-1" />
+                </div>`}
+            <button type="button" onClick=${() => setDay(k, { closed: !hours[k]?.closed })}
+              class="text-xs ${hours[k]?.closed ? "text-primary" : "text-text-muted"}">
+              ${hours[k]?.closed ? "פתח" : "סגור"}
+            </button>
+          </div>`)}
+        </div>
+      </div>
+      <${Btn} variant="gold" onClick=${save} loading=${busy} className="w-full">שמור</${Btn}>
+    </div>
+  </${Modal}>`;
 }
 
 // Sensitive account change: requires re-authentication with the current password.
