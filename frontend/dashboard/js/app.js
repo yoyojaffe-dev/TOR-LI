@@ -65,7 +65,17 @@ function App() {
 
   useEffect(() => {
     auth.getSession().then(setSession);
-    const { data: sub } = auth.onAuthChange((s) => { setSession(s); setShop(undefined); });
+    const { data: sub } = auth.onAuthChange((event, s) => {
+      // Always keep the session/token current.
+      setSession(s);
+      // Only a real sign-in/out should re-resolve the shop (and remount the
+      // Dashboard). A routine TOKEN_REFRESHED — which supabase-js fires when a
+      // backgrounded tab regains focus — must NOT reset shop, or the Dashboard
+      // unmounts/remounts and loses its realtime channel + seenIds/prevStatus.
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        setShop(undefined);
+      }
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
