@@ -194,3 +194,10 @@ class ShopEnrichment(BaseModel):
     staff: list[ExtractedStaff] = []
     services: list[ExtractedService] = []
     reviews: list[ExternalReview] = []
+
+
+class GeocodeResult(BaseModel):
+    """Coordinates for a resolved address (Google Geocoding -> PostGIS point)."""
+
+    lat: float
+    lng: float

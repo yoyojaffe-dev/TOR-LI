@@ -1,5 +1,25 @@
 // Owner data layer — all calls run as the authenticated barber under owner RLS.
 import { supabase } from "./supabaseClient.js";
+import { config } from "./config.js";
+
+// Resolve a free-text address to {lat, lng} via the backend /geocode endpoint
+// (auth-gated: the barber's Supabase JWT is sent as a Bearer token). Used at
+// onboarding to set the shop's PostGIS location from the typed business address
+// instead of the browser's geolocation permission.
+export async function geocodeAddress(address) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  const res = await fetch(
+    `${config.BACKEND_URL}/geocode?address=${encodeURIComponent(address)}`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+  );
+  if (!res.ok) {
+    let detail;
+    try { detail = (await res.json()).detail; } catch { detail = res.statusText; }
+    throw new Error(detail || "geocode failed");
+  }
+  return res.json(); // { lat, lng }
+}
 
 async function uid() {
   const { data } = await supabase.auth.getUser();

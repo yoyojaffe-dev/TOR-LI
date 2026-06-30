@@ -18,7 +18,7 @@ from fastapi.responses import JSONResponse
 
 from app.agents.scraping_agent import ScrapingAgent
 from app.config import get_settings
-from app.routers import admin, barbershops, bookings, reviews, slots
+from app.routers import admin, barbershops, bookings, geocode, reviews, slots
 
 settings = get_settings()
 
@@ -91,6 +91,7 @@ app.include_router(barbershops.router)
 app.include_router(slots.router)
 app.include_router(bookings.router)
 app.include_router(reviews.router)
+app.include_router(geocode.router)
 
 # Admin/ops endpoints trigger billed Google/OpenAI work — keep them out of
 # production until auth is added. Mounted only in non-production environments.

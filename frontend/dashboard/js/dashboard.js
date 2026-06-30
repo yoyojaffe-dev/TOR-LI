@@ -28,6 +28,7 @@ export function Dashboard({ shop, onSignOut }) {
   const [notifOpen, setNotifOpen] = useState(false); // bell dropdown
 
   const seenIds = useRef(new Set());
+  const prevStatus = useRef(new Map()); // booking id -> last-seen status, to detect cancellations
   const firstLoad = useRef(true);
 
   // Load everything; on ANY failure stop the spinner and surface the reason
@@ -42,13 +43,21 @@ export function Dashboard({ shop, onSignOut }) {
         data.listStaff(shop.id),
         data.listOverrides(shop.id),
       ]);
-      // Alert on bookings that are new since a previous load (not the first one).
+      // Alert on bookings that are new since a previous load (not the first one),
+      // and on existing bookings whose status flipped to cancelled.
       const fresh = a.filter((b) => !seenIds.current.has(b.id));
-      if (!firstLoad.current && fresh.length) {
+      const justCancelled = a.filter(
+        (b) =>
+          b.status === "cancelled" &&
+          prevStatus.current.has(b.id) &&
+          prevStatus.current.get(b.id) !== "cancelled"
+      );
+      if (!firstLoad.current) {
         fresh.forEach((b) => toast(`📅 תור חדש: ${b.customer_name}`));
-        setUnseenList((prev) => [...fresh, ...prev]); // newest first
+        justCancelled.forEach((b) => toast(`❌ תור בוטל: ${b.customer_name}`));
+        if (fresh.length) setUnseenList((prev) => [...fresh, ...prev]); // newest first
       }
-      a.forEach((b) => seenIds.current.add(b.id));
+      a.forEach((b) => { seenIds.current.add(b.id); prevStatus.current.set(b.id, b.status); });
       firstLoad.current = false;
 
       setAppts(a); setSlots(sl); setServices(sv); setStaff(st); setOverrides(ov);
@@ -217,7 +226,10 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
   }, [appts, slots, day, staffFilter]);
 
   const dayBooked = items.filter((i) => i.kind === "booked");
-  const revenue = dayBooked.reduce((s, i) => s + (Number(i.price) || 0), 0);
+  // Cancelled bookings stay visible on the timeline but don't earn revenue.
+  const revenue = dayBooked
+    .filter((i) => i.status !== "cancelled")
+    .reduce((s, i) => s + (Number(i.price) || 0), 0);
 
   const delSlot = (id) => confirm({
     title: "מחיקת תור פנוי", body: "למחוק את התור הפנוי הזה?", danger: true,
@@ -284,16 +296,19 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
         const wa = it.kind === "booked" && it.phone
           ? waLink(it.phone, `שלום ${it.name}, בנוגע לתורך ב-${shop.name}`)
           : null;
-        return html`<div key=${it.kind + it.id} class="flex items-start gap-3 ${blocked ? "opacity-50" : ""}">
+        const cancelled = it.kind === "booked" && it.status === "cancelled";
+        return html`<div key=${it.kind + it.id} class="flex items-start gap-3 ${blocked || cancelled ? "opacity-50" : ""}">
         <div class="w-[46px] pt-4 text-left flex-shrink-0 mono text-sm text-text-muted">${fmtTime(it.time)}</div>
-        <div class="w-2 h-2 rounded-full mt-5 ${it.kind === "booked" ? "bg-info" : "bg-primary/40"}"></div>
-        <div class="flex-1 bg-surface-2 border ${it.kind === "booked" ? "border-info/30" : "border-border-light"} rounded-xl p-4">
+        <div class="w-2 h-2 rounded-full mt-5 ${cancelled ? "bg-danger" : it.kind === "booked" ? "bg-info" : "bg-primary/40"}"></div>
+        <div class="flex-1 bg-surface-2 border ${cancelled ? "border-danger/30" : it.kind === "booked" ? "border-info/30" : "border-border-light"} rounded-xl p-4">
           <div class="flex justify-between items-start gap-2">
-            <h3 class="font-bold">${it.title}</h3>
+            <h3 class="font-bold ${cancelled ? "line-through" : ""}">${it.title}</h3>
             <div class="flex items-center gap-2 shrink-0">
-              ${wa && html`<a href=${wa} target="_blank" rel="noopener" class="text-success" title="WhatsApp"><${Icon} name="chat" className="text-[20px]" /></a>`}
+              ${wa && !cancelled && html`<a href=${wa} target="_blank" rel="noopener" class="text-success" title="WhatsApp"><${Icon} name="chat" className="text-[20px]" /></a>`}
               ${it.kind === "booked"
-                ? html`<span class="px-2 py-0.5 rounded bg-info/10 text-info text-xs">מוזמן</span>`
+                ? cancelled
+                  ? html`<span class="px-2 py-0.5 rounded bg-danger/10 text-danger text-xs">בוטל</span>`
+                  : html`<span class="px-2 py-0.5 rounded bg-info/10 text-info text-xs">מוזמן</span>`
                 : blocked
                 ? html`<span class="px-2 py-0.5 rounded bg-surface-3 text-text-muted text-xs">חסום</span>`
                 : html`<button onClick=${() => delSlot(it.id)} class="text-text-muted hover:text-danger"><${Icon} name="delete" className="text-[18px]" /></button>`}
