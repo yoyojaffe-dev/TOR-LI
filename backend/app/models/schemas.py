@@ -57,6 +57,8 @@ class Slot(BaseModel):
     slot_time: datetime
     status: SlotStatus = SlotStatus.free
     locked_until: datetime | None = None
+    is_deal: bool | None = None
+    deal_price: float | None = None
 
 
 class LockRequest(_RequestModel):

@@ -6,6 +6,14 @@ import {
 import * as data from "./data.js";
 import * as auth from "./auth.js";
 
+// Effective price of a slot: the deal price when it's a live deal, else the
+// regular price. Bookings carry no price of their own — every money figure on
+// the dashboard derives from the joined slot — so deal pricing resolves here.
+function slotPrice(slot) {
+  if (!slot) return null;
+  return slot.is_deal && slot.deal_price != null ? slot.deal_price : slot.price;
+}
+
 const TABS = [
   { key: "calendar", label: "לוח", icon: "calendar_month" },
   { key: "loyalty", label: "לקוחות", icon: "loyalty" },
@@ -15,7 +23,7 @@ const TABS = [
   { key: "settings", label: "הגדרות", icon: "settings" },
 ];
 
-export function Dashboard({ shop, onSignOut }) {
+export function Dashboard({ shop, onSignOut, onShopUpdated }) {
   const [tab, setTab] = useState("calendar");
   const [appts, setAppts] = useState([]);
   const [slots, setSlots] = useState([]);
@@ -122,7 +130,7 @@ export function Dashboard({ shop, onSignOut }) {
             ${tab === "stats" && html`<${StatsTab} appts=${appts} staff=${staff} />`}
             ${tab === "staff" && html`<${StaffTab} ...${common} />`}
             ${tab === "services" && html`<${ServicesTab} ...${common} />`}
-            ${tab === "settings" && html`<${SettingsTab} shop=${shop} onSignOut=${onSignOut} confirm=${confirm} reload=${reload} />`}
+            ${tab === "settings" && html`<${SettingsTab} shop=${shop} onSignOut=${onSignOut} confirm=${confirm} reload=${reload} onShopUpdated=${onShopUpdated} />`}
           </div>`}
       <${BottomNav} tabs=${TABS} active=${tab} onSelect=${selectTab} />
       <${ConfirmModal} state=${confirmState} onClose=${() => setConfirmState(null)} />
@@ -218,10 +226,11 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
       .filter((a) => ymd(new Date(a.slot.slot_time)) === day && matchStaff(a.slot.staff_id))
       .map((a) => ({ kind: "booked", time: a.slot.slot_time, id: a.id,
         title: `${a.slot.service_name} · ${a.customer_name}`, sub: a.customer_phone,
-        name: a.customer_name, phone: a.customer_phone, price: a.slot.price, status: a.status }));
+        name: a.customer_name, phone: a.customer_phone, price: slotPrice(a.slot), status: a.status }));
     const free = slots
       .filter((s) => s.status === "free" && ymd(new Date(s.slot_time)) === day && matchStaff(s.staff_id))
-      .map((s) => ({ kind: "free", time: s.slot_time, id: s.id, title: s.service_name, price: s.price, staff_id: s.staff_id }));
+      .map((s) => ({ kind: "free", time: s.slot_time, id: s.id, title: s.service_name,
+        price: s.price, staff_id: s.staff_id, is_deal: s.is_deal, deal_price: s.deal_price }));
     return [...booked, ...free].sort((x, y) => new Date(x.time) - new Date(y.time));
   }, [appts, slots, day, staffFilter]);
 
@@ -304,6 +313,8 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
           <div class="flex justify-between items-start gap-2">
             <h3 class="font-bold ${cancelled ? "line-through" : ""}">${it.title}</h3>
             <div class="flex items-center gap-2 shrink-0">
+              ${it.kind === "free" && it.is_deal && it.deal_price != null
+                && html`<span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-bold">🔥 דיל</span>`}
               ${wa && !cancelled && html`<a href=${wa} target="_blank" rel="noopener" class="text-success" title="WhatsApp"><${Icon} name="chat" className="text-[20px]" /></a>`}
               ${it.kind === "booked"
                 ? cancelled
@@ -317,7 +328,10 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
           <div class="flex items-center gap-2 text-text-muted mono text-sm mt-1" dir="rtl">
             ${it.sub && html`<span dir="ltr">${it.sub}</span>`}
             ${it.sub && html`<span>·</span>`}
-            <span class="text-primary">${it.price != null ? "₪" + it.price : "—"}</span>
+            ${it.kind === "free" && it.is_deal && it.deal_price != null
+              ? html`<span class="text-primary font-bold">₪${it.deal_price}</span>
+                     <span class="line-through text-text-muted/70">₪${it.price}</span>`
+              : html`<span class="text-primary">${it.price != null ? "₪" + it.price : "—"}</span>`}
           </div>
         </div>
       </div>`;
@@ -357,6 +371,8 @@ function AddSlotModal({ open, onClose, shop, services, staff, day, timeBlocked, 
   const [svc, setSvc] = useState("");
   const [time, setTime] = useState("10:00");
   const [staffId, setStaffId] = useState("");
+  const [isDeal, setIsDeal] = useState(false);
+  const [dealPrice, setDealPrice] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -367,11 +383,20 @@ function AddSlotModal({ open, onClose, shop, services, staff, day, timeBlocked, 
     if (timeBlocked && timeBlocked(slot_time, staffId || null)) {
       setErr("הזמן הזה חסום ביומן — הסר את החסימה או בחר שעה אחרת"); return;
     }
+    let deal_price = null;
+    if (isDeal) {
+      deal_price = Number(dealPrice);
+      if (!deal_price || deal_price <= 0) { setErr("יש להזין מחיר מבצע תקין"); return; }
+      if (service.price != null && deal_price >= service.price) {
+        setErr("מחיר המבצע חייב להיות נמוך מהמחיר הרגיל"); return;
+      }
+    }
     setBusy(true); setErr("");
     try {
       await data.createSlot(shop.id, {
         service_name: service.name, price: service.price, slot_time,
         staff_id: staffId || null,
+        is_deal: isDeal, deal_price,
       });
       onSaved();
     } catch (e) { setErr(e.message || "שמירה נכשלה"); setBusy(false); }
@@ -393,6 +418,18 @@ function AddSlotModal({ open, onClose, shop, services, staff, day, timeBlocked, 
           <option value="">— ללא —</option>
           ${staff.map((m) => html`<option key=${m.id} value=${m.id}>${m.name}</option>`)}
         </select></label>
+
+      <!-- Last-minute deal: flag this slot + set a reduced price. -->
+      <button onClick=${() => setIsDeal(!isDeal)} type="button"
+        class="flex items-center justify-between bg-surface-1 border border-border-light rounded-xl px-4 py-3">
+        <span class="flex items-center gap-2">🔥 סמן כדיל של הרגע האחרון</span>
+        <span class="w-12 h-7 rounded-full p-1 transition-colors ${isDeal ? "bg-primary" : "bg-surface-variant"}">
+          <span class="block w-5 h-5 rounded-full bg-white transition-transform ${isDeal ? "translate-x-0" : "translate-x-5"}"></span>
+        </span>
+      </button>
+      ${isDeal && html`<${Field} label="מחיר מבצע ₪" type="number" value=${dealPrice}
+        onInput=${(e) => setDealPrice(e.target.value)} dir="ltr" placeholder="מחיר מוזל" />`}
+
       <${Btn} variant="gold" onClick=${save} loading=${busy} className="w-full">הוסף תור (${day})</${Btn}>
     </div>
   </${Modal}>`;
@@ -453,7 +490,8 @@ function LoyaltyTab({ appts, shop }) {
       const phone = (a.customer_phone || "").trim() || "ללא טלפון";
       const c = map[phone] || (map[phone] = { phone, name: a.customer_name, visits: 0, spend: 0, last: 0 });
       c.visits += 1;
-      c.spend += Number(a.slot?.price) || 0;
+      // Cancelled bookings earn nothing — count the visit, not the spend.
+      if (a.status !== "cancelled") c.spend += Number(slotPrice(a.slot)) || 0;
       const t = new Date(a.slot?.slot_time || a.created_at).getTime();
       if (t > c.last) { c.last = t; c.name = a.customer_name; }
     });
@@ -618,19 +656,27 @@ function StatsTab({ appts, staff }) {
         new Date(a.created_at).getTime() >= since &&
         (staffFilter === "all" || a.slot?.staff_id === staffFilter)
     );
-    const revenue = inRange.reduce((s, a) => s + (Number(a.slot?.price) || 0), 0);
+    // Revenue counts ONLY non-cancelled bookings, each at its effective price
+    // (deal_price when is_deal, else price). Both rules apply together: a
+    // cancelled booking earns nothing (even if it was a deal); a live deal
+    // booking earns deal_price. Visit counts still include cancelled.
+    const earns = (a) => a.status !== "cancelled";
+    const paidCount = inRange.filter(earns).length;
+    const revenue = inRange
+      .filter(earns)
+      .reduce((s, a) => s + (Number(slotPrice(a.slot)) || 0), 0);
     const visitBuckets = {};
     const revBuckets = {};
     inRange.forEach((a) => {
       const k = ymd(new Date(a.created_at));
-      revBuckets[k] = (revBuckets[k] || 0) + (Number(a.slot?.price) || 0);
+      if (earns(a)) revBuckets[k] = (revBuckets[k] || 0) + (Number(slotPrice(a.slot)) || 0);
       visitBuckets[k] = (visitBuckets[k] || 0) + 1;
     });
     const days = Object.keys(revBuckets).sort();
     return {
       revenue,
       visits: inRange.length,
-      avg: inRange.length ? Math.round(revenue / inRange.length) : 0,
+      avg: paidCount ? Math.round(revenue / paidCount) : 0,
       revSeries: days.map((k) => revBuckets[k]),
       visitSeries: days.map((k) => visitBuckets[k]),
     };
@@ -706,10 +752,11 @@ function Chart({ values, color, line = false }) {
 }
 
 // ── Settings (Stitch _41) ────────────────────────────────────────────────────
-function SettingsTab({ shop, onSignOut, confirm, reload }) {
+function SettingsTab({ shop, onSignOut, confirm, reload, onShopUpdated }) {
   const [pwOpen, setPwOpen] = useState(false);
+  const [bizOpen, setBizOpen] = useState(false);
   const rows = [
-    ["store", "פרטי העסק", shop.name, null],
+    ["store", "פרטי העסק", shop.name, () => setBizOpen(true)],
     ["lock", "שינוי סיסמה", "דורש אימות מחדש", () => setPwOpen(true)],
     ["payments", "אמצעי תשלום", "חשבון בנק", null],
     ["language", "שפה", "עברית", null],
@@ -732,7 +779,88 @@ function SettingsTab({ shop, onSignOut, confirm, reload }) {
       <${Btn} variant="danger" onClick=${signOut} className="w-full mt-4"><${Icon} name="logout" /> התנתקות</${Btn}>
     </div>
     <${ChangePasswordModal} open=${pwOpen} onClose=${() => setPwOpen(false)} />
+    <${BizInfoModal} open=${bizOpen} shop=${shop} onClose=${() => setBizOpen(false)}
+      onSaved=${(updated) => { setBizOpen(false); onShopUpdated?.(updated); reload(); }} />
   `;
+}
+
+// Edit core business details (name, address, phone, opening hours). Pre-filled
+// from `shop`; on save persists via updateShop and hands the fresh row back so
+// the dashboard (AppBar title etc.) reflects the change immediately.
+const BIZ_DAY_LABELS = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"];
+const BIZ_DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+function BizInfoModal({ open, shop, onClose, onSaved }) {
+  const [f, setF] = useState({ name: "", address: "", phone: "" });
+  const [hours, setHours] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setF({ name: shop.name || "", address: shop.address || "", phone: shop.phone || "" });
+    // Seed every day with a full {open, close, closed} shape, overlaying whatever
+    // the shop already has so partial/legacy opening_hours objects still edit.
+    const seeded = BIZ_DAY_KEYS.reduce((a, k) => {
+      a[k] = { open: "09:00", close: "19:00", closed: k === "sat", ...(shop.opening_hours?.[k] || {}) };
+      return a;
+    }, {});
+    setHours(seeded);
+    setErr("");
+  }, [open, shop]);
+
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const setDay = (k, patch) => setHours({ ...hours, [k]: { ...hours[k], ...patch } });
+
+  const save = async () => {
+    if (!f.name.trim()) { setErr("יש להזין שם עסק"); return; }
+    setBusy(true); setErr("");
+    try {
+      const updated = await data.updateShop(shop.id, {
+        name: f.name.trim(),
+        address: f.address.trim() || null,
+        phone: f.phone.trim() || null,
+        opening_hours: hours,
+      });
+      toast("הפרטים עודכנו ✓");
+      onSaved(updated);
+    } catch (e) { setErr(e.message || "העדכון נכשל"); setBusy(false); }
+  };
+
+  if (!open) return null;
+  return html`<${Modal} open=${true} onClose=${onClose} title="פרטי העסק">
+    <div class="flex flex-col gap-4">
+      ${err && html`<p class="text-danger text-sm">${err}</p>`}
+      <${Field} label="שם העסק" value=${f.name} onInput=${set("name")} placeholder="שם המספרה" />
+      <${Field} label="כתובת" value=${f.address} onInput=${set("address")} placeholder="רחוב, עיר" />
+      <${Field} label="טלפון" value=${f.phone} onInput=${set("phone")} placeholder="05X-XXXXXXX" dir="ltr" />
+      <div>
+        <span class="text-sm text-text-secondary">שעות פעילות</span>
+        <div class="mt-2 flex flex-col gap-2">
+          ${BIZ_DAY_KEYS.map((k, i) => html`<div key=${k}
+            class="flex items-center gap-3 bg-surface-1 border border-border-light rounded-xl px-3 py-2">
+            <span class="w-6 text-center font-bold">${BIZ_DAY_LABELS[i]}</span>
+            ${hours[k]?.closed
+              ? html`<span class="flex-1 text-text-muted text-sm">סגור</span>`
+              : html`<div class="flex-1 flex items-center gap-2 mono text-sm" dir="ltr">
+                  <input type="time" value=${hours[k]?.open || "09:00"}
+                    onInput=${(e) => setDay(k, { open: e.target.value })}
+                    class="bg-surface-2 border border-border-light rounded px-2 py-1" />
+                  <span>—</span>
+                  <input type="time" value=${hours[k]?.close || "19:00"}
+                    onInput=${(e) => setDay(k, { close: e.target.value })}
+                    class="bg-surface-2 border border-border-light rounded px-2 py-1" />
+                </div>`}
+            <button type="button" onClick=${() => setDay(k, { closed: !hours[k]?.closed })}
+              class="text-xs ${hours[k]?.closed ? "text-primary" : "text-text-muted"}">
+              ${hours[k]?.closed ? "פתח" : "סגור"}
+            </button>
+          </div>`)}
+        </div>
+      </div>
+      <${Btn} variant="gold" onClick=${save} loading=${busy} className="w-full">שמור</${Btn}>
+    </div>
+  </${Modal}>`;
 }
 
 // Sensitive account change: requires re-authentication with the current password.

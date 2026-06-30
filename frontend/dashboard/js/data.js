@@ -87,7 +87,7 @@ export async function listAppointments() {
       .from("bookings")
       .select(
         "id,customer_name,customer_phone,status,created_at," +
-          "slot:available_slots(id,service_name,slot_time,price,staff_id,barbershop_id,status)"
+          "slot:available_slots(id,service_name,slot_time,price,staff_id,barbershop_id,status,is_deal,deal_price)"
       )
       .order("created_at", { ascending: false })
   );
@@ -101,16 +101,28 @@ export async function listSlots(shopId) {
       "listSlots",
       await supabase
         .from("available_slots")
-        .select("id,service_name,slot_time,price,status,staff_id")
+        .select("id,service_name,slot_time,price,status,staff_id,is_deal,deal_price")
         .eq("barbershop_id", shopId)
         .order("slot_time", { ascending: true })
     ) || []
   );
 }
-export async function createSlot(shopId, { service_name, price, slot_time, staff_id }) {
+export async function createSlot(
+  shopId,
+  { service_name, price, slot_time, staff_id, is_deal, deal_price }
+) {
   const { data, error } = await supabase
     .from("available_slots")
-    .insert({ barbershop_id: shopId, service_name, price, slot_time, staff_id: staff_id || null })
+    .insert({
+      barbershop_id: shopId,
+      service_name,
+      price,
+      slot_time,
+      staff_id: staff_id || null,
+      is_deal: !!is_deal,
+      // Only carry a deal price when the slot is actually flagged as a deal.
+      deal_price: is_deal ? deal_price : null,
+    })
     .select("id")
     .single();
   if (error) throw error;
