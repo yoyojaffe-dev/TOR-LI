@@ -29,21 +29,23 @@ export function Onboarding({ onComplete }) {
   const next = () => setStep((s) => Math.min(s + 1, total - 1));
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
-  const useMyLocation = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (p) => setBiz((b) => ({ ...b, lat: p.coords.latitude, lng: p.coords.longitude })),
-      () => setErr("לא הצלחנו לאתר מיקום — אפשר להמשיך בלי")
-    );
-  };
-
   const finish = async () => {
     if (!biz.name.trim()) { setStep(0); setErr("יש להזין שם עסק"); return; }
+    if (!biz.address.trim()) { setStep(0); setErr("יש להזין כתובת עסק"); return; }
     setBusy(true); setErr("");
     try {
+      // Resolve the typed address to coordinates so the shop has a PostGIS
+      // location and shows up in the consumer's nearby search.
+      let lat, lng;
+      try {
+        ({ lat, lng } = await data.geocodeAddress(biz.address.trim()));
+      } catch {
+        setStep(0); setErr("לא הצלחנו לאתר את כתובת העסק — בדוק/י את הכתובת");
+        setBusy(false); return;
+      }
       const shop = await data.createShop({
-        name: biz.name.trim(), address: biz.address, phone: biz.phone,
-        lat: biz.lat, lng: biz.lng, opening_hours: hours,
+        name: biz.name.trim(), address: biz.address.trim(), phone: biz.phone,
+        lat, lng, opening_hours: hours,
       });
       for (const s of services) {
         if (s.name.trim()) await data.createService(shop.id, {
@@ -93,10 +95,6 @@ function StepBusiness({ biz, setBiz, hours, setHours, useMyLocation }) {
       <${Field} label="שם המספרה" value=${biz.name} onInput=${set("name")} placeholder="הכנס את שם המספרה" />
       <${Field} label="כתובת" value=${biz.address} onInput=${set("address")} placeholder="רחוב, עיר" />
       <${Field} label="טלפון" value=${biz.phone} onInput=${set("phone")} placeholder="05X-XXXXXXX" dir="ltr" />
-      <button onClick=${useMyLocation}
-        class="flex items-center gap-2 text-primary text-sm self-start">
-        <${Icon} name="my_location" /> ${biz.lat ? "המיקום נקלט ✓" : "השתמש במיקום הנוכחי"}
-      </button>
 
       <div class="mt-2">
         <span class="text-body-md text-text-secondary text-sm">שעות פעילות</span>
