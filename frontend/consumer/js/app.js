@@ -979,7 +979,10 @@ async function router() {
 
 // ── View: Barber Profile ─────────────────────────────────────────────────────
 
+let barberPollTimer = null;
+
 async function renderBarberView(shopId) {
+  if (barberPollTimer) { clearInterval(barberPollTimer); barberPollTimer = null; }
   const view = els.viewBarber();
   let shop = store.get().selectedBarbershop;
   if (!shop || shop.id !== shopId) {
@@ -1191,8 +1194,8 @@ async function renderBarberView(shopId) {
   );
   setTab("slots");
 
-  // Load services menu (real) into the Services tab.
-  (async () => {
+  // Load services menu (real) into the Services tab; poll while this view is open.
+  async function loadServiceMenu() {
     const box = document.getElementById("bp-service-menu");
     if (!box) return;
     try {
@@ -1204,7 +1207,16 @@ async function renderBarberView(shopId) {
       console.warn("fetchServices failed:", err?.message);
       box.innerHTML = `<p class="text-text-muted font-body-md py-6 text-center">תפריט השירותים עדיין לא זמין</p>`;
     }
-  })();
+  }
+  await loadServiceMenu();
+  barberPollTimer = setInterval(() => {
+    if (location.hash !== `#/barber/${shopId}`) {
+      clearInterval(barberPollTimer);
+      barberPollTimer = null;
+      return;
+    }
+    loadServiceMenu();
+  }, 15000);
 
   // Load scraped Google reviews (external_reviews) into the Reviews tab.
   (async () => {
