@@ -107,10 +107,22 @@ export async function listSlots(shopId) {
     ) || []
   );
 }
-export async function createSlot(shopId, { service_name, price, slot_time, staff_id }) {
+export async function createSlot(
+  shopId,
+  { service_name, price, slot_time, staff_id, is_deal, deal_price }
+) {
   const { data, error } = await supabase
     .from("available_slots")
-    .insert({ barbershop_id: shopId, service_name, price, slot_time, staff_id: staff_id || null })
+    .insert({
+      barbershop_id: shopId,
+      service_name,
+      price,
+      slot_time,
+      staff_id: staff_id || null,
+      is_deal: !!is_deal,
+      // Only carry a deal price when the slot is actually flagged as a deal.
+      deal_price: is_deal ? deal_price : null,
+    })
     .select("id")
     .single();
   if (error) throw error;

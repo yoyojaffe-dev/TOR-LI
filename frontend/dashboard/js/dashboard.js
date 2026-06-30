@@ -357,6 +357,8 @@ function AddSlotModal({ open, onClose, shop, services, staff, day, timeBlocked, 
   const [svc, setSvc] = useState("");
   const [time, setTime] = useState("10:00");
   const [staffId, setStaffId] = useState("");
+  const [isDeal, setIsDeal] = useState(false);
+  const [dealPrice, setDealPrice] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -367,11 +369,20 @@ function AddSlotModal({ open, onClose, shop, services, staff, day, timeBlocked, 
     if (timeBlocked && timeBlocked(slot_time, staffId || null)) {
       setErr("הזמן הזה חסום ביומן — הסר את החסימה או בחר שעה אחרת"); return;
     }
+    let deal_price = null;
+    if (isDeal) {
+      deal_price = Number(dealPrice);
+      if (!deal_price || deal_price <= 0) { setErr("יש להזין מחיר מבצע תקין"); return; }
+      if (service.price != null && deal_price >= service.price) {
+        setErr("מחיר המבצע חייב להיות נמוך מהמחיר הרגיל"); return;
+      }
+    }
     setBusy(true); setErr("");
     try {
       await data.createSlot(shop.id, {
         service_name: service.name, price: service.price, slot_time,
         staff_id: staffId || null,
+        is_deal: isDeal, deal_price,
       });
       onSaved();
     } catch (e) { setErr(e.message || "שמירה נכשלה"); setBusy(false); }
@@ -393,6 +404,18 @@ function AddSlotModal({ open, onClose, shop, services, staff, day, timeBlocked, 
           <option value="">— ללא —</option>
           ${staff.map((m) => html`<option key=${m.id} value=${m.id}>${m.name}</option>`)}
         </select></label>
+
+      <!-- Last-minute deal: flag this slot + set a reduced price. -->
+      <button onClick=${() => setIsDeal(!isDeal)} type="button"
+        class="flex items-center justify-between bg-surface-1 border border-border-light rounded-xl px-4 py-3">
+        <span class="flex items-center gap-2">🔥 סמן כדיל של הרגע האחרון</span>
+        <span class="w-12 h-7 rounded-full p-1 transition-colors ${isDeal ? "bg-primary" : "bg-surface-variant"}">
+          <span class="block w-5 h-5 rounded-full bg-white transition-transform ${isDeal ? "translate-x-0" : "translate-x-5"}"></span>
+        </span>
+      </button>
+      ${isDeal && html`<${Field} label="מחיר מבצע ₪" type="number" value=${dealPrice}
+        onInput=${(e) => setDealPrice(e.target.value)} dir="ltr" placeholder="מחיר מוזל" />`}
+
       <${Btn} variant="gold" onClick=${save} loading=${busy} className="w-full">הוסף תור (${day})</${Btn}>
     </div>
   </${Modal}>`;
