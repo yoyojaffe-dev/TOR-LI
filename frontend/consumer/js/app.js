@@ -783,9 +783,7 @@ function renderSlots(slots) {
       <!-- Price / bolt -->
       <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
         <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
-        <span class="font-price-lg text-price-lg text-primary leading-none">
-          ${s.price != null ? "₪" + s.price : ""}
-        </span>
+        ${slotPriceHTML(s)}
       </div>
       <!-- Time + service -->
       <div class="flex-1 text-right flex flex-col justify-center pr-3">
@@ -827,7 +825,7 @@ function slotRowHTML(s) {
                 cursor-pointer hover:bg-surface-2 hover:border-surface-variant transition-colors">
       <div class="flex flex-col items-center gap-0.5 w-16" dir="ltr">
         <span class="material-symbols-outlined text-primary text-[18px]">bolt</span>
-        <span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>
+        ${slotPriceHTML(s)}
       </div>
       <div class="flex-1 text-right flex flex-col justify-center pr-3">
         <span class="font-headline-sm text-base">${s.service_name}</span>
@@ -841,6 +839,29 @@ function wireSlotTaps(container) {
   container.querySelectorAll("[data-id]").forEach((el) =>
     el.addEventListener("click", () => bookSlot(el.dataset.id))
   );
+}
+
+// Whether a slot is a live last-minute deal (toggle on + a deal price set).
+function isDealSlot(s) {
+  return !!s.is_deal && s.deal_price != null;
+}
+
+// The price a customer actually pays: the deal price for a live deal, else the
+// regular price. This is the amount charged at the confirm sheet.
+function effectivePrice(s) {
+  return isDealSlot(s) ? s.deal_price : s.price;
+}
+
+// Price column markup for a slot card. For a deal: the deal price highlighted,
+// the original struck through, and a "🔥 מבצע" badge. Otherwise the plain price.
+function slotPriceHTML(s) {
+  if (isDealSlot(s)) {
+    return `
+      <span class="font-price-lg text-price-lg text-primary leading-none">₪${s.deal_price}</span>
+      ${s.price != null ? `<span class="text-text-muted text-[11px] line-through leading-none">₪${s.price}</span>` : ""}
+      <span class="text-[10px] font-bold text-primary leading-none whitespace-nowrap">🔥 מבצע</span>`;
+  }
+  return `<span class="font-price-lg text-price-lg text-primary leading-none">${s.price != null ? "₪" + s.price : ""}</span>`;
 }
 
 // Escape untrusted text (scraped reviews, service names) before innerHTML.
@@ -2751,9 +2772,19 @@ function openConfirmSheet(shop, slot) {
   $("#cs-time").textContent = new Date(slot.slot_time).toLocaleString("he-IL", {
     day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
   });
-  const price = slot.price != null ? `₪${slot.price}` : "—";
-  $("#cs-total").textContent = price;
-  $("#cs-cta-price").textContent = price;
+  // Deal slots are charged the deal price (not the original). The CTA + total
+  // reflect what the customer actually pays; deals also show the struck original.
+  const eff = effectivePrice(slot);
+  const effLabel = eff != null ? `₪${eff}` : "—";
+  $("#cs-cta-price").textContent = effLabel;
+  if (isDealSlot(slot)) {
+    $("#cs-total").innerHTML =
+      `<span class="text-primary">₪${slot.deal_price}</span>` +
+      (slot.price != null ? ` <span class="text-text-muted text-sm line-through">₪${slot.price}</span>` : "") +
+      ` <span class="text-xs font-bold text-primary">🔥 מבצע</span>`;
+  } else {
+    $("#cs-total").textContent = effLabel;
+  }
 
   // Prefill saved customer details.
   $("#cs-name").value = localStorage.getItem("torli_customer_name") || "";
