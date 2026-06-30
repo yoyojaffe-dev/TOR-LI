@@ -281,6 +281,14 @@ class DiscoveryAgent:
         name = place.get("name") or "Unknown"
         address = place.get("formatted_address")
         phone = place.get("formatted_phone_number")
+        # TODO(data-quality, post-MVP): Google's `website` is often the shop's
+        # marketing homepage ROOT, not the real booking deep-link, so booking_url
+        # sometimes points at a page with no slots/prices. Known affected (own-
+        # domain roots, manually spotted): Davidi Levi, Barberia, Aviel, ברבר 7,
+        # Oded, homie's, KID-CUT, מספרת יצחק (katzuz.com proven marketing/₪0;
+        # davidi-levi.indt-web.com returns CONTENT_TOO_THIN). Fix later via manual
+        # booking_url correction or a smarter heuristic (prefer a detected booking
+        # platform / deep path over a bare homepage root). Not addressed today.
         website = place.get("website")
 
         # Build photo URLs from up to 6 Places photo references.
