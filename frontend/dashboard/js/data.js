@@ -1,5 +1,25 @@
 // Owner data layer — all calls run as the authenticated barber under owner RLS.
 import { supabase } from "./supabaseClient.js";
+import { config } from "./config.js";
+
+// Resolve a free-text address to {lat, lng} via the backend /geocode endpoint
+// (auth-gated: the barber's Supabase JWT is sent as a Bearer token). Used at
+// onboarding to set the shop's PostGIS location from the typed business address
+// instead of the browser's geolocation permission.
+export async function geocodeAddress(address) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  const res = await fetch(
+    `${config.BACKEND_URL}/geocode?address=${encodeURIComponent(address)}`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+  );
+  if (!res.ok) {
+    let detail;
+    try { detail = (await res.json()).detail; } catch { detail = res.statusText; }
+    throw new Error(detail || "geocode failed");
+  }
+  return res.json(); // { lat, lng }
+}
 
 async function uid() {
   const { data } = await supabase.auth.getUser();
@@ -124,8 +144,34 @@ export async function createService(shopId, s) {
   return data;
 }
 export async function updateService(id, patch) {
-  const { error } = await supabase.from("services").update(patch).eq("id", id);
+  const { data: svc, error } = await supabase
+    .from("services")
+    .update(patch)
+    .eq("id", id)
+    .select("name,shop_id,price")
+    .single();
   if (error) throw error;
+
+  // Cascade the (possibly updated) price onto this barbershop's FREE slots for
+  // this service. Slots link to services by service_name (no service_id column).
+  // Only status='free' rows are touched — 'locked'/'booked' slots keep the price
+  // the customer reserved/paid at. A cascade failure is logged, not thrown: the
+  // services table remains the source of truth for newly created slots, so we do
+  // not roll back the service update on a slots error.
+  if (svc) {
+    const { error: slotErr } = await supabase
+      .from("available_slots")
+      .update({ price: svc.price })
+      .eq("barbershop_id", svc.shop_id)
+      .eq("service_name", svc.name)
+      .eq("status", "free");
+    if (slotErr) {
+      console.error(
+        `updateService: price cascade to available_slots failed for service "${svc.name}" (shop ${svc.shop_id}):`,
+        slotErr.message || slotErr
+      );
+    }
+  }
 }
 export async function deleteService(id) {
   const { error } = await supabase.from("services").delete().eq("id", id);

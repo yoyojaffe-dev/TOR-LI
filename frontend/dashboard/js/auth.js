@@ -9,7 +9,9 @@ export async function getSession() {
 }
 
 export function onAuthChange(cb) {
-  return supabase.auth.onAuthStateChange((_event, session) => cb(session));
+  // Expose the event type (SIGNED_IN / SIGNED_OUT / TOKEN_REFRESHED / …) so the
+  // caller can distinguish a real session change from a routine token refresh.
+  return supabase.auth.onAuthStateChange((event, session) => cb(event, session));
 }
 
 export function signIn(email, password) {
