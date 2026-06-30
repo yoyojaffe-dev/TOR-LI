@@ -490,7 +490,8 @@ function LoyaltyTab({ appts, shop }) {
       const phone = (a.customer_phone || "").trim() || "ללא טלפון";
       const c = map[phone] || (map[phone] = { phone, name: a.customer_name, visits: 0, spend: 0, last: 0 });
       c.visits += 1;
-      c.spend += Number(slotPrice(a.slot)) || 0;
+      // Cancelled bookings earn nothing — count the visit, not the spend.
+      if (a.status !== "cancelled") c.spend += Number(slotPrice(a.slot)) || 0;
       const t = new Date(a.slot?.slot_time || a.created_at).getTime();
       if (t > c.last) { c.last = t; c.name = a.customer_name; }
     });
@@ -655,19 +656,27 @@ function StatsTab({ appts, staff }) {
         new Date(a.created_at).getTime() >= since &&
         (staffFilter === "all" || a.slot?.staff_id === staffFilter)
     );
-    const revenue = inRange.reduce((s, a) => s + (Number(slotPrice(a.slot)) || 0), 0);
+    // Revenue counts ONLY non-cancelled bookings, each at its effective price
+    // (deal_price when is_deal, else price). Both rules apply together: a
+    // cancelled booking earns nothing (even if it was a deal); a live deal
+    // booking earns deal_price. Visit counts still include cancelled.
+    const earns = (a) => a.status !== "cancelled";
+    const paidCount = inRange.filter(earns).length;
+    const revenue = inRange
+      .filter(earns)
+      .reduce((s, a) => s + (Number(slotPrice(a.slot)) || 0), 0);
     const visitBuckets = {};
     const revBuckets = {};
     inRange.forEach((a) => {
       const k = ymd(new Date(a.created_at));
-      revBuckets[k] = (revBuckets[k] || 0) + (Number(slotPrice(a.slot)) || 0);
+      if (earns(a)) revBuckets[k] = (revBuckets[k] || 0) + (Number(slotPrice(a.slot)) || 0);
       visitBuckets[k] = (visitBuckets[k] || 0) + 1;
     });
     const days = Object.keys(revBuckets).sort();
     return {
       revenue,
       visits: inRange.length,
-      avg: inRange.length ? Math.round(revenue / inRange.length) : 0,
+      avg: paidCount ? Math.round(revenue / paidCount) : 0,
       revSeries: days.map((k) => revBuckets[k]),
       visitSeries: days.map((k) => visitBuckets[k]),
     };
