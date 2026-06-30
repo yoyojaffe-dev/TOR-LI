@@ -6,7 +6,7 @@ import { geocodeAddress, locateSafely } from "./geo.js";
 import { renderMap, renderBarbershopMarkers, recenterMap, travelEtas, boundsToRadius } from "./map.js";
 import { subscribeToSlots } from "./realtime.js";
 import { startBooking, confirmBooking, cancelBooking } from "./booking.js";
-import { fetchServices, fetchExternalReviews } from "./shopData.js";
+import { fetchServices, fetchStaff, fetchExternalReviews } from "./shopData.js";
 import { uploadAvatar } from "./storage.js";
 
 // --- DOM hooks ---
@@ -903,6 +903,18 @@ function serviceRowHTML(s) {
     </div>`;
 }
 
+// A single team-member row for the "הצוות שלנו" section. The staff table has no
+// photo column, so every member gets the same generic person avatar; names only.
+function staffRowHTML(m) {
+  return `
+    <div class="bg-surface-1 border border-border-light rounded-2xl p-3 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-surface-2 border border-border-light flex items-center justify-center text-primary shrink-0">
+        <span class="material-symbols-outlined text-[22px]" style="font-variation-settings:'FILL' 1;">person</span>
+      </div>
+      <span class="font-headline-sm text-base text-right flex-1">${escapeHtml(m.name)}</span>
+    </div>`;
+}
+
 // ── External (Google) review card (Supabase `external_reviews`) ──────────────
 // Graceful degradation: author / rating / text / reviewed_at may be null.
 function externalReviewHTML(r) {
@@ -1093,11 +1105,16 @@ async function renderBarberView(shopId) {
       </div>
     </section>
 
-    <!-- Tab: Services menu (from Supabase services table) -->
+    <!-- Tab: Services menu (from Supabase services table) + team roster -->
     <section id="bp-services" class="px-gutter py-stack-lg hidden">
       <div id="bp-service-menu" class="flex flex-col gap-3">
         <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
         <div class="h-16 bg-surface-2 rounded-2xl border border-border-light animate-pulse"></div>
+      </div>
+      <!-- Our Team (active staff) — hidden until at least one member loads -->
+      <div id="bp-team-section" class="hidden mt-stack-lg">
+        <h2 class="font-headline-sm text-lg text-text-primary mb-stack-sm">הצוות שלנו</h2>
+        <div id="bp-team" class="flex flex-col gap-3"></div>
       </div>
     </section>
 
@@ -1238,6 +1255,23 @@ async function renderBarberView(shopId) {
     }
     loadServiceMenu();
   }, 15000);
+
+  // Load the active team roster into the "הצוות שלנו" section (Services tab).
+  // The whole section stays hidden when the shop has no active staff, so a shop
+  // without a roster shows just its service menu — no empty "Our Team" header.
+  (async () => {
+    const section = document.getElementById("bp-team-section");
+    const box = document.getElementById("bp-team");
+    if (!section || !box) return;
+    try {
+      const team = await fetchStaff(shop.id);
+      if (!team.length) return; // leave section hidden
+      box.innerHTML = team.map(staffRowHTML).join("");
+      section.classList.remove("hidden");
+    } catch (err) {
+      console.warn("fetchStaff failed:", err?.message);
+    }
+  })();
 
   // Load scraped Google reviews (external_reviews) into the Reviews tab.
   (async () => {
