@@ -77,6 +77,11 @@ class EnrichmentAgent:
             self.db.table("barbershops")
             .select("id, name, booking_url, enriched_at")
             .not_.is_("booking_url", "null")
+            # Only enrich actual barbershops — mirrors the place_type restriction
+            # the consumer-facing barbershops_within_radius RPC already applies,
+            # so non-barbers (car rental, clinics, dress shops) stay out of the
+            # enrichment queue instead of polluting staff/services.
+            .in_("place_type", ["barber_shop", "hair_care"])
             .order("enriched_at", desc=False, nullsfirst=True)
             .limit(limit)
             .execute()
