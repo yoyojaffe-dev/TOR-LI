@@ -6,6 +6,14 @@ import {
 import * as data from "./data.js";
 import * as auth from "./auth.js";
 
+// Effective price of a slot: the deal price when it's a live deal, else the
+// regular price. Bookings carry no price of their own — every money figure on
+// the dashboard derives from the joined slot — so deal pricing resolves here.
+function slotPrice(slot) {
+  if (!slot) return null;
+  return slot.is_deal && slot.deal_price != null ? slot.deal_price : slot.price;
+}
+
 const TABS = [
   { key: "calendar", label: "לוח", icon: "calendar_month" },
   { key: "loyalty", label: "לקוחות", icon: "loyalty" },
@@ -218,10 +226,11 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
       .filter((a) => ymd(new Date(a.slot.slot_time)) === day && matchStaff(a.slot.staff_id))
       .map((a) => ({ kind: "booked", time: a.slot.slot_time, id: a.id,
         title: `${a.slot.service_name} · ${a.customer_name}`, sub: a.customer_phone,
-        name: a.customer_name, phone: a.customer_phone, price: a.slot.price, status: a.status }));
+        name: a.customer_name, phone: a.customer_phone, price: slotPrice(a.slot), status: a.status }));
     const free = slots
       .filter((s) => s.status === "free" && ymd(new Date(s.slot_time)) === day && matchStaff(s.staff_id))
-      .map((s) => ({ kind: "free", time: s.slot_time, id: s.id, title: s.service_name, price: s.price, staff_id: s.staff_id }));
+      .map((s) => ({ kind: "free", time: s.slot_time, id: s.id, title: s.service_name,
+        price: s.price, staff_id: s.staff_id, is_deal: s.is_deal, deal_price: s.deal_price }));
     return [...booked, ...free].sort((x, y) => new Date(x.time) - new Date(y.time));
   }, [appts, slots, day, staffFilter]);
 
@@ -304,6 +313,8 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
           <div class="flex justify-between items-start gap-2">
             <h3 class="font-bold ${cancelled ? "line-through" : ""}">${it.title}</h3>
             <div class="flex items-center gap-2 shrink-0">
+              ${it.kind === "free" && it.is_deal && it.deal_price != null
+                && html`<span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-bold">🔥 דיל</span>`}
               ${wa && !cancelled && html`<a href=${wa} target="_blank" rel="noopener" class="text-success" title="WhatsApp"><${Icon} name="chat" className="text-[20px]" /></a>`}
               ${it.kind === "booked"
                 ? cancelled
@@ -317,7 +328,10 @@ function CalendarTab({ shop, appts, slots, services, staff, overrides, reload, c
           <div class="flex items-center gap-2 text-text-muted mono text-sm mt-1" dir="rtl">
             ${it.sub && html`<span dir="ltr">${it.sub}</span>`}
             ${it.sub && html`<span>·</span>`}
-            <span class="text-primary">${it.price != null ? "₪" + it.price : "—"}</span>
+            ${it.kind === "free" && it.is_deal && it.deal_price != null
+              ? html`<span class="text-primary font-bold">₪${it.deal_price}</span>
+                     <span class="line-through text-text-muted/70">₪${it.price}</span>`
+              : html`<span class="text-primary">${it.price != null ? "₪" + it.price : "—"}</span>`}
           </div>
         </div>
       </div>`;
@@ -476,7 +490,7 @@ function LoyaltyTab({ appts, shop }) {
       const phone = (a.customer_phone || "").trim() || "ללא טלפון";
       const c = map[phone] || (map[phone] = { phone, name: a.customer_name, visits: 0, spend: 0, last: 0 });
       c.visits += 1;
-      c.spend += Number(a.slot?.price) || 0;
+      c.spend += Number(slotPrice(a.slot)) || 0;
       const t = new Date(a.slot?.slot_time || a.created_at).getTime();
       if (t > c.last) { c.last = t; c.name = a.customer_name; }
     });
@@ -641,12 +655,12 @@ function StatsTab({ appts, staff }) {
         new Date(a.created_at).getTime() >= since &&
         (staffFilter === "all" || a.slot?.staff_id === staffFilter)
     );
-    const revenue = inRange.reduce((s, a) => s + (Number(a.slot?.price) || 0), 0);
+    const revenue = inRange.reduce((s, a) => s + (Number(slotPrice(a.slot)) || 0), 0);
     const visitBuckets = {};
     const revBuckets = {};
     inRange.forEach((a) => {
       const k = ymd(new Date(a.created_at));
-      revBuckets[k] = (revBuckets[k] || 0) + (Number(a.slot?.price) || 0);
+      revBuckets[k] = (revBuckets[k] || 0) + (Number(slotPrice(a.slot)) || 0);
       visitBuckets[k] = (visitBuckets[k] || 0) + 1;
     });
     const days = Object.keys(revBuckets).sort();
