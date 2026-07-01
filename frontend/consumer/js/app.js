@@ -1591,7 +1591,7 @@ async function renderProfileView() {
   try {
     const bookings = await api.listBookings(store.get().userToken);
     const c = document.getElementById("pf-count");
-    if (c) c.textContent = String(bookings.length);
+    if (c) c.textContent = String(bookings.filter(b => b.status !== "cancelled").length);
   } catch { /* leave dash */ }
 }
 
