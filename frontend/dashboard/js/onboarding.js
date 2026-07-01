@@ -70,7 +70,7 @@ export function Onboarding({ onComplete }) {
       <div class="px-5 pt-4"><${ProgressBar} step=${step + 1} total=${total} /></div>
       <div class="px-5 pt-6">
         ${err && html`<p class="text-danger text-sm mb-4">${err}</p>`}
-        ${step === 0 && html`<${StepBusiness} biz=${biz} setBiz=${setBiz} hours=${hours} setHours=${setHours} useMyLocation=${useMyLocation} />`}
+        ${step === 0 && html`<${StepBusiness} biz=${biz} setBiz=${setBiz} hours=${hours} setHours=${setHours} />`}
         ${step === 1 && html`<${StepServices} services=${services} setServices=${setServices} />`}
         ${step === 2 && html`<${StepStaff} staff=${staff} setStaff=${setStaff} />`}
         ${step === 3 && html`<${StepBank} bank=${bank} setBank=${setBank} />`}
@@ -86,7 +86,7 @@ export function Onboarding({ onComplete }) {
   `;
 }
 
-function StepBusiness({ biz, setBiz, hours, setHours, useMyLocation }) {
+function StepBusiness({ biz, setBiz, hours, setHours }) {
   const set = (k) => (e) => setBiz({ ...biz, [k]: e.target.value });
   return html`
     <h2 class="text-headline-md text-2xl font-extrabold mb-2">פרטי העסק</h2>
