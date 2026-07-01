@@ -4,8 +4,9 @@ from scripts.run_national_discovery import CITIES, _select_cities
 
 
 def test_grid_covers_ten_core_cities() -> None:
-    keys = {c["key"] for c in CITIES}
-    assert keys == {
+    # The grid has since grown beyond these; assert the original 10 core
+    # cities remain a subset of the current grid rather than an exact match.
+    core_cities = {
         "kiryat_shmona",
         "tiberias",
         "tel_aviv",
@@ -17,6 +18,8 @@ def test_grid_covers_ten_core_cities() -> None:
         "netanya",
         "eilat",
     }
+    keys = {c["key"] for c in CITIES}
+    assert core_cities <= keys
 
 
 def test_select_none_returns_all_cities() -> None:
